@@ -1,47 +1,77 @@
 #include <iostream>
 #include <SDL.h>
 
-int main(int argc, char* argv[]) 
+SDL_Color green{ 34, 177, 76, 0 };
+SDL_Color purple{ 185, 151, 230, 0 };
+
+int main(int argc, char* argv[])
 {
-	SDL_Window* window = nullptr;
+	SDL_Window* pWindow = nullptr;
+	SDL_Renderer* pRenderer = nullptr;
 
-	// SDL 초기화
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+
+	int width = 640;
+	int height = 480;
+
+	if (SDL_CreateWindowAndRenderer(width, height, 0, &pWindow, &pRenderer) < 0)
 	{
-		printf("SDL Initialization Fail: %s\n", SDL_GetError());
-		return 1;
+		printf("SDL_CreateWindowAndRenderer Error\n");
+		return 0;
 	}
 
-	// 윈도우 창 생성
-	window = SDL_CreateWindow("title", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
-		640, 480, SDL_WINDOW_SHOWN);
+	SDL_SetWindowTitle(pWindow, "Screen flip");
 
-	if (!window) 
+	bool running = true;
+	int lastTickCount = SDL_GetTicks();
+	int curTickCount = lastTickCount;
+	int color = 0;
+
+	while (running)
 	{
-		printf("SDL Initialization Fail: %s\n", SDL_GetError());
-		SDL_Quit();
+		SDL_Event event;
 
-		return 1;
-	}
-
-
-	// 메시지 루프
-	SDL_Event event;
-	int quit = 0;
-
-	while (not quit) 
-	{
-		while (SDL_PollEvent(&event)) 
+		while (SDL_PollEvent(&event))
 		{
-			if (event.type == SDL_QUIT) 
+			// ESC 키를 누르면 종료된다.
+			if (event.type == SDL_KEYDOWN)
 			{
-				quit = 1;
+				if (event.key.keysym.sym == SDLK_ESCAPE)
+				{
+					running = false;
+				}
+			}
+			else if (event.type == SDL_QUIT)
+			{
+				running = false;
 			}
 		}
+
+		curTickCount = SDL_GetTicks();
+
+		if (curTickCount - lastTickCount > 1000)
+		{
+			color++;
+			color = color % 2;
+			lastTickCount = curTickCount;
+		}
+
+		if (color == 0)
+		{
+			SDL_SetRenderDrawColor(pRenderer, green.r, green.g, green.b, green.a);
+		}
+		else
+		{
+			SDL_SetRenderDrawColor(pRenderer, purple.r, purple.g, purple.b, purple.a);
+		}
+
+		SDL_RenderClear(pRenderer);
+		SDL_RenderFillRect(pRenderer, nullptr);
+
+		SDL_RenderPresent(pRenderer);
 	}
 
-	// 종료
-	SDL_DestroyWindow(window);
+	SDL_DestroyRenderer(pRenderer);
+	SDL_DestroyWindow(pWindow);
 	SDL_Quit();
 
 	return 0;
