@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
 	int height = 480;
 
 	// 扩档快 积己
-	SDL_Window* pWindow = SDL_CreateWindow("Keyboard Input", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+	SDL_Window* pWindow = SDL_CreateWindow("Mouse Input", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		width, height, SDL_WINDOW_SHOWN);
 
 	// 坊歹矾 积己
@@ -33,12 +33,24 @@ int main(int argc, char* argv[])
 					quit = true;
 					break;
 
-				case SDL_KEYDOWN:
-					std::cout << "Key pressed: " << SDL_GetKeyName(event.key.keysym.sym) << std::endl;
+				case SDL_MOUSEBUTTONDOWN:
+					if (event.button.button == SDL_BUTTON_LEFT)
+					{
+						std::cout << "Mouse pressed: " << static_cast<int>(event.button.button) << std::endl;
+						std::cout << "Mouse position: (" << event.button.x << ", " << event.button.y << ")" << std::endl;
+					}
 					break;
 
-				case SDL_KEYUP:
-					std::cout << "Key released: " << SDL_GetKeyName(event.key.keysym.sym) << std::endl;
+				case SDL_MOUSEBUTTONUP:
+					if (event.button.button == SDL_BUTTON_LEFT)
+					{
+						std::cout << "Mouse released: " << static_cast<int>(event.button.button) << std::endl;
+						std::cout << "Mouse position: (" << event.button.x << ", " << event.button.y << ")" << std::endl;
+					}
+					break;
+
+				case SDL_MOUSEMOTION:
+					std::cout << "Mouse moved: (" << event.motion.x << ", " << event.motion.y << ")" << std::endl;
 					break;
 
 				default:
