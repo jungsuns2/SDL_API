@@ -6,67 +6,52 @@ SDL_Color purple{ 185, 151, 230, 0 };
 
 int main(int argc, char* argv[])
 {
-	SDL_Window* pWindow = nullptr;
-	SDL_Renderer* pRenderer = nullptr;
-
+	// SDL 초기화
+	SDL_Init(SDL_INIT_EVERYTHING);
 
 	int width = 640;
 	int height = 480;
 
-	if (SDL_CreateWindowAndRenderer(width, height, 0, &pWindow, &pRenderer) < 0)
+	// 윈도우 생성
+	SDL_Window* pWindow = SDL_CreateWindow("Keyboard Input", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+		width, height, SDL_WINDOW_SHOWN);
+
+	// 렌더러 생성
+	SDL_Renderer* pRenderer = SDL_CreateRenderer(pWindow, -1, 0);
+
+	bool quit = false;
+	SDL_Event event;
+
+	// 이벤트 처리
+	while (not quit)
 	{
-		printf("SDL_CreateWindowAndRenderer Error\n");
-		return 0;
-	}
-
-	SDL_SetWindowTitle(pWindow, "Screen flip");
-
-	bool running = true;
-	int lastTickCount = SDL_GetTicks();
-	int curTickCount = lastTickCount;
-	int color = 0;
-
-	while (running)
-	{
-		SDL_Event event;
-
 		while (SDL_PollEvent(&event))
 		{
-			// ESC 키를 누르면 종료된다.
-			if (event.type == SDL_KEYDOWN)
+			switch (event.type)
 			{
-				if (event.key.keysym.sym == SDLK_ESCAPE)
-				{
-					running = false;
-				}
+				case SDL_QUIT:
+					quit = true;
+					break;
+
+				case SDL_KEYDOWN:
+					std::cout << "Key pressed: " << SDL_GetKeyName(event.key.keysym.sym) << std::endl;
+					break;
+
+				case SDL_KEYUP:
+					std::cout << "Key released: " << SDL_GetKeyName(event.key.keysym.sym) << std::endl;
+					break;
+
+				default:
+					break;
 			}
-			else if (event.type == SDL_QUIT)
-			{
-				running = false;
-			}
 		}
 
-		curTickCount = SDL_GetTicks();
-
-		if (curTickCount - lastTickCount > 1000)
-		{
-			color++;
-			color = color % 2;
-			lastTickCount = curTickCount;
-		}
-
-		if (color == 0)
-		{
-			SDL_SetRenderDrawColor(pRenderer, green.r, green.g, green.b, green.a);
-		}
-		else
-		{
-			SDL_SetRenderDrawColor(pRenderer, purple.r, purple.g, purple.b, purple.a);
-		}
-
+		SDL_SetRenderDrawColor(pRenderer, 0, 0, 0, 255);
+		
+		// 텍스처 초기화
 		SDL_RenderClear(pRenderer);
-		SDL_RenderFillRect(pRenderer, nullptr);
 
+		// 화면에 출력
 		SDL_RenderPresent(pRenderer);
 	}
 
