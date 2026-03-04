@@ -1,72 +1,62 @@
 #include <iostream>
 #include <SDL.h>
+#include <assert.h>
 
-SDL_Color green{ 34, 177, 76, 0 };
-SDL_Color purple{ 185, 151, 230, 0 };
+constexpr int WIDTH = 640;
+constexpr int HEIGHT = 480;
 
 int main(int argc, char* argv[])
 {
 	// SDL 초기화
-	SDL_Init(SDL_INIT_EVERYTHING);
-
-	int width = 640;
-	int height = 480;
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+	{
+		std::cout << SDL_GetError() << std::endl;
+		return 0;
+	}
 
 	// 윈도우 생성
-	SDL_Window* pWindow = SDL_CreateWindow("Mouse Input", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		width, height, SDL_WINDOW_SHOWN);
+	SDL_Window* pWindow = SDL_CreateWindow("bmp", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+		WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
 
 	// 렌더러 생성
 	SDL_Renderer* pRenderer = SDL_CreateRenderer(pWindow, -1, 0);
 
-	bool quit = false;
+	// bmp 이미지 생성
+	SDL_Surface* pHellowBMP = SDL_LoadBMP("hello.bmp");
+	assert(pHellowBMP != nullptr);
+
+	// 텍스처 객체로 변환
+	SDL_Texture* pTexture = SDL_CreateTextureFromSurface(pRenderer, pHellowBMP);
+	assert(pTexture != nullptr);
+	SDL_FreeSurface(pHellowBMP);
+
+	bool running = true;
 	SDL_Event event;
 
 	// 이벤트 처리
-	while (not quit)
+	while (running)
 	{
 		while (SDL_PollEvent(&event))
 		{
-			switch (event.type)
+			if (event.type == SDL_KEYDOWN)
 			{
-				case SDL_QUIT:
-					quit = true;
-					break;
-
-				case SDL_MOUSEBUTTONDOWN:
-					if (event.button.button == SDL_BUTTON_LEFT)
-					{
-						std::cout << "Mouse pressed: " << static_cast<int>(event.button.button) << std::endl;
-						std::cout << "Mouse position: (" << event.button.x << ", " << event.button.y << ")" << std::endl;
-					}
-					break;
-
-				case SDL_MOUSEBUTTONUP:
-					if (event.button.button == SDL_BUTTON_LEFT)
-					{
-						std::cout << "Mouse released: " << static_cast<int>(event.button.button) << std::endl;
-						std::cout << "Mouse position: (" << event.button.x << ", " << event.button.y << ")" << std::endl;
-					}
-					break;
-
-				case SDL_MOUSEMOTION:
-					std::cout << "Mouse moved: (" << event.motion.x << ", " << event.motion.y << ")" << std::endl;
-					break;
-
-				default:
-					break;
+				if (event.key.keysym.sym == SDLK_ESCAPE)
+				{
+					running = false;
+				}
+			}
+			else if (event.type == SDL_QUIT)
+			{
+				running = false;
 			}
 		}
 
-		SDL_SetRenderDrawColor(pRenderer, 0, 0, 0, 255);
-		
-		// 텍스처 초기화
 		SDL_RenderClear(pRenderer);
-
-		// 화면에 출력
+		SDL_RenderCopy(pRenderer, pTexture, nullptr, nullptr);
 		SDL_RenderPresent(pRenderer);
 	}
 
+	SDL_DestroyTexture(pTexture);
 	SDL_DestroyRenderer(pRenderer);
 	SDL_DestroyWindow(pWindow);
 	SDL_Quit();
