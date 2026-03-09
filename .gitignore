@@ -32,7 +32,6 @@ Resource/
 *.lai
 *.la
 *.a
-*.lib
 !DirectXTex.lib
 
 # Executables
