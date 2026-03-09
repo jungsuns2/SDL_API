@@ -1,6 +1,5 @@
 #include <iostream>
 #include <SDL.h>
-#include <vector>
 #include <array>
 
 bool GetKey(const SDL_Scancode virtualCode);
@@ -8,8 +7,8 @@ bool GetKeyDown(const SDL_Scancode virtualCode);
 bool GetKeyUp(const SDL_Scancode virtualCode);
 void SetKeyState(const SDL_Scancode virtualCode, const bool bPressed);
 
-static std::array<size_t, SDL_NUM_SCANCODES> KeysPressed;
-static std::array<size_t, SDL_NUM_SCANCODES> KeysStateChanged;
+static std::array<bool, SDL_NUM_SCANCODES> KeysPressed;
+static std::array<bool, SDL_NUM_SCANCODES> PrevKeysPressed;
 
 int main(int argc, char* argv[])
 {
@@ -77,13 +76,13 @@ int main(int argc, char* argv[])
 		// 게임 업데이트
 
 		// 렌더링
-		SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);
+		SDL_SetRenderDrawColor(renderer, 255, 174, 201, 255);
 		SDL_RenderClear(renderer);		// 화면을 지정색으로 채운다.
 
 		SDL_RenderPresent(renderer);	// 화면에 출력한다.
 
 		// 모든 키를 초기화 한다.
-		KeysStateChanged = {};
+		PrevKeysPressed = {};
 	}
 
 	SDL_DestroyRenderer(renderer);
@@ -100,18 +99,18 @@ bool GetKey(const SDL_Scancode virtualCode)
 
 bool GetKeyDown(const SDL_Scancode virtualCode)
 {
-	return KeysStateChanged[virtualCode] and KeysPressed[virtualCode];
+	return KeysPressed[virtualCode] and PrevKeysPressed[virtualCode];
 }
 
 bool GetKeyUp(const SDL_Scancode virtualCode)
 {
-	return KeysStateChanged[virtualCode] and not KeysPressed[virtualCode];
+	return not KeysPressed[virtualCode] and PrevKeysPressed[virtualCode];
 
 }
 
 void SetKeyState(const SDL_Scancode virtualCode, const bool bPressed)
 {
-	KeysStateChanged[virtualCode] = (KeysPressed[virtualCode] != bPressed);
+	PrevKeysPressed[virtualCode] = (KeysPressed[virtualCode] != bPressed);
 	KeysPressed[virtualCode] = bPressed;
 }
 
