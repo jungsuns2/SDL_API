@@ -6,6 +6,7 @@ struct Player
 	SDL_Surface* imageSurface;
 	SDL_Texture* texture;
 	SDL_FPoint position;
+	SDL_FPoint velocity;
 };
 
 constexpr int WIDTH = 640;
@@ -104,21 +105,49 @@ int main(int argc, char* argv[])
 			const int32_t moveX = gInput.GetKey(SDL_SCANCODE_D) - gInput.GetKey(SDL_SCANCODE_A);
 			const int32_t moveY = gInput.GetKey(SDL_SCANCODE_S) - gInput.GetKey(SDL_SCANCODE_W);
 
-			static SDL_FPoint position{};
-			SDL_FPoint velocity{};
-			constexpr float SPEED = 500.0f;
+			static int32_t prevMoveX;
+			static int32_t prevMoveY;
 
-			if (moveX != 0 or moveY != 0)
+			SDL_FPoint& velocity  = gPlayer.velocity;
+			constexpr float MAX_SPEED = 500.0f;
+			constexpr float ACC = 40.0f;
+
+			if (moveX != 0)
 			{
-				float speed = SPEED * deltaTime;
-				SDL_FPoint direction = { .x = float(moveX), .y = float(moveY) };
-				velocity.x = direction.x * speed;
-				velocity.y = direction.y * speed;
+				velocity.x = std::clamp(velocity.x + ACC * moveX, -MAX_SPEED, MAX_SPEED);
+				prevMoveX = moveX;
+			}
+			else
+			{
+				if (prevMoveX > 0)
+				{
+					velocity.x = std::max(velocity.x - ACC, 0.0f);
+				}
+				else
+				{
+					velocity.x = std::min(velocity.x + ACC, 0.0f);
+				}
 			}
 
-			position.x += velocity.x;
-			position.y += velocity.y;
-			gPlayer.position = position;
+			if (moveY != 0)
+			{
+				velocity.y = std::clamp(velocity.y + ACC * moveY, -MAX_SPEED, MAX_SPEED);
+				prevMoveY = moveY;
+			}
+			else
+			{
+				if (prevMoveY > 0)
+				{
+					velocity.y = std::max(velocity.y - ACC, 0.0f);
+				}
+				else
+				{
+					velocity.y = std::min(velocity.y + ACC, 0.0f);
+				}
+			}
+
+			gPlayer.position.x += velocity.x * deltaTime;
+			gPlayer.position.y += velocity.y * deltaTime;
 
 			if (gIsMousePositionPrint)
 			{
