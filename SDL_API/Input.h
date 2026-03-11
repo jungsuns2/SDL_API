@@ -11,8 +11,8 @@ public:
 	bool GetMouseButtonDown(const Uint8 virtualMouse);
 	bool GetMouseButtonUp(const Uint8 virtualMouse);
 
-	Point_2S GetMousePosition() const;
-	void SetMousePosition(Point_2S mousePosition);
+	SDL_FPoint GetMousePosition() const;
+	void SetMousePosition(SDL_FPoint mousePosition);
 
 public:
 	void SetKeyState(const SDL_Scancode virtualCode, const bool bPressed);
@@ -28,5 +28,5 @@ private:
 	std::array<bool, SDL_NUM_SCANCODES> mPrevKeysPressed{};
 	std::array<bool, SDL_MOUSE_COUNT> mPreMousePressed{};
 
-	Point_2S MousePosition{};
+	SDL_FPoint MousePosition{};
 };
