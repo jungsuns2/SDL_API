@@ -1,6 +1,8 @@
 #pragma once
-#include <iostream>
 #include <SDL.h>
+#include <SDL_image.h>
+
+#include <iostream>
 #include <array>
 
 struct Point_2S
