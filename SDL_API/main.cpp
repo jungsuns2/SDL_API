@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 
 	// 초기화를 한다.
 	{
-		SDL_Surface* imageSurface = IMG_Load("player.png");
+		SDL_Surface * imageSurface = IMG_Load("player.png");
 		assert(imageSurface != nullptr);
 
 		SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, imageSurface);
@@ -104,7 +104,8 @@ int main(int argc, char* argv[])
 			const int32_t moveX = gInput.GetKey(SDL_SCANCODE_D) - gInput.GetKey(SDL_SCANCODE_A);
 			const int32_t moveY = gInput.GetKey(SDL_SCANCODE_S) - gInput.GetKey(SDL_SCANCODE_W);
 
-			SDL_FPoint velocity{};	// 키를 떼면, 초기화 되도록 한다.
+			static SDL_FPoint position{};
+			SDL_FPoint velocity{};
 			constexpr float SPEED = 500.0f;
 
 			if (moveX != 0 or moveY != 0)
@@ -115,8 +116,9 @@ int main(int argc, char* argv[])
 				velocity.y = direction.y * speed;
 			}
 
-			gPlayer.position.x += velocity.x;
-			gPlayer.position.y += velocity.y;
+			position.x += velocity.x;
+			position.y += velocity.y;
+			gPlayer.position = position;
 
 			if (gIsMousePositionPrint)
 			{
