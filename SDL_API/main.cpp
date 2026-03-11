@@ -6,7 +6,6 @@ struct Player
 	SDL_Surface* imageSurface;
 	SDL_Texture* texture;
 	SDL_FPoint position;
-	SDL_FPoint velocity;
 };
 
 constexpr int WIDTH = 640;
@@ -108,7 +107,7 @@ int main(int argc, char* argv[])
 			static int32_t prevMoveX;
 			static int32_t prevMoveY;
 
-			SDL_FPoint& velocity  = gPlayer.velocity;
+			SDL_FPoint velocity = {};
 			constexpr float MAX_SPEED = 500.0f;
 			constexpr float ACC = 40.0f;
 
@@ -144,6 +143,15 @@ int main(int argc, char* argv[])
 				{
 					velocity.y = std::min(velocity.y + ACC, 0.0f);
 				}
+			}
+
+			float length = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+			if (length > 0.0f)
+			{
+				SDL_FPoint direction = { .x = velocity.x / length, .y = velocity.y / length };
+
+				velocity.x = MAX_SPEED * direction.x;
+				velocity.y = MAX_SPEED * direction.y;
 			}
 
 			gPlayer.position.x += velocity.x * deltaTime;
