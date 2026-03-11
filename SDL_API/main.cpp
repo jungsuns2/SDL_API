@@ -6,7 +6,6 @@ struct Player
 	SDL_Surface* imageSurface;
 	SDL_Texture* texture;
 	SDL_FPoint position;
-	SDL_FPoint velocity;
 };
 
 constexpr int WIDTH = 640;
@@ -41,7 +40,6 @@ int main(int argc, char* argv[])
 		gPlayer.imageSurface = imageSurface;
 		gPlayer.texture = texture;
 		gPlayer.position = {};
-		gPlayer.velocity = {};
 	}
 
 	float deltaTime = 0.0f;
@@ -103,28 +101,24 @@ int main(int argc, char* argv[])
 			}
 
 			// 플레이어가 이동한다.
-			constexpr uint32_t SPEED = 500;
+			const int32_t moveX = gInput.GetKey(SDL_SCANCODE_D) - gInput.GetKey(SDL_SCANCODE_A);
+			const int32_t moveY = gInput.GetKey(SDL_SCANCODE_S) - gInput.GetKey(SDL_SCANCODE_W);
 
-			if (gInput.GetKey(SDL_SCANCODE_W))
+			static SDL_FPoint position{};
+			SDL_FPoint velocity{};
+			constexpr float SPEED = 500.0f;
+
+			if (moveX != 0 or moveY != 0)
 			{
-				gPlayer.position.y -= SPEED * deltaTime;
+				float speed = SPEED * deltaTime;
+				SDL_FPoint direction = { .x = float(moveX), .y = float(moveY) };
+				velocity.x = direction.x * speed;
+				velocity.y = direction.y * speed;
 			}
-			if (gInput.GetKey(SDL_SCANCODE_S))
-			{
-				gPlayer.position.y += SPEED * deltaTime;
-			}
-			if (gInput.GetKey(SDL_SCANCODE_A))
-			{
-				gPlayer.position.x -= SPEED * deltaTime;
-			}
-			if (gInput.GetKey(SDL_SCANCODE_D))
-			{
-				gPlayer.position.x += SPEED * deltaTime;
-			}
-			if (gInput.GetKeyDown(SDL_SCANCODE_SPACE))
-			{
-				printf("Space 점프\n");
-			}
+
+			position.x += velocity.x;
+			position.y += velocity.y;
+			gPlayer.position = position;
 
 			if (gIsMousePositionPrint)
 			{
