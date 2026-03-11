@@ -18,6 +18,20 @@ int main(int argc, char* argv[])
 
 	IMG_Init(IMG_INIT_JPG or IMG_INIT_PNG);
 
+	SDL_Surface* imageSurface = IMG_Load("player.png");
+	assert(imageSurface != nullptr);
+
+	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, imageSurface);
+	assert(texture != nullptr);
+
+	SDL_Rect playerPosition =
+	{
+		.x = 100, 
+		.y = 100,
+		.w = imageSurface->w,
+		.h = imageSurface->h
+	};
+
 	bool quit = false;
 	SDL_Event event{};
 
@@ -103,12 +117,17 @@ int main(int argc, char* argv[])
 		// 렌더링
 		SDL_SetRenderDrawColor(renderer, 255, 174, 201, 255);
 		SDL_RenderClear(renderer);		// 화면을 지정색으로 채운다.
+		SDL_RenderCopy(renderer, texture, nullptr, &playerPosition);	// 이미지를 출력한다.
 
 		SDL_RenderPresent(renderer);	// 화면에 출력한다.
 
 		// 이전 키를 모두 초기화한다.
 		input.Clear();
 	}
+
+	SDL_DestroyTexture(texture);
+	SDL_FreeSurface(imageSurface);
+	IMG_Quit();
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);

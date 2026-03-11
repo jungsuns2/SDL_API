@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <array>
+#include <cassert>
 
 struct Point_2S
 {
