@@ -12,12 +12,11 @@ struct Player
 constexpr int WIDTH = 640;
 constexpr int HEIGHT = 480;
 
-static Input input;
-static bool isMousePositionPrint;
+static Input gInput;
+static bool gIsMousePositionPrint;
 
-static Player player;
-
-static SDL_FRect dstFRect;
+static Player gPlayer;
+static SDL_FRect gPlayerDstFRect;
 
 int main(int argc, char* argv[])
 {
@@ -39,10 +38,10 @@ int main(int argc, char* argv[])
 		SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, imageSurface);
 		assert(texture != nullptr);
 
-		player.imageSurface = imageSurface;
-		player.texture = texture;
-		player.position = {};
-		player.velocity = {};
+		gPlayer.imageSurface = imageSurface;
+		gPlayer.texture = texture;
+		gPlayer.position = {};
+		gPlayer.velocity = {};
 	}
 
 	float deltaTime = 0.0f;
@@ -60,16 +59,16 @@ int main(int argc, char* argv[])
 			{
 				case SDL_KEYDOWN:
 				case SDL_KEYUP:
-					input.SetKeyState(event.key.keysym.scancode, bool(event.type == SDL_KEYDOWN));
+					gInput.SetKeyState(event.key.keysym.scancode, bool(event.type == SDL_KEYDOWN));
 					break;
 
 				case SDL_MOUSEBUTTONDOWN:
 				case SDL_MOUSEBUTTONUP:
-					input.SetMouseButtonState(event.button.button, bool(event.type == SDL_MOUSEBUTTONDOWN));
+					gInput.SetMouseButtonState(event.button.button, bool(event.type == SDL_MOUSEBUTTONDOWN));
 					break;
 
 				case SDL_MOUSEMOTION:
-					input.SetMousePosition({ float(event.motion.x), float(event.motion.y) });
+					gInput.SetMousePosition({ float(event.motion.x), float(event.motion.y) });
 					break;
 
 				case SDL_QUIT:
@@ -83,53 +82,53 @@ int main(int argc, char* argv[])
 
 		// 게임 업데이트
 		{
-			SDL_FPoint velecity{};
-
-			constexpr uint32_t SPEED = 500;
-			if (input.GetKey(SDL_SCANCODE_W))
-			{
-				player.position.y -= SPEED * deltaTime;
-			}
-			if (input.GetKey(SDL_SCANCODE_S))
-			{
-				player.position.y += SPEED * deltaTime;
-			}
-			if (input.GetKey(SDL_SCANCODE_A))
-			{
-				player.position.x -= SPEED * deltaTime;
-			}
-			if (input.GetKey(SDL_SCANCODE_D))
-			{
-				player.position.x += SPEED * deltaTime;
-			}
-			if (input.GetKeyDown(SDL_SCANCODE_SPACE))
-			{
-				printf("Space 점프\n");
-			}
-
-			if (input.GetKeyDown(SDL_SCANCODE_ESCAPE))
+			if (gInput.GetKeyDown(SDL_SCANCODE_ESCAPE))
 			{
 				printf("ESC 종료\n");
 				quit = true;
 			}
 
-			if (input.GetMouseButtonDown(SDL_BUTTON_LEFT))
+			if (gInput.GetMouseButtonDown(SDL_BUTTON_LEFT))
 			{
 				printf("Left 클릭\n");
 			}
-			if (input.GetMouseButtonDown(SDL_BUTTON_RIGHT))
+			if (gInput.GetMouseButtonDown(SDL_BUTTON_RIGHT))
 			{
 				printf("Right 클릭\n");
 			}
 
-			if (input.GetKey(SDL_SCANCODE_T))
+			if (gInput.GetKey(SDL_SCANCODE_T))
 			{
-				isMousePositionPrint = !isMousePositionPrint;
+				gIsMousePositionPrint = !gIsMousePositionPrint;
 			}
 
-			if (isMousePositionPrint)
+			// 플레이어가 이동한다.
+			constexpr uint32_t SPEED = 500;
+
+			if (gInput.GetKey(SDL_SCANCODE_W))
 			{
-				printf("%f, %f\n", input.GetMousePosition().x, input.GetMousePosition().y);
+				gPlayer.position.y -= SPEED * deltaTime;
+			}
+			if (gInput.GetKey(SDL_SCANCODE_S))
+			{
+				gPlayer.position.y += SPEED * deltaTime;
+			}
+			if (gInput.GetKey(SDL_SCANCODE_A))
+			{
+				gPlayer.position.x -= SPEED * deltaTime;
+			}
+			if (gInput.GetKey(SDL_SCANCODE_D))
+			{
+				gPlayer.position.x += SPEED * deltaTime;
+			}
+			if (gInput.GetKeyDown(SDL_SCANCODE_SPACE))
+			{
+				printf("Space 점프\n");
+			}
+
+			if (gIsMousePositionPrint)
+			{
+				printf("%f, %f\n", gInput.GetMousePosition().x, gInput.GetMousePosition().y);
 			}
 		}
 
@@ -138,27 +137,27 @@ int main(int argc, char* argv[])
 			SDL_SetRenderDrawColor(renderer, 255, 174, 201, 255);
 			SDL_RenderClear(renderer);		// 화면을 지정색으로 채운다.
 
-			dstFRect =
+			gPlayerDstFRect =
 			{
-				.x = player.position.x,
-				.y = player.position.y,
-				.w = float(player.imageSurface->w),
-				.h = float(player.imageSurface->h)
+				.x = gPlayer.position.x,
+				.y = gPlayer.position.y,
+				.w = float(gPlayer.imageSurface->w),
+				.h = float(gPlayer.imageSurface->h)
 			};
-			SDL_RenderCopyF(renderer, player.texture, nullptr, &dstFRect);	// 이미지를 출력한다.
+			SDL_RenderCopyF(renderer, gPlayer.texture, nullptr, &gPlayerDstFRect);	// 이미지를 출력한다.
 
 			SDL_RenderPresent(renderer);	// 화면에 출력한다.
 		}
 
 		// 이전 키를 모두 초기화한다.
-		input.Clear();
+		gInput.Clear();
 
 		deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count() * 0.001f;
 	}
 
 	// 헤제를 한다.
-	SDL_DestroyTexture(player.texture);
-	SDL_FreeSurface(player.imageSurface);
+	SDL_DestroyTexture(gPlayer.texture);
+	SDL_FreeSurface(gPlayer.imageSurface);
 
 	IMG_Quit();
 
