@@ -26,6 +26,9 @@
     <ClCompile Include="Font.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Label.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -38,6 +41,9 @@
       <Filter>소스 파일</Filter>
     </ClInclude>
     <ClInclude Include="Font.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Label.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
   </ItemGroup>

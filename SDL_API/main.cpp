@@ -2,16 +2,10 @@
 #include "Input.h"
 #include "Texture.h"
 #include "Font.h"
+#include "Label.h"
 
 struct Player
 {
-	SDL_FPoint position;
-};
-
-struct Label
-{
-	SDL_Surface* surface;
-	SDL_Texture* texture;
 	SDL_FPoint position;
 };
 
@@ -50,17 +44,12 @@ int main(int argc, char* argv[])
 	{
 		// 폰트
 		{
-			gFont.Initilize(renderer, "Resource/DroidSans.TTF", 30);
+			gFont.Initilize(renderer, "Resource/DroidSans.TTF");
 
-			SDL_Surface* surface = TTF_RenderText_Blended(gFont.GetFont(), "TTF Test", {.r = 0, .g = 0, .b = 0});
-			assert(surface != nullptr);
-
-			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-			assert(texture != nullptr);
-
-			gLabel.surface = surface;
-			gLabel.texture = texture;
-			gLabel.position = { .x = 10.0f, .y = 10.0f };
+			gLabel.SetFont(&gFont);
+			gLabel.SetText(renderer, "aaaaaaaaaaaaaaaaaaaaa");
+			gLabel.SetPosition({ .x = 50.0f, .y = 10.0f });
+			gLabel.SetSize(30);
 		}
 
 		// 플레이어
@@ -199,10 +188,10 @@ int main(int argc, char* argv[])
 			{
 				gTextDstFRect =
 				{
-					.x = gLabel.position.x,
-					.y = gLabel.position.y,
-					.w = float(gLabel.surface->w),
-					.h = float(gLabel.surface->h)
+					.x = gLabel.GetPosition().x,
+					.y = gLabel.GetPosition().y,
+					.w = float(gLabel.GetWidth()),
+					.h = float(gLabel.GetHeight())
 				};
 
 				gPlayerDstFRect =
@@ -220,7 +209,7 @@ int main(int argc, char* argv[])
 			SDL_SetRenderDrawColor(renderer, 255, 174, 201, 255);
 			SDL_RenderClear(renderer);		// 화면을 지정색으로 채운다.
 
-			SDL_RenderCopyF(renderer, gLabel.texture, nullptr, &gTextDstFRect);
+			SDL_RenderCopyF(renderer, gLabel.GetTexture(), nullptr, &gTextDstFRect);			// 텍스트를 출력한다.
 			SDL_RenderCopyF(renderer, gPlayerTexture.GetTexture(), nullptr, &gPlayerDstFRect);	// 플레이어를 출력한다.
 
 			SDL_RenderPresent(renderer);	// 화면에 출력한다.
@@ -233,9 +222,7 @@ int main(int argc, char* argv[])
 	}
 
 	// 헤제를 한다.
-	SDL_DestroyTexture(gLabel.texture);
-	SDL_FreeSurface(gLabel.surface);
-
+	gLabel.Finalize();
 	gPlayerTexture.Finalize();
 
 	IMG_Quit();
