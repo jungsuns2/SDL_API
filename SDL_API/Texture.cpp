@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Texture.h"
+#include "Font.h"
 
 void Texture::Initialize(SDL_Renderer* renderer, const std::string fileName)
 {

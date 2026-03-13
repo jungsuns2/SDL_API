@@ -1,15 +1,15 @@
 #include "pch.h"
 #include "Input.h"
 #include "Texture.h"
+#include "Font.h"
 
 struct Player
 {
 	SDL_FPoint position;
 };
 
-struct Font
+struct Label
 {
-	TTF_Font* font;
 	SDL_Surface* surface;
 	SDL_Texture* texture;
 	SDL_FPoint position;
@@ -26,6 +26,7 @@ static Player gPlayer;
 static SDL_FRect gPlayerDstFRect;
 
 static Font gFont;
+static Label gLabel;
 static SDL_FRect gTextDstFRect;
 
 int main(int argc, char* argv[])
@@ -49,19 +50,17 @@ int main(int argc, char* argv[])
 	{
 		// 폰트
 		{
-			TTF_Font* font = TTF_OpenFont("Resource/DroidSans.TTF", 30);
-			assert(font != nullptr);
+			gFont.Initilize(renderer, "Resource/DroidSans.TTF", 30);
 
-			SDL_Surface* surface = TTF_RenderText_Blended(font, "TTF Test", { .r = 0, .g = 0, .b = 0 });
+			SDL_Surface* surface = TTF_RenderText_Blended(gFont.GetFont(), "TTF Test", {.r = 0, .g = 0, .b = 0});
 			assert(surface != nullptr);
 
 			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
 			assert(texture != nullptr);
 
-			gFont.font = font;
-			gFont.surface = surface;
-			gFont.texture = texture;
-			gFont.position = { .x = 10.0f, .y = 10.0f };
+			gLabel.surface = surface;
+			gLabel.texture = texture;
+			gLabel.position = { .x = 10.0f, .y = 10.0f };
 		}
 
 		// 플레이어
@@ -200,10 +199,10 @@ int main(int argc, char* argv[])
 			{
 				gTextDstFRect =
 				{
-					.x = gFont.position.x,
-					.y = gFont.position.y,
-					.w = float(gFont.surface->w),
-					.h = float(gFont.surface->h)
+					.x = gLabel.position.x,
+					.y = gLabel.position.y,
+					.w = float(gLabel.surface->w),
+					.h = float(gLabel.surface->h)
 				};
 
 				gPlayerDstFRect =
@@ -221,7 +220,7 @@ int main(int argc, char* argv[])
 			SDL_SetRenderDrawColor(renderer, 255, 174, 201, 255);
 			SDL_RenderClear(renderer);		// 화면을 지정색으로 채운다.
 
-			SDL_RenderCopyF(renderer, gFont.texture, nullptr, &gTextDstFRect);
+			SDL_RenderCopyF(renderer, gLabel.texture, nullptr, &gTextDstFRect);
 			SDL_RenderCopyF(renderer, gPlayerTexture.GetTexture(), nullptr, &gPlayerDstFRect);	// 플레이어를 출력한다.
 
 			SDL_RenderPresent(renderer);	// 화면에 출력한다.
@@ -234,13 +233,13 @@ int main(int argc, char* argv[])
 	}
 
 	// 헤제를 한다.
-	SDL_DestroyTexture(gFont.texture);
-	SDL_FreeSurface(gFont.surface);
+	SDL_DestroyTexture(gLabel.texture);
+	SDL_FreeSurface(gLabel.surface);
 
 	gPlayerTexture.Finalize();
 
 	IMG_Quit();
-	TTF_CloseFont(gFont.font);
+	gFont.Finalize();
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
