@@ -76,7 +76,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)SDL2-2.26.4\include;$(SolutionDir)SDL2_image-devel-2.8.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SDL2-2.26.4\include;$(SolutionDir)SDL2_image-devel-2.8.4\include;$(SolutionDir)SDL2_ttf-2.24.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -84,12 +84,13 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.4\lib\x64;$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.4\lib\x64;$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64;$(SolutionDir)SDL2_ttf-2.24.0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(SolutionDir)SDL2-2.26.4\lib\x64\SDL2.dll" "$(OutDir)"
-copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"</Command>
+copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"
+copy "$(SolutionDir)SDL2_ttf-2.24.0\lib\x64\SDL2_ttf.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -100,7 +101,7 @@ copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"</
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)SDL2-2.26.4\include;$(SolutionDir)SDL2_image-devel-2.8.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SDL2-2.26.4\include;$(SolutionDir)SDL2_image-devel-2.8.4\include;$(SolutionDir)SDL2_ttf-2.24.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -108,12 +109,13 @@ copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"</
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.4\lib\x64;$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.4\lib\x64;$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64;$(SolutionDir)SDL2_ttf-2.24.0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(SolutionDir)SDL2-2.26.4\lib\x64\SDL2.dll" "$(OutDir)"
-copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"</Command>
+copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"
+copy "$(SolutionDir)SDL2_ttf-2.24.0\lib\x64\SDL2_ttf.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -122,7 +124,7 @@ copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"</
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)SDL2-2.26.4\include;$(SolutionDir)SDL2_image-devel-2.8.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SDL2-2.26.4\include;$(SolutionDir)SDL2_image-devel-2.8.4\include;$(SolutionDir)SDL2_ttf-2.24.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -130,12 +132,13 @@ copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"</
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.4\lib\x64;$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.4\lib\x64;$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64;$(SolutionDir)SDL2_ttf-2.24.0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(SolutionDir)SDL2-2.26.4\lib\x64\SDL2.dll" "$(OutDir)"
-copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"</Command>
+copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"
+copy "$(SolutionDir)SDL2_ttf-2.24.0\lib\x64\SDL2_ttf.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -146,7 +149,7 @@ copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"</
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)SDL2-2.26.4\include;$(SolutionDir)SDL2_image-devel-2.8.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SDL2-2.26.4\include;$(SolutionDir)SDL2_image-devel-2.8.4\include;$(SolutionDir)SDL2_ttf-2.24.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -154,12 +157,13 @@ copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"</
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.4\lib\x64;$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDL2-2.26.4\lib\x64;$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64;$(SolutionDir)SDL2_ttf-2.24.0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(SolutionDir)SDL2-2.26.4\lib\x64\SDL2.dll" "$(OutDir)"
-copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"</Command>
+copy "$(SolutionDir)SDL2_image-devel-2.8.4\lib\x64\SDL2_image.dll" "$(OutDir)"
+copy "$(SolutionDir)SDL2_ttf-2.24.0\lib\x64\SDL2_ttf.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
