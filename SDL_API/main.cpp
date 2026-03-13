@@ -1,10 +1,9 @@
 #include "pch.h"
 #include "Input.h"
+#include "Texture.h"
 
 struct Player
 {
-	SDL_Surface* surface;
-	SDL_Texture* texture;
 	SDL_FPoint position;
 };
 
@@ -22,6 +21,7 @@ constexpr int HEIGHT = 480;
 static Input gInput;
 static bool gIsMousePositionPrint;
 
+static Texture gPlayerTexture;
 static Player gPlayer;
 static SDL_FRect gPlayerDstFRect;
 
@@ -66,14 +66,7 @@ int main(int argc, char* argv[])
 
 		// 플레이어
 		{
-			SDL_Surface* surface = IMG_Load("Resource/player.png");
-			assert(surface != nullptr);
-
-			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-			assert(texture != nullptr);
-
-			gPlayer.surface = surface;
-			gPlayer.texture = texture;
+			gPlayerTexture.Initialize(renderer, "Resource/Player.png");
 			gPlayer.position = {};
 		}
 	}
@@ -217,8 +210,8 @@ int main(int argc, char* argv[])
 				{
 					.x = gPlayer.position.x,
 					.y = gPlayer.position.y,
-					.w = float(gPlayer.surface->w),
-					.h = float(gPlayer.surface->h)
+					.w = float(gPlayerTexture.GetWidth()),
+					.h = float(gPlayerTexture.GetHeight())
 				};
 			}
 		}
@@ -229,7 +222,7 @@ int main(int argc, char* argv[])
 			SDL_RenderClear(renderer);		// 화면을 지정색으로 채운다.
 
 			SDL_RenderCopyF(renderer, gFont.texture, nullptr, &gTextDstFRect);
-			SDL_RenderCopyF(renderer, gPlayer.texture, nullptr, &gPlayerDstFRect);	// 플레이어를 출력한다.
+			SDL_RenderCopyF(renderer, gPlayerTexture.GetTexture(), nullptr, &gPlayerDstFRect);	// 플레이어를 출력한다.
 
 			SDL_RenderPresent(renderer);	// 화면에 출력한다.
 		}
@@ -242,10 +235,9 @@ int main(int argc, char* argv[])
 
 	// 헤제를 한다.
 	SDL_DestroyTexture(gFont.texture);
-	SDL_DestroyTexture(gPlayer.texture);
-
-	SDL_FreeSurface(gPlayer.surface);
 	SDL_FreeSurface(gFont.surface);
+
+	gPlayerTexture.Finalize();
 
 	IMG_Quit();
 	TTF_CloseFont(gFont.font);

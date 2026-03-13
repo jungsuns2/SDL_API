@@ -1,6 +1,6 @@
 #pragma once
 
-class Input
+class Input final
 {
 public:
 	bool GetKey(const SDL_Scancode virtualCode);
