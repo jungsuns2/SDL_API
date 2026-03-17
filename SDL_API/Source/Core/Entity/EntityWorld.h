@@ -8,13 +8,15 @@ public:
 	EntityWorld() = default;
 	EntityWorld(const EntityWorld& other) = delete;
 	EntityWorld operator=(EntityWorld& other) = delete;
-	~EntityWorld() = default;
+	~EntityWorld();
 
 public:
 	void AddEntity(Entity* entity);
+	void Remove(Entity* entity);
+
 	const std::vector<Entity*>& GetAllEntites() const;
 
 private:
-	std::vector<Entity*> mEntites;
+	std::vector<Entity*> mEntites{};
 };
 
