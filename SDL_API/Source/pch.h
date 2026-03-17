@@ -8,3 +8,15 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+
+struct Position
+{
+	float x;
+	float y;
+};
+
+struct Scale
+{
+	float width;
+	float height;
+};

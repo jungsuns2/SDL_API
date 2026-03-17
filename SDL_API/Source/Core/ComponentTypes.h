@@ -4,20 +4,18 @@
 
 struct Transfrom final : public Component
 {
-	static constexpr unsigned int id = 0;
-	Transfrom() : Component(&id) {}
+	static constexpr uint32_t id = 0;
+	Transfrom() : Component(id) {}
 
-	float x;
-	float y;
-	float z;
-	float scale;
+	Position position;
+	Scale scale;
 	float angle;
 };
 
 struct Material final : public Component
 {
 	static constexpr unsigned int id = 0;
-	Material() : Component(&id) {}
+	Material() : Component(id) {}
 
 	Texture* texture;
 };

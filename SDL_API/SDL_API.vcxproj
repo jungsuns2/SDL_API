@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\Component.cpp" />
+    <ClCompile Include="Source\Core\ComponentTypes.cpp" />
     <ClCompile Include="Source\Core\Entity\Entity.cpp" />
     <ClCompile Include="Source\Core\Entity\EntityWorld.cpp" />
     <ClCompile Include="Source\Core\Font.cpp" />
