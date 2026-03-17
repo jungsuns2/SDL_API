@@ -6,8 +6,8 @@ class EntityWorld final
 {
 public:
 	EntityWorld() = default;
-	EntityWorld(const EntityWorld& other) = delete;
-	EntityWorld operator=(EntityWorld& other) = delete;
+	EntityWorld(const EntityWorld&) = delete;
+	EntityWorld& operator=(EntityWorld&) = delete;
 	~EntityWorld();
 
 public:

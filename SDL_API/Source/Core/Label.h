@@ -6,6 +6,8 @@ class Label final
 {
 public:
 	Label() = default;
+	Label(const Label&) = delete;
+	Label& operator=(Label&) = delete;
 	~Label() = default;
 
 public:

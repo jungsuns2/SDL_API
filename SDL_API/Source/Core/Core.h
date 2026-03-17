@@ -4,8 +4,8 @@ class Core final
 {
 public:
 	Core() = default;
-	Core(const Core& other) = delete;
-	Core operator=(Core& other) = delete;
+	Core(const Core&) = delete;
+	Core& operator=(Core&) = delete;
 	~Core() = default;
 
 public:
