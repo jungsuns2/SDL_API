@@ -1,4 +1,8 @@
 #pragma once
+
+class Helper;
+class Core;
+
 class Scene
 {
 public:
@@ -9,7 +13,17 @@ public:
 
 public:
 	virtual void Initialize() = 0;
-	virtual bool Update() = 0;
+	virtual bool Update(const float deltaTime) = 0;
 	virtual void Finalize() = 0;
-};
 
+public:
+	[[nodiscard]]  Helper* GetHelper() const;
+
+protected:
+	void SetHelper(Helper* helper);
+
+private:
+	Helper* mHelper = nullptr;
+
+	friend Core;
+};

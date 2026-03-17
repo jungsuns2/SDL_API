@@ -40,18 +40,6 @@ void Label::SetText(SDL_Renderer* renderer, const std::string& text)
 {
 	assert(renderer != nullptr);
 
-	if (mSurface)
-	{
-		SDL_FreeSurface(mSurface);
-		mSurface = nullptr;
-	}
-
-	if (mTexture)
-	{
-		SDL_DestroyTexture(mTexture);
-		mTexture = nullptr;
-	}
-
 	mSurface = TTF_RenderText_Blended(mFont->GetFont(), text.c_str(), mColor);
 	assert(mSurface != nullptr);
 

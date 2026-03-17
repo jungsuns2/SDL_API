@@ -1,4 +1,6 @@
 #pragma once
+#include "Scene.h"
+#include "Helper.h"
 
 class Core final
 {
@@ -9,15 +11,17 @@ public:
 	~Core() = default;
 
 public:
-	void Initialize();
-	bool Update();
+	void Initialize(Scene* scene);
+	bool Update(const float deltaTime);
 	void Finalize();
 
 public:
 	[[nodiscard]]  SDL_Window* GetWindow() const;
-	[[nodiscard]]  SDL_Renderer* GetRender() const;
 
 private:
 	SDL_Window* mWindow = nullptr;
 	SDL_Renderer* mRenderer = nullptr;
+
+	Helper mHelper{};
+	Scene* mScene = nullptr;
 };

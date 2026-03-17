@@ -1,9 +1,8 @@
 #include "pch.h"
-#include "Core/Input.h"
-#include "Core/Texture.h"
-#include "Core/Font.h"
-#include "Core/Label.h"
 #include "Core/Core.h"
+#include "Core/Input.h"
+#include "Game/MainScene.h"
+#include "Core/Texture.h"
 
 struct Player
 {
@@ -22,31 +21,21 @@ static Texture gPlayerTexture;
 static Player gPlayer;
 static SDL_FRect gPlayerDstFRect;
 
-static Font gFont;
-static Label gLabel;
-static SDL_FRect gTextDstFRect;
-
 int main(int argc, char* argv[])
 {
 
 	// 초기화를 한다.
 	{
-		gCore.Initialize();
+		gCore.Initialize(new MainScene);
 
 		// 폰트
 		{
-			gFont.Initilize(gCore.GetRender(), "Resource/DroidSans.TTF");
-
-			gLabel.SetFont(&gFont);
-			gLabel.SetText(gCore.GetRender(), "aaaaaaaaaaaaaaaaaaaaa");
-			gLabel.SetPosition({ .x = 50.0f, .y = 10.0f });
-			gLabel.SetSize(30);
 		}
 
 		// 플레이어
 		{
-			gPlayerTexture.Initialize(gCore.GetRender(), "Resource/Player.png");
-			gPlayer.position = {};
+			//gPlayerTexture.Initialize(gCore.GetRender(), "Resource/Player.png");
+			//gPlayer.position = {};
 		}
 	}
 
@@ -88,7 +77,7 @@ int main(int argc, char* argv[])
 
 		// 게임 업데이트
 		{
-			if (gCore.Update())
+			if (gCore.Update(deltaTime))
 			{
 				// 씬 전환 X
 			}
@@ -176,39 +165,31 @@ int main(int argc, char* argv[])
 					velocity.y = MAX_SPEED * direction.y;
 				}
 
-				gPlayer.position.x += velocity.x * deltaTime;
-				gPlayer.position.y += velocity.y * deltaTime;
+				//gPlayer.position.x += velocity.x * deltaTime;
+				//gPlayer.position.y += velocity.y * deltaTime;
 			}
 
 			// 렌더링할 이미지 크기를 조정한다.
 			{
-				gTextDstFRect =
-				{
-					.x = gLabel.GetPosition().x,
-					.y = gLabel.GetPosition().y,
-					.w = float(gLabel.GetWidth()),
-					.h = float(gLabel.GetHeight())
-				};
-
-				gPlayerDstFRect =
-				{
-					.x = gPlayer.position.x,
-					.y = gPlayer.position.y,
-					.w = float(gPlayerTexture.GetWidth()),
-					.h = float(gPlayerTexture.GetHeight())
-				};
+				//gPlayerDstFRect =
+				//{
+				//	.x = gPlayer.position.x,
+				//	.y = gPlayer.position.y,
+				//	.w = float(gPlayerTexture.GetWidth()),
+				//	.h = float(gPlayerTexture.GetHeight())
+				//};
 			}
 		}
 
 		// 렌더링을 한다.
 		{
-			SDL_SetRenderDrawColor(gCore.GetRender(), 255, 174, 201, 255);
-			SDL_RenderClear(gCore.GetRender());		// 화면을 지정색으로 채운다.
+			//SDL_SetRenderDrawColor(gCore.GetRender(), 255, 174, 201, 255);
+			//SDL_RenderClear(gCore.GetRender());		// 화면을 지정색으로 채운다.
 
-			SDL_RenderCopyF(gCore.GetRender(), gLabel.GetTexture(), nullptr, &gTextDstFRect);			// 텍스트를 출력한다.
-			SDL_RenderCopyF(gCore.GetRender(), gPlayerTexture.GetTexture(), nullptr, &gPlayerDstFRect);	// 플레이어를 출력한다.
+			//SDL_RenderCopyF(gCore.GetRender(), gLabel.GetTexture(), nullptr, &gTextDstFRect);			// 텍스트를 출력한다.
+			//SDL_RenderCopyF(gCore.GetRender(), gPlayerTexture.GetTexture(), nullptr, &gPlayerDstFRect);	// 플레이어를 출력한다.
 
-			SDL_RenderPresent(gCore.GetRender());	// 화면에 출력한다.
+			//SDL_RenderPresent(gCore.GetRender());	// 화면에 출력한다.
 		}
 
 		// 이전 키를 모두 초기화한다.
@@ -218,9 +199,7 @@ int main(int argc, char* argv[])
 	}
 
 	// 헤제를 한다.
-	gLabel.Finalize();
-	gPlayerTexture.Finalize();
-	gFont.Finalize();
+	//gPlayerTexture.Finalize();
 
 	gCore.Finalize();
 

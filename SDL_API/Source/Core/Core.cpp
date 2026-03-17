@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "Core.h"
 #include "Constant.h"
+#include "Core.h"
 
-void Core::Initialize()
+void Core::Initialize(Scene* scene)
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -11,24 +11,54 @@ void Core::Initialize()
 
 	// SDL_RENDERER_PRESENTVSYNC: 모니터 주사율에 맞춘다.
 	mRenderer = SDL_CreateRenderer(mWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	mHelper.Initialize(mRenderer);
 
 	IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
 
 	TTF_Init();
+
+	assert(scene != nullptr);
+	
+	if (mScene != nullptr)
+	{
+		mScene->Finalize();
+		delete mScene;
+		mScene = nullptr;
+	}
+
+	mScene = scene;
+	mScene->SetHelper(&mHelper);
+	mScene->Initialize();
 }
 
-bool Core::Update()
+bool Core::Update(const float deltaTime)
 {
+	if (not mScene->Update(deltaTime))
+	{
+		return false;
+	}
+
+	// Render
+	{
+		SDL_SetRenderDrawColor(mRenderer, 255, 174, 201, 255);
+		SDL_RenderClear(mRenderer);		// 화면을 지정색으로 채운다.
+
+
+		SDL_RenderPresent(mRenderer);	// 화면에 출력한다.
+
+	}
+
 	return true;
 }
 
 void Core::Finalize()
 {
+	mScene->Finalize();
+
 	IMG_Quit();
 
 	SDL_DestroyRenderer(mRenderer);
 	SDL_DestroyWindow(mWindow);
-
 
 	SDL_Quit();
 }
@@ -36,9 +66,4 @@ void Core::Finalize()
 SDL_Window* Core::GetWindow() const
 {
 	return mWindow;
-}
-
-SDL_Renderer* Core::GetRender() const
-{
-	return mRenderer;
 }

@@ -1,9 +1,7 @@
 #pragma once
+#include "Core/Font.h"
+#include "Core/Label.h"
 #include "Core/Scene.h"
-
-class Font;
-class Label;
-
 
 class MainScene final : public Scene
 {
@@ -15,6 +13,11 @@ public:
 
 public:
 	void Initialize() override;
-	bool Update() override;
+	bool Update(const float deltaTime) override;
 	void Finalize()  override;
+
+private:
+	Font mFont{};
+	Label mLabel{};
+	SDL_FRect mTextDstFRect{};
 };

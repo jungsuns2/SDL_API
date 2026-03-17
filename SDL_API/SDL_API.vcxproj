@@ -26,6 +26,7 @@
     <ClCompile Include="Source\Core\Entity\Entity.cpp" />
     <ClCompile Include="Source\Core\Entity\EntityWorld.cpp" />
     <ClCompile Include="Source\Core\Font.cpp" />
+    <ClCompile Include="Source\Core\Helper.cpp" />
     <ClCompile Include="Source\Core\Input.cpp" />
     <ClCompile Include="Source\Core\Label.cpp" />
     <ClCompile Include="Source\Core\Scene.cpp" />
@@ -47,6 +48,7 @@
     <ClInclude Include="Source\Core\Entity\Entity.h" />
     <ClInclude Include="Source\Core\Entity\EntityWorld.h" />
     <ClInclude Include="Source\Core\Font.h" />
+    <ClInclude Include="Source\Core\Helper.h" />
     <ClInclude Include="Source\Core\Input.h" />
     <ClInclude Include="Source\Core\Label.h" />
     <ClInclude Include="Source\Core\Scene.h" />
