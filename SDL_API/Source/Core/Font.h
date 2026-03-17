@@ -18,7 +18,7 @@ public:
 	TTF_Font* GetFont() const;
 
 protected:
-	void SetSize(const uint32_t size);
+	void _SetSize(const uint32_t size);
 
 private:
 	TTF_Font* mFont = nullptr;

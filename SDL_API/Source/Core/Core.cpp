@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "Constant.h"
 #include "Core.h"
+#include "Entity/Entity.h"
+#include "Entity/EntityWorld.h"
+#include "ComponentTypes.h"
 
 void Core::Initialize(Scene* scene)
 {
@@ -27,25 +30,49 @@ void Core::Initialize(Scene* scene)
 	}
 
 	mScene = scene;
-	mScene->SetHelper(&mHelper);
+	mScene->_SetHelper(&mHelper);
 	mScene->Initialize();
 }
 
 bool Core::Update(const float deltaTime)
 {
-	if (not mScene->Update(deltaTime))
-	{
-		return false;
-	}
-
 	// Render
 	{
 		SDL_SetRenderDrawColor(mRenderer, 255, 174, 201, 255);
 		SDL_RenderClear(mRenderer);		// 화면을 지정색으로 채운다.
 
+		if (not mScene->Update(deltaTime))
+		{
+			return false;
+		}
+
+		const std::vector<Entity*>* entites = mScene->_GetEntity();
+
+		for (Entity* entity : *entites)
+		{
+
+			if (entity->HasComponent<Material>())
+			{
+				continue;
+			}
+
+			Material* material = entity->GetComponent<Material>();
+			Transform* transform = entity->GetComponent<Transform>();			
+
+			SDL_FRect rect = 
+			{
+				.x = transform->position.x,
+				.y = transform->position.y,
+				.w = material->texture->GetWidth()  * transform->scale.width,
+				.h = material->texture->GetHeight() * transform->scale.height,
+			};
+
+			printf("%f, %f \n", transform->position.x, transform->position.y);
+
+			SDL_RenderCopyF(mRenderer, material->texture->GetTexture(), nullptr, &rect);
+		}
 
 		SDL_RenderPresent(mRenderer);	// 화면에 출력한다.
-
 	}
 
 	return true;

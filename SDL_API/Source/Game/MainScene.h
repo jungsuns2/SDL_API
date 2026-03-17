@@ -1,7 +1,11 @@
 #pragma once
+#include "Core/ComponentTypes.h"
+#include "Core/Entity/Entity.h"
 #include "Core/Font.h"
 #include "Core/Label.h"
 #include "Core/Scene.h"
+
+class EntityWorld;
 
 class MainScene final : public Scene
 {
@@ -17,7 +21,13 @@ public:
 	void Finalize()  override;
 
 private:
+	std::vector<Entity*> mEnties{};
+	EntityWorld* mEntityWorld = nullptr;
+
+private:
 	Font mFont{};
 	Label mLabel{};
-	SDL_FRect mTextDstFRect{};
+
+	Entity mPlayer{};
+	Texture mPlayerTexture{};
 };

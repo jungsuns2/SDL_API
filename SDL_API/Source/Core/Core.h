@@ -2,6 +2,8 @@
 #include "Scene.h"
 #include "Helper.h"
 
+class EntityWorld;
+
 class Core final
 {
 public:
@@ -24,4 +26,5 @@ private:
 
 	Helper mHelper{};
 	Scene* mScene = nullptr;
+	EntityWorld* mEntityWorld = nullptr;
 };

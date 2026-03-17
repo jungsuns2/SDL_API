@@ -8,7 +8,7 @@ public:
 	EntityWorld() = default;
 	EntityWorld(const EntityWorld&) = delete;
 	EntityWorld& operator=(EntityWorld&) = delete;
-	~EntityWorld();
+	~EntityWorld() = default;
 
 public:
 	void AddEntity(Entity* entity);
@@ -19,4 +19,3 @@ public:
 private:
 	std::vector<Entity*> mEntites{};
 };
-

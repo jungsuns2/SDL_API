@@ -4,7 +4,6 @@
 void Font::Initilize(const std::string& filename)
 {
 	mFont = TTF_OpenFont(filename.c_str(), mSize);
-
 	assert(mFont != nullptr);
 }
 
@@ -18,7 +17,7 @@ TTF_Font* Font::GetFont() const
 	return mFont;
 }
 
-void Font::SetSize(const uint32_t size)
+void Font::_SetSize(const uint32_t size)
 {
 	mSize = size;
 }

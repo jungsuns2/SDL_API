@@ -9,6 +9,9 @@ public:
 	~Input() = default;
 
 public:
+	[[nodiscard]] static Input& Get();
+
+public:
 	bool GetKey(const SDL_Scancode virtualCode) const;
 	bool GetKeyDown(const SDL_Scancode virtualCode) const;
 	bool GetKeyUp(const SDL_Scancode virtualCode) const;

@@ -1,6 +1,12 @@
 #include "pch.h"
 #include "Input.h"
 
+Input& Input::Get()
+{
+	static Input input{};
+	return input;
+}
+
 bool Input::GetKey(const SDL_Scancode virtualCode) const
 {
 	return mKeysPressed[virtualCode];

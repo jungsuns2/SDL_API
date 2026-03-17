@@ -1,6 +1,5 @@
 #pragma once
-
-class Component;
+#include "Core/Component.h"
 
 class Entity final
 {
@@ -12,13 +11,50 @@ public:
 
 public:
 	template<typename T>
-	void AddComponent(const T& newComponent);
+	void AddComponent(const T& newComponent)
+	{
+		#if defined(_DEBUG)
+			for (Component* component : mComponents)
+			{
+				if (component->ID == &newComponent._ID)
+				{
+					assert(false and "중복된 컴포넌트입니다.");
+					return;
+				}
+			}
+		#endif
+
+		mComponents.push_back(new T(newComponent));
+	};
 
 	template<typename T>
-	T* GetComponent() const;
+	T* GetComponent() const
+	{
+		for (Component* component : mComponents)
+		{
+			if (component->ID == &T::_ID)
+			{
+				return static_cast<T*>(component);
+			}
+		}
+
+		assert(false && "없는 컴포넌트입니다.");
+		return nullptr;
+	};
 
 	template<typename T>
-	bool HasComponent();
+	bool HasComponent()
+	{
+		for (Component* component : mComponents)
+		{
+			if (component->ID == &T::_ID)
+			{
+				return true;
+			}
+
+			return false;
+		}
+	};
 
 private:
 	std::vector<Component*> mComponents{};

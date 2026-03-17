@@ -2,20 +2,20 @@
 #include "Component.h"
 #include "Texture.h"
 
-struct Transfrom final : public Component
+struct Transform final : public Component
 {
-	static constexpr uint32_t id = 0;
-	Transfrom() : Component(id) {}
+	static constexpr uint32_t _ID = 0;
+	Transform() : Component(&_ID) {}
 
-	Position position;
-	Scale scale;
-	float angle;
+	Position position{};
+	Scale scale{ .width = 1.0f, .height = 1.0f };
+	float angle{};
 };
 
 struct Material final : public Component
 {
-	static constexpr unsigned int id = 0;
-	Material() : Component(id) {}
+	static constexpr uint32_t _ID = 0;
+	Material() : Component(&_ID) {}
 
-	Texture* texture;
+	Texture* texture = nullptr;
 };

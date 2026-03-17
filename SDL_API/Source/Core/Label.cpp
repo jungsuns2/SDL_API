@@ -25,7 +25,7 @@ uint32_t Label::GetSize() const
 
 void Label::SetSize(const uint32_t size)
 {
-	mFont->SetSize(size);
+	mFont->_SetSize(size);
 	mSize = size;
 }
 
