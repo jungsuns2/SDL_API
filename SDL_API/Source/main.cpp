@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "Input.h"
-#include "Texture.h"
-#include "Font.h"
-#include "Label.h"
+#include "Core/Input.h"
+#include "Core/Texture.h"
+#include "Core/Font.h"
+#include "Core/Label.h"
 
 struct Player
 {

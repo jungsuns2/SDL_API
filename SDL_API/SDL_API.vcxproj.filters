@@ -1,68 +1,75 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="소스 파일">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="Source">
+      <UniqueIdentifier>{739fbd8a-f37e-4075-b203-22cb0b6f008e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="리소스 파일">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Source\Core">
+      <UniqueIdentifier>{be5fc8a1-3760-4d19-991c-edb116ffc15c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Game">
+      <UniqueIdentifier>{2b87a469-2084-448b-a0f7-a7e526a38f4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Core\Entity">
+      <UniqueIdentifier>{9de19b90-8474-4c1b-9c17-86c6b8f0e8a3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Source\main.cpp">
+      <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Source\pch.cpp">
+      <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Input.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Source\Core\Entity\Entity.cpp">
+      <Filter>Source\Core\Entity</Filter>
     </ClCompile>
-    <ClCompile Include="Texture.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Source\Core\Entity\EntityWorld.cpp">
+      <Filter>Source\Core\Entity</Filter>
     </ClCompile>
-    <ClCompile Include="Font.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Source\Core\Label.cpp">
+      <Filter>Source\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Label.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Source\Core\Texture.cpp">
+      <Filter>Source\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Component.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Source\Core\Component.cpp">
+      <Filter>Source\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Entity.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Source\Core\Font.cpp">
+      <Filter>Source\Core</Filter>
     </ClCompile>
-    <ClCompile Include="EntityWorld.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="Source\Core\Input.cpp">
+      <Filter>Source\Core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
-      <Filter>소스 파일</Filter>
+    <ClInclude Include="Source\pch.h">
+      <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="Input.h">
-      <Filter>소스 파일</Filter>
+    <ClInclude Include="Source\Core\Entity\Entity.h">
+      <Filter>Source\Core\Entity</Filter>
     </ClInclude>
-    <ClInclude Include="Texture.h">
-      <Filter>소스 파일</Filter>
+    <ClInclude Include="Source\Core\Entity\EntityWorld.h">
+      <Filter>Source\Core\Entity</Filter>
     </ClInclude>
-    <ClInclude Include="Font.h">
-      <Filter>소스 파일</Filter>
+    <ClInclude Include="Source\Core\Label.h">
+      <Filter>Source\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Label.h">
-      <Filter>소스 파일</Filter>
+    <ClInclude Include="Source\Core\Texture.h">
+      <Filter>Source\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Component.h">
-      <Filter>소스 파일</Filter>
+    <ClInclude Include="Source\Core\Component.h">
+      <Filter>Source\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Entity.h">
-      <Filter>소스 파일</Filter>
+    <ClInclude Include="Source\Core\ComponentTypes.h">
+      <Filter>Source\Core</Filter>
     </ClInclude>
-    <ClInclude Include="EntityWorld.h">
-      <Filter>소스 파일</Filter>
+    <ClInclude Include="Source\Core\Font.h">
+      <Filter>Source\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Input.h">
+      <Filter>Source\Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
