@@ -1,6 +1,10 @@
 #pragma once
 #include "Core/Scene.h"
 
+class Font;
+class Label;
+
+
 class MainScene final : public Scene
 {
 public:

@@ -12,4 +12,12 @@ public:
 	void Initialize();
 	bool Update();
 	void Finalize();
+
+public:
+	[[nodiscard]]  SDL_Window* GetWindow() const;
+	[[nodiscard]]  SDL_Renderer* GetRender() const;
+
+private:
+	SDL_Window* mWindow = nullptr;
+	SDL_Renderer* mRenderer = nullptr;
 };

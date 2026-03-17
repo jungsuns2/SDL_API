@@ -3,6 +3,7 @@
 #include "Core/Texture.h"
 #include "Core/Font.h"
 #include "Core/Label.h"
+#include "Core/Core.h"
 
 struct Player
 {
@@ -11,6 +12,8 @@ struct Player
 
 constexpr int WIDTH = 640;
 constexpr int HEIGHT = 480;
+
+Core gCore;
 
 static Input gInput;
 static bool gIsMousePositionPrint;
@@ -25,41 +28,24 @@ static SDL_FRect gTextDstFRect;
 
 int main(int argc, char* argv[])
 {
-	SDL_Init(SDL_INIT_EVERYTHING);
-
-	SDL_Window* window = SDL_CreateWindow("Player", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
-	if (window == nullptr)
-	{
-		printf("%s", SDL_GetError());
-		return 0;
-	}
-
-	// SDL_RENDERER_PRESENTVSYNC: 모니터 주사율에 맞춘다.
-	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-
-	IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
-
-	if (TTF_Init() == -1)
-	{
-		return 0;
-	}
 
 	// 초기화를 한다.
 	{
+		gCore.Initialize();
+
 		// 폰트
 		{
-			gFont.Initilize(renderer, "Resource/DroidSans.TTF");
+			gFont.Initilize(gCore.GetRender(), "Resource/DroidSans.TTF");
 
 			gLabel.SetFont(&gFont);
-			gLabel.SetText(renderer, "aaaaaaaaaaaaaaaaaaaaa");
+			gLabel.SetText(gCore.GetRender(), "aaaaaaaaaaaaaaaaaaaaa");
 			gLabel.SetPosition({ .x = 50.0f, .y = 10.0f });
 			gLabel.SetSize(30);
 		}
 
 		// 플레이어
 		{
-			gPlayerTexture.Initialize(renderer, "Resource/Player.png");
+			gPlayerTexture.Initialize(gCore.GetRender(), "Resource/Player.png");
 			gPlayer.position = {};
 		}
 	}
@@ -102,6 +88,11 @@ int main(int argc, char* argv[])
 
 		// 게임 업데이트
 		{
+			if (gCore.Update())
+			{
+				// 씬 전환 X
+			}
+
 			// 키 입력을 처리한다.
 			{
 				if (gInput.GetKeyDown(SDL_SCANCODE_ESCAPE))
@@ -211,13 +202,13 @@ int main(int argc, char* argv[])
 
 		// 렌더링을 한다.
 		{
-			SDL_SetRenderDrawColor(renderer, 255, 174, 201, 255);
-			SDL_RenderClear(renderer);		// 화면을 지정색으로 채운다.
+			SDL_SetRenderDrawColor(gCore.GetRender(), 255, 174, 201, 255);
+			SDL_RenderClear(gCore.GetRender());		// 화면을 지정색으로 채운다.
 
-			SDL_RenderCopyF(renderer, gLabel.GetTexture(), nullptr, &gTextDstFRect);			// 텍스트를 출력한다.
-			SDL_RenderCopyF(renderer, gPlayerTexture.GetTexture(), nullptr, &gPlayerDstFRect);	// 플레이어를 출력한다.
+			SDL_RenderCopyF(gCore.GetRender(), gLabel.GetTexture(), nullptr, &gTextDstFRect);			// 텍스트를 출력한다.
+			SDL_RenderCopyF(gCore.GetRender(), gPlayerTexture.GetTexture(), nullptr, &gPlayerDstFRect);	// 플레이어를 출력한다.
 
-			SDL_RenderPresent(renderer);	// 화면에 출력한다.
+			SDL_RenderPresent(gCore.GetRender());	// 화면에 출력한다.
 		}
 
 		// 이전 키를 모두 초기화한다.
@@ -229,13 +220,9 @@ int main(int argc, char* argv[])
 	// 헤제를 한다.
 	gLabel.Finalize();
 	gPlayerTexture.Finalize();
-
-	IMG_Quit();
 	gFont.Finalize();
 
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
+	gCore.Finalize();
 
 	return 0;
 }
