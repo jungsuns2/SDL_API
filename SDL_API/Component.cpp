@@ -6,3 +6,8 @@ Component::Component(const uint32_t id)
 {
 
 }
+
+uint32_t Component::GetID() const
+{
+	return mID;
+}
