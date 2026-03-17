@@ -2,16 +2,23 @@
 
 class Component;
 
-class Entity
+class Entity final
 {
 public:
 	Entity() = default;
 	Entity(const Entity& other) = delete;
 	Entity operator=(Entity& other) = delete;
-	~Entity() = default;
+	~Entity();
 
 public:
-	void AddComponent(const Component& newComponent);
+	template<typename T>
+	void AddComponent(const T& newComponent);
+
+	template<typename T>
+	T* GetComponent() const;
+
+	template<typename T>
+	bool HasComponent();
 
 private:
 	std::vector<Component*> mComponents{};
