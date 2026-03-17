@@ -5,7 +5,7 @@ class Texture final
 public:
 	Texture() = default;
 	Texture(const Texture&) = delete;
-	Texture& operator=(const Texture&) = delete;
+	const Texture& operator=(const Texture&) = delete;
 	~Texture() = default;
 
 public:

@@ -4,7 +4,7 @@ class Font final
 public:
 	Font() = default;
 	Font(const Font&) = delete;
-	Font& operator=(const Font&) = delete;
+	const Font& operator=(const Font&) = delete;
 	~Font() = default;
 
 public:

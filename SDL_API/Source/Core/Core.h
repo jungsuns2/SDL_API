@@ -5,7 +5,7 @@ class Core final
 public:
 	Core() = default;
 	Core(const Core&) = delete;
-	Core& operator=(Core&) = delete;
+	const Core& operator=(Core&) = delete;
 	~Core() = default;
 
 public:

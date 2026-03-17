@@ -5,7 +5,7 @@ class Input final
 public:
 	Input() = default;
 	Input(const Input&) = delete;
-	Input& operator=(const Input&) = delete;
+	const Input& operator=(const Input&) = delete;
 	~Input() = default;
 
 public:
