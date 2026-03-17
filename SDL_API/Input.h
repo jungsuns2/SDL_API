@@ -3,13 +3,19 @@
 class Input final
 {
 public:
-	bool GetKey(const SDL_Scancode virtualCode);
-	bool GetKeyDown(const SDL_Scancode virtualCode);
-	bool GetKeyUp(const SDL_Scancode virtualCode);
+	Input() = default;
+	Input(const Input&) = delete;
+	Input& operator=(const Input&) = delete;
+	~Input() = default;
 
-	bool GetMouseButton(const Uint8 virtualMouse);
-	bool GetMouseButtonDown(const Uint8 virtualMouse);
-	bool GetMouseButtonUp(const Uint8 virtualMouse);
+public:
+	bool GetKey(const SDL_Scancode virtualCode) const;
+	bool GetKeyDown(const SDL_Scancode virtualCode) const;
+	bool GetKeyUp(const SDL_Scancode virtualCode) const;
+
+	bool GetMouseButton(const Uint8 virtualMouse) const;
+	bool GetMouseButtonDown(const Uint8 virtualMouse) const;
+	bool GetMouseButtonUp(const Uint8 virtualMouse) const;
 
 	SDL_FPoint GetMousePosition() const;
 	void SetMousePosition(SDL_FPoint mousePosition);

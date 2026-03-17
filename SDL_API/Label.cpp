@@ -36,7 +36,7 @@ void Label::SetFont(Font* font)
 	mFont = font;
 }
 
-void Label::SetText(SDL_Renderer* renderer, const std::string text)
+void Label::SetText(SDL_Renderer* renderer, const std::string& text)
 {
 	assert(renderer != nullptr);
 

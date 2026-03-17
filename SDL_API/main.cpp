@@ -29,12 +29,17 @@ int main(int argc, char* argv[])
 
 	SDL_Window* window = SDL_CreateWindow("Player", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
+	if (window == nullptr)
+	{
+		printf("%s", SDL_GetError());
+		return;
+	}
 
 	// SDL_RENDERER_PRESENTVSYNC: 모니터 주사율에 맞춘다.
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
 	IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
-	
+
 	if (TTF_Init() == -1)
 	{
 		return 0;
@@ -72,26 +77,26 @@ int main(int argc, char* argv[])
 		{
 			switch (event.type)
 			{
-				case SDL_KEYDOWN:
-				case SDL_KEYUP:
-					gInput.SetKeyState(event.key.keysym.scancode, bool(event.type == SDL_KEYDOWN));
-					break;
+			case SDL_KEYDOWN:
+			case SDL_KEYUP:
+				gInput.SetKeyState(event.key.keysym.scancode, bool(event.type == SDL_KEYDOWN));
+				break;
 
-				case SDL_MOUSEBUTTONDOWN:
-				case SDL_MOUSEBUTTONUP:
-					gInput.SetMouseButtonState(event.button.button, bool(event.type == SDL_MOUSEBUTTONDOWN));
-					break;
+			case SDL_MOUSEBUTTONDOWN:
+			case SDL_MOUSEBUTTONUP:
+				gInput.SetMouseButtonState(event.button.button, bool(event.type == SDL_MOUSEBUTTONDOWN));
+				break;
 
-				case SDL_MOUSEMOTION:
-					gInput.SetMousePosition({ float(event.motion.x), float(event.motion.y) });
-					break;
+			case SDL_MOUSEMOTION:
+				gInput.SetMousePosition({ float(event.motion.x), float(event.motion.y) });
+				break;
 
-				case SDL_QUIT:
-					quit = true;
-					break;
+			case SDL_QUIT:
+				quit = true;
+				break;
 
-				default:
-					break;
+			default:
+				break;
 			}
 		}
 

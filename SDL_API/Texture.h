@@ -9,14 +9,14 @@ public:
 	~Texture() = default;
 
 public:
-	void Initialize(SDL_Renderer* renderer, const std::string fileName);
+	void Initialize(SDL_Renderer* renderer, const std::string& fileName);
 	void Finalize();
 
 public:
 	[[nodiscard]] uint32_t GetWidth() const;
 	[[nodiscard]] uint32_t GetHeight() const;
 
-	SDL_Texture* GetTexture() const;
+	[[nodiscard]] SDL_Texture* GetTexture() const;
 
 private:
 	SDL_Surface* mSurface = nullptr;

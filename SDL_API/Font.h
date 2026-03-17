@@ -8,7 +8,7 @@ public:
 	~Font() = default;
 
 public:
-	void Initilize(SDL_Renderer* renderer, const std::string fileName);
+	void Initilize(SDL_Renderer* renderer, const std::string& filename);
 	void Finalize();
 
 public:
@@ -17,6 +17,7 @@ public:
 
 private:
 	TTF_Font* mFont = nullptr;
+
 	uint32_t mSize = 30;
 };
 

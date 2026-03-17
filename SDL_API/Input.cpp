@@ -1,33 +1,33 @@
 #include "pch.h"
 #include "Input.h"
 
-bool Input::GetKey(const SDL_Scancode virtualCode)
+bool Input::GetKey(const SDL_Scancode virtualCode) const
 {
 	return mKeysPressed[virtualCode];
 }
 
-bool Input::GetKeyDown(const SDL_Scancode virtualCode)
+bool Input::GetKeyDown(const SDL_Scancode virtualCode) const
 {
 	return mKeysPressed[virtualCode] and mPrevKeysPressed[virtualCode];
 }
 
-bool Input::GetKeyUp(const SDL_Scancode virtualCode)
+bool Input::GetKeyUp(const SDL_Scancode virtualCode) const
 {
 	return not mKeysPressed[virtualCode] and mPrevKeysPressed[virtualCode];
 }
 
-bool Input::GetMouseButton(const Uint8 virtualMouse)
+bool Input::GetMouseButton(const Uint8 virtualMouse) const
 {
 	return mMousePressed[Uint8(virtualMouse)];
 }
 
-bool Input::GetMouseButtonDown(const Uint8 virtualMouse)
+bool Input::GetMouseButtonDown(const Uint8 virtualMouse) const
 {
 	Uint8 index = Uint8(virtualMouse);
 	return mMousePressed[index] and mPreMousePressed[index];
 }
 
-bool Input::GetMouseButtonUp(const Uint8 virtualMouse)
+bool Input::GetMouseButtonUp(const Uint8 virtualMouse) const
 {
 	Uint8 index = Uint8(virtualMouse);
 	return not mMousePressed[index] and mPreMousePressed[index];

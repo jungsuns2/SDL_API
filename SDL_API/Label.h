@@ -19,7 +19,7 @@ public:
 	void SetSize(const uint32_t scale);
 
 	void SetFont(Font* font);
-	void SetText(SDL_Renderer* renderer, const std::string text);
+	void SetText(SDL_Renderer* renderer, const std::string& text);
 
 	[[nodiscard]] SDL_Color GetColor() const;
 	void SetColor(const SDL_Color fg);
@@ -40,6 +40,6 @@ private:
 
 	SDL_FPoint mPosition{};
 	uint32_t mSize = 30;
-	SDL_Color mColor{ .r = 0, .g = 0, .b = 0, .a = 255 };
+	SDL_Color mColor{ .a = 255 };
 };
 

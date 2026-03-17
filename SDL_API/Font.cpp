@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "Font.h"
 
-void Font::Initilize(SDL_Renderer* renderer, const std::string fileName)
+void Font::Initilize(SDL_Renderer* renderer, const std::string& filename)
 {
 	assert(renderer != nullptr);
 
-	mFont = TTF_OpenFont(fileName.c_str(), mSize);
+	mFont = TTF_OpenFont(filename.c_str(), mSize);
 	assert(mFont != nullptr);
 }
 
