@@ -35,6 +35,9 @@
     <ClCompile Include="Entity.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="EntityWorld.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -56,6 +59,9 @@
       <Filter>소스 파일</Filter>
     </ClInclude>
     <ClInclude Include="Entity.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityWorld.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
   </ItemGroup>
