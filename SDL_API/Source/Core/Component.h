@@ -15,4 +15,3 @@ public:
 private:
 	uint32_t mID{};
 };
-

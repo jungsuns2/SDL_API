@@ -4,12 +4,12 @@ class Scene
 public:
 	Scene() = default;
 	Scene(const Scene&) = delete;
-	Scene& operator=(Scene&) = delete;
-	~Scene() = default;
+	const Scene& operator=(Scene&) = delete;
+	virtual ~Scene() = default;
 
 public:
-	void Initialize();
-	bool Update();
-	void Finalize();
+	virtual void Initialize() = 0;
+	virtual bool Update() = 0;
+	virtual void Finalize() = 0;
 };
 
