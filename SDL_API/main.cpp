@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 	if (window == nullptr)
 	{
 		printf("%s", SDL_GetError());
-		return;
+		return 0;
 	}
 
 	// SDL_RENDERER_PRESENTVSYNC: 모니터 주사율에 맞춘다.
