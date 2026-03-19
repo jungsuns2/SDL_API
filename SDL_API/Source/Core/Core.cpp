@@ -46,9 +46,9 @@ bool Core::Update(const float deltaTime)
 			return false;
 		}
 
-		const std::vector<Entity*>* entites = mScene->_GetEntity();
+		const EntityWorld* entityWorld = mScene->_GetEntityWorld();
 
-		for (Entity* entity : *entites)
+		for (Entity* entity : entityWorld->GetAllEntites())
 		{
 
 			if (entity->HasComponent<Material>())

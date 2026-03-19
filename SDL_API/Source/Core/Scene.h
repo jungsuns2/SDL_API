@@ -23,9 +23,7 @@ public:
 
 protected:
 	void SetEntityWorld(EntityWorld* entityWorld);
-	EntityWorld* GetEntityWorld() const;
-
-	void SetEntity(const std::vector<Entity*>* enties);
+	EntityWorld* _GetEntityWorld() const;
 
 	void _SetHelper(Helper* helper);
 	const std::vector<Entity*>* _GetEntity() const;

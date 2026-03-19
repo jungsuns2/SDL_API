@@ -16,11 +16,8 @@ void MainScene::Initialize()
 		mLabel.SetSize(30);
 	}
 
-	mEntityWorld = GetEntityWorld();
 	mEntityWorld = new EntityWorld;
-
-	mEnties.reserve(5);
-	SetEntity(&mEnties);
+	SetEntityWorld(mEntityWorld);
 
 	// 플레이어를 초기화한다.
 	{
@@ -33,7 +30,6 @@ void MainScene::Initialize()
 		material->texture = &mPlayerTexture;
 		mPlayer.AddComponent(*material);
 
-		mEnties.push_back(&mPlayer);
 		mEntityWorld->AddEntity(&mPlayer);
 	}
 }

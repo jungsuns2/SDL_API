@@ -21,7 +21,6 @@ public:
 	void Finalize()  override;
 
 private:
-	std::vector<Entity*> mEnties{};
 	EntityWorld* mEntityWorld = nullptr;
 
 private:
