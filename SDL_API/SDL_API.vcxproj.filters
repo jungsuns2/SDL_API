@@ -27,13 +27,7 @@
     <ClCompile Include="Source\Core\Entity\EntityWorld.cpp">
       <Filter>Source\Core\Entity</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Core\Label.cpp">
-      <Filter>Source\Core</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Core\Texture.cpp">
-      <Filter>Source\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Core\Component.cpp">
       <Filter>Source\Core</Filter>
     </ClCompile>
     <ClCompile Include="Source\Core\Font.cpp">
@@ -60,6 +54,9 @@
     <ClCompile Include="Source\Core\Helper.cpp">
       <Filter>Source\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Core\Component.cpp">
+      <Filter>Source\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\pch.h">
@@ -71,13 +68,7 @@
     <ClInclude Include="Source\Core\Entity\EntityWorld.h">
       <Filter>Source\Core\Entity</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Core\Label.h">
-      <Filter>Source\Core</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Core\Texture.h">
-      <Filter>Source\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Core\Component.h">
       <Filter>Source\Core</Filter>
     </ClInclude>
     <ClInclude Include="Source\Core\ComponentTypes.h">
@@ -102,6 +93,9 @@
       <Filter>Source\Core</Filter>
     </ClInclude>
     <ClInclude Include="Source\Core\Helper.h">
+      <Filter>Source\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Component.h">
       <Filter>Source\Core</Filter>
     </ClInclude>
   </ItemGroup>

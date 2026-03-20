@@ -1,7 +1,5 @@
 #pragma once
 
-class Label;
-
 class Font final
 {
 public:
@@ -11,19 +9,13 @@ public:
 	~Font() = default;
 
 public:
-	void Initilize(const std::string& filename);
+	void Initilize(const std::string& filename, const uint32_t size);
 	void Finalize();
 
 public:
-	TTF_Font* GetFont() const;
-
-protected:
-	void _SetSize(const uint32_t size);
-
+	[[nodiscard]] TTF_Font* GetFont() const;
+	
 private:
 	TTF_Font* mFont = nullptr;
-	uint32_t mSize = 30;
-
-	friend Label;
 };
 

@@ -21,12 +21,12 @@ public:
 public:
 	[[nodiscard]] Helper* GetHelper() const;
 
+public:
+	EntityWorld* _GetEntityWorld() const;
+	void _SetHelper(Helper* helper);
+
 protected:
 	void SetEntityWorld(EntityWorld* entityWorld);
-	EntityWorld* _GetEntityWorld() const;
-
-	void _SetHelper(Helper* helper);
-	const std::vector<Entity*>* _GetEntity() const;
 
 private:
 	Helper* mHelper = nullptr;

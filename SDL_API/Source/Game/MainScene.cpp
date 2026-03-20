@@ -6,18 +6,27 @@
 
 void MainScene::Initialize()
 {
-	// 폰트를 초기화한다.
-	{
-		mFont.Initilize("Resource/DroidSans.TTF");
-
-		mLabel.SetFont(&mFont);
-		mLabel.SetText(GetHelper()->GetRenderer(), "aaaaaaaaaaaaaaaaaaaaa");
-		mLabel.SetPosition({ .x = 50.0f, .y = 10.0f });
-		mLabel.SetSize(30);
-	}
-
 	mEntityWorld = new EntityWorld;
 	SetEntityWorld(mEntityWorld);
+
+	{
+		mFont.Initilize("Resource/DroidSans.TTF", 5);
+		mPlayerTexture.Initialize(GetHelper(), "Resource/Player.png");
+	}
+
+	// 폰트를 초기화한다.
+	{
+		Transform transform;
+		transform.position = { .x = 50.0f, .y = 50.0f };
+		mLabel.AddComponent(transform);
+
+		Label* label = new Label;
+		label->font = &mFont;
+		label->SetText(GetHelper(), "abc");
+		mLabel.AddComponent(*label);
+
+		mEntityWorld->AddEntity(&mLabel);
+	}
 
 	// 플레이어를 초기화한다.
 	{
@@ -25,10 +34,9 @@ void MainScene::Initialize()
 		transform.position = { .x = 200.0f, .y = 200.0f };
 		mPlayer.AddComponent(transform);
 
-		mPlayerTexture.Initialize(GetHelper()->GetRenderer(), "Resource/Player.png");
-		Material* material = new Material;
-		material->texture = &mPlayerTexture;
-		mPlayer.AddComponent(*material);
+		Material material;
+		material.texture = &mPlayerTexture;
+		mPlayer.AddComponent(material);
 
 		mEntityWorld->AddEntity(&mPlayer);
 	}
@@ -55,7 +63,7 @@ bool MainScene::Update(const float deltaTime)
 
 		static bool mousePositionPrint;
 
-		if (Input::Get().GetKey(SDL_SCANCODE_T))
+		if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
 		{
 			mousePositionPrint = !mousePositionPrint;
 		}
@@ -132,7 +140,7 @@ bool MainScene::Update(const float deltaTime)
 void MainScene::Finalize()
 {
 	mFont.Finalize();
-	mLabel.Finalize();
+	//mLabel.Finalize();
 
 	mPlayerTexture.Finalize();
 

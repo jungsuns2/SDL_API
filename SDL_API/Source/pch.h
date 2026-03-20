@@ -1,4 +1,5 @@
 #pragma once
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
@@ -19,4 +20,12 @@ struct Scale
 {
 	float width;
 	float height;
+};
+
+struct Color
+{
+	Uint8 r;
+	Uint8 g;
+	Uint8 b;
+	Uint8 a;
 };

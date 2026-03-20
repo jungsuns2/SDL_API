@@ -1,5 +1,6 @@
 #pragma once
-class Constant
+
+class Constant final
 {
 public:
 	Constant() = default;
@@ -8,7 +9,7 @@ public:
 	~Constant() = default;
 
 public: 
-	[[nodiscard]] static Constant& Get();
+	[[nodiscard]] static const Constant& Get();
 
 	[[nodiscard]] uint32_t GetWidth() const;
 	[[nodiscard]] uint32_t GetHeight() const;

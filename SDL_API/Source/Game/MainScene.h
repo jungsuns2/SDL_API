@@ -2,7 +2,6 @@
 #include "Core/ComponentTypes.h"
 #include "Core/Entity/Entity.h"
 #include "Core/Font.h"
-#include "Core/Label.h"
 #include "Core/Scene.h"
 
 class EntityWorld;
@@ -25,7 +24,7 @@ private:
 
 private:
 	Font mFont{};
-	Label mLabel{};
+	Entity mLabel{};
 
 	Entity mPlayer{};
 	Texture mPlayerTexture{};

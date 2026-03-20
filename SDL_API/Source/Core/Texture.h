@@ -9,7 +9,7 @@ public:
 	~Texture() = default;
 
 public:
-	void Initialize(SDL_Renderer* renderer, const std::string& fileName);
+	void Initialize(Helper* helper, const std::string& fileName);
 	void Finalize();
 
 public:

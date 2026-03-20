@@ -39,7 +39,7 @@ bool Core::Update(const float deltaTime)
 	// Render
 	{
 		SDL_SetRenderDrawColor(mRenderer, 255, 174, 201, 255);
-		SDL_RenderClear(mRenderer);		// 화면을 지정색으로 채운다.
+		SDL_RenderClear(mRenderer);	// 화면을 지정색으로 채운다.
 
 		if (not mScene->Update(deltaTime))
 		{
@@ -47,29 +47,50 @@ bool Core::Update(const float deltaTime)
 		}
 
 		const EntityWorld* entityWorld = mScene->_GetEntityWorld();
+		for (const Entity* entity : entityWorld->GetAllEntites())
+		{
+			{
+				if (not entity->HasComponent<Transform>()
+					or not entity->HasComponent<Material>())
+				{
+					continue;
+				}
+
+				Transform* transform = entity->GetComponent<Transform>();
+				Material* material = entity->GetComponent<Material>();
+
+				SDL_FRect materialRect =
+				{
+					.x = transform->position.x,
+					.y = transform->position.y,
+					.w = material->texture->GetWidth() * transform->scale.width,
+					.h = material->texture->GetHeight() * transform->scale.height,
+				};
+
+				SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &materialRect, 0.0f, nullptr, SDL_FLIP_NONE);
+			}
+		}
 
 		for (Entity* entity : entityWorld->GetAllEntites())
 		{
-
-			if (entity->HasComponent<Material>())
+			if (not entity->HasComponent<Transform>()
+				or not entity->HasComponent<Label>())
 			{
 				continue;
 			}
 
-			Material* material = entity->GetComponent<Material>();
-			Transform* transform = entity->GetComponent<Transform>();			
+			Transform* transform = entity->GetComponent<Transform>();
+			Label* label = entity->GetComponent<Label>();
 
-			SDL_FRect rect = 
+			SDL_FRect labelRect =
 			{
 				.x = transform->position.x,
 				.y = transform->position.y,
-				.w = material->texture->GetWidth()  * transform->scale.width,
-				.h = material->texture->GetHeight() * transform->scale.height,
+				.w = label->width,
+				.h = label->height,
 			};
 
-			printf("%f, %f \n", transform->position.x, transform->position.y);
-
-			SDL_RenderCopyF(mRenderer, material->texture->GetTexture(), nullptr, &rect);
+			SDL_RenderCopyF(mRenderer, label->texture, nullptr, &labelRect);
 		}
 
 		SDL_RenderPresent(mRenderer);	// 화면에 출력한다.

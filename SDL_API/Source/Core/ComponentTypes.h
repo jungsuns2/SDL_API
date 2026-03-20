@@ -1,5 +1,7 @@
 #pragma once
 #include "Component.h"
+#include "Font.h"
+#include "Helper.h"
 #include "Texture.h"
 
 struct Transform final : public Component
@@ -9,7 +11,7 @@ struct Transform final : public Component
 
 	Position position{};
 	Scale scale{ .width = 1.0f, .height = 1.0f };
-	float angle{};
+	float angle = 0.0f;
 };
 
 struct Material final : public Component
@@ -18,4 +20,57 @@ struct Material final : public Component
 	Material() : Component(&_ID) {}
 
 	Texture* texture = nullptr;
+};
+
+struct Label final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+
+	Label() : Component(&_ID) {}
+
+	// TODO: Label에서 리소스를 들고 있기 때문에, 직접 해제한다.
+	~Label()
+	{
+		if (surface != nullptr)
+		{
+			SDL_FreeSurface(surface);
+		}
+
+		if (texture != nullptr)
+		{
+			SDL_DestroyTexture(texture);
+		}
+	}
+
+	void SetText(Helper* helper, const std::string& text)
+	{
+		assert(helper != nullptr);
+
+		if (surface != nullptr)
+		{
+			SDL_FreeSurface(surface);
+		}
+
+		if (texture != nullptr)
+		{
+			SDL_DestroyTexture(texture);
+		}
+
+		surface = TTF_RenderText_Blended(font->GetFont(), text.c_str(), color);
+		assert(surface != nullptr);
+
+		width = float(surface->w);
+		height = float(surface->h);
+		
+		texture = SDL_CreateTextureFromSurface(helper->GetRenderer(), surface);
+		assert(texture != nullptr);
+	}
+
+	Font* font = nullptr;
+	SDL_Color color{ .a = 255 };
+	SDL_Surface* surface = nullptr;
+	SDL_Texture* texture = nullptr;
+
+	float width = 0.0f;
+	float height = 0.0f;
 };

@@ -28,7 +28,6 @@
     <ClCompile Include="Source\Core\Font.cpp" />
     <ClCompile Include="Source\Core\Helper.cpp" />
     <ClCompile Include="Source\Core\Input.cpp" />
-    <ClCompile Include="Source\Core\Label.cpp" />
     <ClCompile Include="Source\Core\Scene.cpp" />
     <ClCompile Include="Source\Core\Texture.cpp" />
     <ClCompile Include="Source\Game\MainScene.cpp" />
@@ -50,7 +49,6 @@
     <ClInclude Include="Source\Core\Font.h" />
     <ClInclude Include="Source\Core\Helper.h" />
     <ClInclude Include="Source\Core\Input.h" />
-    <ClInclude Include="Source\Core\Label.h" />
     <ClInclude Include="Source\Core\Scene.h" />
     <ClInclude Include="Source\Core\Texture.h" />
     <ClInclude Include="Source\Game\MainScene.h" />

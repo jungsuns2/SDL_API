@@ -27,8 +27,3 @@ EntityWorld* Scene::_GetEntityWorld() const
 {
 	return mEntityWorld;
 }
-
-const std::vector<Entity*>* Scene::_GetEntity() const
-{
-	 return mEntites;
-}

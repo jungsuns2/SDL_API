@@ -1,13 +1,14 @@
 #include "pch.h"
-#include "Texture.h"
 #include "Font.h"
+#include "Helper.h"
+#include "Texture.h"
 
-void Texture::Initialize(SDL_Renderer* renderer, const std::string& fileName)
+void Texture::Initialize(Helper* helper, const std::string& fileName)
 {
-	assert(renderer != nullptr);
+	assert(helper != nullptr);
 
 	mSurface = IMG_Load(fileName.c_str());
-	mTexture = SDL_CreateTextureFromSurface(renderer, mSurface);
+	mTexture = SDL_CreateTextureFromSurface(helper->GetRenderer(), mSurface);
 }
 
 void Texture::Finalize()

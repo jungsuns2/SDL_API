@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "Font.h"
 
-void Font::Initilize(const std::string& filename)
+void Font::Initilize(const std::string& filename, const uint32_t size)
 {
-	mFont = TTF_OpenFont(filename.c_str(), mSize);
+	mFont = TTF_OpenFont(filename.c_str(), size);
 	assert(mFont != nullptr);
 }
 
@@ -15,9 +15,4 @@ void Font::Finalize()
 TTF_Font* Font::GetFont() const
 {
 	return mFont;
-}
-
-void Font::_SetSize(const uint32_t size)
-{
-	mSize = size;
 }

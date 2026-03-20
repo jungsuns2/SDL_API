@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Constant.h"
 
-Constant& Constant::Get()
+const Constant& Constant::Get()
 {
 	static Constant constant{};
 	return constant;
