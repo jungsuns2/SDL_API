@@ -15,7 +15,7 @@ void Scene::_SetHelper(Helper* helper)
 	mHelper = helper;
 }
 
-EntityWorld& Scene::GetEntityWorld() 
+EntityWorld* Scene::GetEntityWorld() 
 {
-	return mEntityWorld;
+	return &mEntityWorld;
 }

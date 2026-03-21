@@ -22,7 +22,7 @@ void MainScene::Initialize()
 		label.SetText(GetHelper(), "abc");
 		mLabel.AddComponent(label);
 
-		GetEntityWorld().AddEntity(&mLabel);
+		GetEntityWorld()->AddEntity(&mLabel);
 	}
 
 	// 플레이어를 초기화한다.
@@ -35,7 +35,7 @@ void MainScene::Initialize()
 		material.texture = &mPlayerTexture;
 		mPlayer.AddComponent(material);
 
-		GetEntityWorld().AddEntity(&mPlayer);
+		GetEntityWorld()->AddEntity(&mPlayer);
 	}
 }
 

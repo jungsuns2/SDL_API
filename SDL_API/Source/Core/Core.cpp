@@ -46,8 +46,8 @@ bool Core::Update(const float deltaTime)
 			return false;
 		}
 
-		const EntityWorld& entityWorld = mScene->GetEntityWorld();
-		for (const Entity* entity : entityWorld.GetAllEntites())
+		const EntityWorld* entityWorld = mScene->GetEntityWorld();
+		for (const Entity* entity : entityWorld->GetAllEntites())
 		{
 			{
 				if (not entity->HasComponent<Transform>()
@@ -71,7 +71,7 @@ bool Core::Update(const float deltaTime)
 			}
 		}
 
-		for (Entity* entity : entityWorld.GetAllEntites())
+		for (Entity* entity : entityWorld->GetAllEntites())
 		{
 			if (not entity->HasComponent<Transform>()
 				or not entity->HasComponent<Label>())

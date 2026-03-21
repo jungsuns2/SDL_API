@@ -22,7 +22,7 @@ public:
 	[[nodiscard]] Helper* GetHelper() const;
 
 public:
-	EntityWorld& GetEntityWorld();
+	EntityWorld* GetEntityWorld();
 	void _SetHelper(Helper* helper);
 
 private:
