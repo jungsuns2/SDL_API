@@ -27,6 +27,5 @@ public:
 
 private:
 	Helper* mHelper = nullptr;
-	const std::vector<Entity*>* mEntites{};
 	EntityWorld mEntityWorld{};
 };
