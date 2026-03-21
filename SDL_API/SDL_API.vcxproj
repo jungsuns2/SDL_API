@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Core\Component.cpp" />
     <ClCompile Include="Source\Core\ComponentTypes.cpp" />
     <ClCompile Include="Source\Core\Constant.cpp" />
     <ClCompile Include="Source\Core\Core.cpp" />
+    <ClCompile Include="Source\Core\Entity\Component.cpp" />
     <ClCompile Include="Source\Core\Entity\Entity.cpp" />
     <ClCompile Include="Source\Core\Entity\EntityWorld.cpp" />
     <ClCompile Include="Source\Core\Font.cpp" />
@@ -40,10 +40,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Core\Component.h" />
     <ClInclude Include="Source\Core\ComponentTypes.h" />
     <ClInclude Include="Source\Core\Constant.h" />
     <ClInclude Include="Source\Core\Core.h" />
+    <ClInclude Include="Source\Core\Entity\Component.h" />
     <ClInclude Include="Source\Core\Entity\Entity.h" />
     <ClInclude Include="Source\Core\Entity\EntityWorld.h" />
     <ClInclude Include="Source\Core\Font.h" />

@@ -54,8 +54,8 @@
     <ClCompile Include="Source\Core\Helper.cpp">
       <Filter>Source\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Core\Component.cpp">
-      <Filter>Source\Core</Filter>
+    <ClCompile Include="Source\Core\Entity\Component.cpp">
+      <Filter>Source\Core\Entity</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -95,8 +95,8 @@
     <ClInclude Include="Source\Core\Helper.h">
       <Filter>Source\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Core\Component.h">
-      <Filter>Source\Core</Filter>
+    <ClInclude Include="Source\Core\Entity\Component.h">
+      <Filter>Source\Core\Entity</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

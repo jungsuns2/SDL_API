@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/Component.h"
+#include "Core/Entity/Component.h"
 
 class Entity final
 {

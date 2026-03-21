@@ -6,9 +6,6 @@
 
 void MainScene::Initialize()
 {
-	mEntityWorld = new EntityWorld;
-	SetEntityWorld(mEntityWorld);
-
 	{
 		mFont.Initilize("Resource/DroidSans.TTF", 5);
 		mPlayerTexture.Initialize(GetHelper(), "Resource/Player.png");
@@ -20,12 +17,12 @@ void MainScene::Initialize()
 		transform.position = { .x = 50.0f, .y = 50.0f };
 		mLabel.AddComponent(transform);
 
-		Label* label = new Label;
-		label->font = &mFont;
-		label->SetText(GetHelper(), "abc");
-		mLabel.AddComponent(*label);
+		Label label;
+		label.font = &mFont;
+		label.SetText(GetHelper(), "abc");
+		mLabel.AddComponent(label);
 
-		mEntityWorld->AddEntity(&mLabel);
+		GetEntityWorld().AddEntity(&mLabel);
 	}
 
 	// 플레이어를 초기화한다.
@@ -38,7 +35,7 @@ void MainScene::Initialize()
 		material.texture = &mPlayerTexture;
 		mPlayer.AddComponent(material);
 
-		mEntityWorld->AddEntity(&mPlayer);
+		GetEntityWorld().AddEntity(&mPlayer);
 	}
 }
 
@@ -140,13 +137,5 @@ bool MainScene::Update(const float deltaTime)
 void MainScene::Finalize()
 {
 	mFont.Finalize();
-	//mLabel.Finalize();
-
 	mPlayerTexture.Finalize();
-
-	if (mEntityWorld != nullptr)
-	{
-		delete mEntityWorld;
-		mEntityWorld = nullptr;
-	}
 }

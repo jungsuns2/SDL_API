@@ -1,5 +1,5 @@
 #pragma once
-#include "Component.h"
+#include "Core/Entity/Component.h"
 #include "Font.h"
 #include "Helper.h"
 #include "Texture.h"

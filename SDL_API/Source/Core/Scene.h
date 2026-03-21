@@ -1,9 +1,9 @@
 #pragma once
+#include "Entity/EntityWorld.h"
 
 class Helper;
 class Core;
 class Entity;
-class EntityWorld;
 
 class Scene
 {
@@ -22,17 +22,11 @@ public:
 	[[nodiscard]] Helper* GetHelper() const;
 
 public:
-	EntityWorld* _GetEntityWorld() const;
+	EntityWorld& GetEntityWorld();
 	void _SetHelper(Helper* helper);
-
-protected:
-	void SetEntityWorld(EntityWorld* entityWorld);
 
 private:
 	Helper* mHelper = nullptr;
-
-	EntityWorld* mEntityWorld = nullptr;
 	const std::vector<Entity*>* mEntites{};
-
-	friend Core;
+	EntityWorld mEntityWorld{};
 };

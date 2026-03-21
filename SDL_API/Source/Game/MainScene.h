@@ -20,9 +20,6 @@ public:
 	void Finalize()  override;
 
 private:
-	EntityWorld* mEntityWorld = nullptr;
-
-private:
 	Font mFont{};
 	Entity mLabel{};
 

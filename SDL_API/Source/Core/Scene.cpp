@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "Core/Entity/Entity.h"
 #include "Core/Entity/EntityWorld.h"
 #include "Helper.h"
 #include "Scene.h"
@@ -16,14 +15,7 @@ void Scene::_SetHelper(Helper* helper)
 	mHelper = helper;
 }
 
-void Scene::SetEntityWorld(EntityWorld* entityWorld)
-{
-	assert(entityWorld != nullptr);
-
-	mEntityWorld = entityWorld;
-}
-
-EntityWorld* Scene::_GetEntityWorld() const
+EntityWorld& Scene::GetEntityWorld() 
 {
 	return mEntityWorld;
 }
