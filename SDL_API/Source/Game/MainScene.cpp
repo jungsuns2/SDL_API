@@ -7,35 +7,50 @@
 void MainScene::Initialize()
 {
 	{
-		mFont.Initilize("Resource/DroidSans.TTF", 5);
+		mFont.Initilize("Resource/DroidSans.TTF", 50);
 		mPlayerTexture.Initialize(GetHelper(), "Resource/Player.png");
 	}
 
-	// 폰트를 초기화한다.
 	{
 		Transform transform;
-		transform.position = { .x = 50.0f, .y = 50.0f };
+		transform.position = { .x = 0.0f, .y = 0.0f };
 		mLabel.AddComponent(transform);
 
 		Label label;
 		label.font = &mFont;
-		label.SetText(GetHelper(), "abc");
+		label.SetText(GetHelper(), "UI Label");
 		mLabel.AddComponent(label);
 
 		GetEntityWorld()->AddEntity(&mLabel);
 	}
 
-	// 플레이어를 초기화한다.
 	{
 		Transform transform;
-		transform.position = { .x = 200.0f, .y = 200.0f };
+		transform.position = { 100.0, 100.0f};
 		mPlayer.AddComponent(transform);
 
 		Material material;
 		material.texture = &mPlayerTexture;
 		mPlayer.AddComponent(material);
 
+		mMainCamera.position = {};
+		mPlayer.AddComponent(mMainCamera);
+		SetCamera(&mMainCamera);
+
 		GetEntityWorld()->AddEntity(&mPlayer);
+	}
+
+	{
+		Transform transform;
+		transform.position = { .x = 100.0f, .y = 0.0f };
+		transform.scale = { 0.5f, 0.5f };
+		mMonster.AddComponent(transform);
+
+		Material material;
+		material.texture = &mPlayerTexture;
+		mMonster.AddComponent(material);
+
+		GetEntityWorld()->AddEntity(&mMonster);
 	}
 }
 
@@ -129,6 +144,10 @@ bool MainScene::Update(const float deltaTime)
 			transform->position.x += velocity.x * deltaTime;
 			transform->position.y += velocity.y * deltaTime;
 		}
+
+		// 카메라를 업데이트한다.
+		Transform* transform = mPlayer.GetComponent<Transform>();
+		mMainCamera.position = transform->position;
 	}
 
 	return true;

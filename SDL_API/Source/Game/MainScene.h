@@ -1,8 +1,11 @@
 #pragma once
-#include "Core/ComponentTypes.h"
+
 #include "Core/Entity/Entity.h"
+
+#include "Core/ComponentTypes.h"
 #include "Core/Font.h"
 #include "Core/Scene.h"
+#include "Core/Texture.h"
 
 class EntityWorld;
 
@@ -23,6 +26,10 @@ private:
 	Font mFont{};
 	Entity mLabel{};
 
+	Camera mMainCamera{};
+
 	Entity mPlayer{};
 	Texture mPlayerTexture{};
+
+	Entity mMonster{};
 };

@@ -1,9 +1,11 @@
 #include "pch.h"
-#include "Constant.h"
-#include "Core.h"
+
 #include "Entity/Entity.h"
 #include "Entity/EntityWorld.h"
+
 #include "ComponentTypes.h"
+#include "Constant.h"
+#include "Core.h"
 
 void Core::Initialize(Scene* scene)
 {
@@ -46,32 +48,38 @@ bool Core::Update(const float deltaTime)
 			return false;
 		}
 
+		const Camera* camera = mScene->GetCamera();
+
 		const EntityWorld* entityWorld = mScene->GetEntityWorld();
 		for (const Entity* entity : entityWorld->GetAllEntites())
 		{
+			if (not entity->HasComponent<Transform>()
+				or not entity->HasComponent<Material>())
 			{
-				if (not entity->HasComponent<Transform>()
-					or not entity->HasComponent<Material>())
-				{
-					continue;
-				}
-
-				Transform* transform = entity->GetComponent<Transform>();
-				Material* material = entity->GetComponent<Material>();
-
-				SDL_FRect materialRect =
-				{
-					.x = transform->position.x,
-					.y = transform->position.y,
-					.w = material->texture->GetWidth() * transform->scale.width,
-					.h = material->texture->GetHeight() * transform->scale.height,
-				};
-
-				SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &materialRect, 0.0f, nullptr, SDL_FLIP_NONE);
+				continue;
 			}
+
+			const Transform* transform = entity->GetComponent<Transform>();
+			const Material* material = entity->GetComponent<Material>();
+
+			const Position centerOffset =
+			{
+				.x = (Constant::Get().GetWidth() -50.0f) * 0.5f,
+				.y = (Constant::Get().GetHeight()) * 0.5f,
+			};
+
+			const SDL_FRect rect =
+			{
+				.x = transform->position.x - camera->position.x + centerOffset.x,
+				.y = transform->position.y - camera->position.y + centerOffset.y,
+				.w = material->texture->GetWidth() * transform->scale.width,
+				.h = material->texture->GetHeight() * transform->scale.height,
+			};
+
+			SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &rect, 0.0f, nullptr, SDL_FLIP_NONE);
 		}
 
-		for (Entity* entity : entityWorld->GetAllEntites())
+		for (const Entity* entity : entityWorld->GetAllEntites())
 		{
 			if (not entity->HasComponent<Transform>()
 				or not entity->HasComponent<Label>())
@@ -82,7 +90,7 @@ bool Core::Update(const float deltaTime)
 			Transform* transform = entity->GetComponent<Transform>();
 			Label* label = entity->GetComponent<Label>();
 
-			SDL_FRect labelRect =
+			SDL_FRect rect =
 			{
 				.x = transform->position.x,
 				.y = transform->position.y,
@@ -90,7 +98,7 @@ bool Core::Update(const float deltaTime)
 				.h = label->height,
 			};
 
-			SDL_RenderCopyF(mRenderer, label->texture, nullptr, &labelRect);
+			SDL_RenderCopyF(mRenderer, label->texture, nullptr, &rect);
 		}
 
 		SDL_RenderPresent(mRenderer);	// 화면에 출력한다.

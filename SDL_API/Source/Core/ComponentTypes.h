@@ -1,5 +1,7 @@
 #pragma once
-#include "Core/Entity/Component.h"
+#include "Entity/Component.h"
+#include "Entity/Entity.h"
+
 #include "Font.h"
 #include "Helper.h"
 #include "Texture.h"
@@ -29,18 +31,18 @@ struct Label final : public Component
 	Label() : Component(&_ID) {}
 
 	// TODO: Label에서 리소스를 들고 있기 때문에, 직접 해제한다.
-	~Label()
-	{
-		if (surface != nullptr)
-		{
-			SDL_FreeSurface(surface);
-		}
+	//~Label()
+	//{
+	//	if (surface != nullptr)
+	//	{
+	//		SDL_FreeSurface(surface);
+	//	}
 
-		if (texture != nullptr)
-		{
-			SDL_DestroyTexture(texture);
-		}
-	}
+	//	if (texture != nullptr)
+	//	{
+	//		SDL_DestroyTexture(texture);
+	//	}
+	//}
 
 	void SetText(Helper* helper, const std::string& text)
 	{
@@ -73,4 +75,13 @@ struct Label final : public Component
 
 	float width = 0.0f;
 	float height = 0.0f;
+};
+
+struct Camera final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Camera() : Component(&_ID) {}
+
+	Position position{};
+	float angle{};
 };
