@@ -1,16 +1,29 @@
 #include "pch.h"
 #include "Core/Entity/EntityWorld.h"
+
 #include "Core/Helper.h"
 #include "Core/Input.h"
 #include "MainScene.h"
 
 void MainScene::Initialize()
 {
+	// Texture
 	{
 		mFont.Initilize("Resource/DroidSans.TTF", 50);
-		mPlayerTexture.Initialize(GetHelper(), "Resource/Player.png");
+		mMonsterTexture.Initialize(GetHelper(), "Resource/Player.png");
+
+		for (uint32_t i = 0; i < 5; ++i)
+		{
+			mPlayerIdleTextures[i].Initialize(GetHelper(), "Resource/Char/Alice/Idle/" + std::to_string(i) + ".png");
+
+			Clip::Frame frame;
+			frame.texture = &mPlayerIdleTextures[i];
+			frame.durationTime = 0.18f;
+			mPlayerIdle.AddClip(frame);
+		}
 	}
 
+	// Label
 	{
 		Transform transform;
 		transform.position = {};
@@ -24,14 +37,17 @@ void MainScene::Initialize()
 		GetEntityWorld()->AddEntity(&mLabel);
 	}
 
+	// Player
 	{
 		Transform transform;
-		transform.position = { 100.0, 0.0f};
+		transform.position = {};
+		transform.scale = { .width = 3.0f, .height = 3.0f };
 		mPlayer.AddComponent(transform);
 
-		Material material;
-		material.texture = &mPlayerTexture;
-		mPlayer.AddComponent(material);
+		Animator animator;
+		animator.clipState = &mPlayerIdle;
+		animator.elapsedTime = 0.0f;
+		mPlayer.AddComponent(animator);
 
 		mMainCamera.position = {};
 		mPlayer.AddComponent(mMainCamera);
@@ -40,14 +56,15 @@ void MainScene::Initialize()
 		GetEntityWorld()->AddEntity(&mPlayer);
 	}
 
+	// Monster
 	{
 		Transform transform;
-		transform.position = { .x = 100.0f, .y = 0.0f };
+		transform.position = { .x = -200.0f, .y = 0.0f };
 		transform.scale = { 0.5f, 0.5f };
 		mMonster.AddComponent(transform);
 
 		Material material;
-		material.texture = &mPlayerTexture;
+		material.texture = &mMonsterTexture;
 		mMonster.AddComponent(material);
 
 		GetEntityWorld()->AddEntity(&mMonster);
@@ -155,5 +172,5 @@ bool MainScene::Update(const float deltaTime)
 void MainScene::Finalize()
 {
 	mFont.Finalize();
-	mPlayerTexture.Finalize();
+	mMonsterTexture.Finalize();
 }

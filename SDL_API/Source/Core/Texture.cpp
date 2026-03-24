@@ -3,11 +3,11 @@
 #include "Helper.h"
 #include "Texture.h"
 
-void Texture::Initialize(Helper* helper, const std::string& fileName)
+void Texture::Initialize(Helper* helper, const std::string& filename)
 {
 	assert(helper != nullptr);
 
-	mSurface = IMG_Load(fileName.c_str());
+	mSurface = IMG_Load(filename.c_str());
 	mTexture = SDL_CreateTextureFromSurface(helper->GetRenderer(), mSurface);
 }
 

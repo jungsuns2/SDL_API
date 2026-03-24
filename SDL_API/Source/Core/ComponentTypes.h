@@ -2,6 +2,7 @@
 #include "Entity/Component.h"
 #include "Entity/Entity.h"
 
+#include "Clip.h"
 #include "Font.h"
 #include "Helper.h"
 #include "Texture.h"
@@ -84,4 +85,14 @@ struct Camera final : public Component
 
 	Point position{};
 	float angle{};
+};
+
+struct Animator final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Animator() : Component(&_ID) {}
+
+	Clip* clipState = nullptr;
+	float elapsedTime{};	// »Â∏• Ω√∞£
+	uint32_t frameIndex{};
 };

@@ -2,6 +2,7 @@
 
 #include "Core/Entity/Entity.h"
 
+#include "Core/Clip.h"
 #include "Core/ComponentTypes.h"
 #include "Core/Font.h"
 #include "Core/Scene.h"
@@ -29,7 +30,9 @@ private:
 	Camera mMainCamera{};
 
 	Entity mPlayer{};
-	Texture mPlayerTexture{};
+	std::array<Texture, 5> mPlayerIdleTextures{};
+	Clip mPlayerIdle{};
 
 	Entity mMonster{};
+	Texture mMonsterTexture{};
 };

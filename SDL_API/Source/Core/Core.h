@@ -18,7 +18,7 @@ public:
 	void Finalize();
 
 public:
-	[[nodiscard]]  SDL_Window* GetWindow() const;
+	[[nodiscard]] SDL_Window* GetWindow() const;
 
 private:
 	SDL_Window* mWindow = nullptr;

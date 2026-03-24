@@ -57,6 +57,9 @@
     <ClCompile Include="Source\Core\Entity\Component.cpp">
       <Filter>Source\Core\Entity</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Core\Clip.cpp">
+      <Filter>Source\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\pch.h">
@@ -97,6 +100,9 @@
     </ClInclude>
     <ClInclude Include="Source\Core\Entity\Component.h">
       <Filter>Source\Core\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Clip.h">
+      <Filter>Source\Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

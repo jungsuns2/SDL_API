@@ -3,6 +3,7 @@
 #include "Entity/Entity.h"
 #include "Entity/EntityWorld.h"
 
+#include "Clip.h"
 #include "ComponentTypes.h"
 #include "Constant.h"
 #include "Core.h"
@@ -77,6 +78,49 @@ bool Core::Update(const float deltaTime)
 			};
 
 			SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &rect, 0.0f, nullptr, SDL_FLIP_NONE);
+		}
+
+		for (const Entity* entity : entityWorld->GetAllEntites())
+		{
+			if (not entity->HasComponent<Transform>()
+				or not entity->HasComponent<Animator>())
+			{
+				continue;
+			}
+
+			const Transform* transform = entity->GetComponent<Transform>();
+			Animator* animator = entity->GetComponent<Animator>();
+
+			const Point centerOffset =
+			{
+				.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
+				.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
+			};
+
+			animator->elapsedTime += deltaTime;
+
+			std::vector<Clip::Frame>& frames = animator->clipState->GetAllFrames();
+			uint32_t index = animator->frameIndex;
+
+			if (animator->elapsedTime >= frames[index].durationTime)
+			{
+				if (++animator->frameIndex >= frames.size())
+				{
+					animator->frameIndex = 0;
+				}
+
+				animator->elapsedTime = 0.0f;
+			}
+
+			const SDL_FRect rect =
+			{
+				.x = transform->position.x - camera->position.x + centerOffset.x,
+				.y = transform->position.y - camera->position.y + centerOffset.y,
+				.w = frames[index].texture->GetWidth() * transform->scale.width,
+				.h = frames[index].texture->GetHeight() * transform->scale.height,
+			};
+
+			SDL_RenderCopyExF(mRenderer, frames[index].texture->GetTexture(), nullptr, &rect, 0.0f, nullptr, SDL_FLIP_NONE);
 		}
 
 		for (const Entity* entity : entityWorld->GetAllEntites())
