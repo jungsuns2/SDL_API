@@ -62,10 +62,10 @@ bool Core::Update(const float deltaTime)
 			const Transform* transform = entity->GetComponent<Transform>();
 			const Material* material = entity->GetComponent<Material>();
 
-			const Position centerOffset =
+			const Point centerOffset =
 			{
-				.x = (Constant::Get().GetWidth() -50.0f) * 0.5f,
-				.y = (Constant::Get().GetHeight()) * 0.5f,
+				.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
+				.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
 			};
 
 			const SDL_FRect rect =

@@ -13,7 +13,7 @@ void MainScene::Initialize()
 
 	{
 		Transform transform;
-		transform.position = { .x = 0.0f, .y = 0.0f };
+		transform.position = {};
 		mLabel.AddComponent(transform);
 
 		Label label;
@@ -26,7 +26,7 @@ void MainScene::Initialize()
 
 	{
 		Transform transform;
-		transform.position = { 100.0, 100.0f};
+		transform.position = { 100.0, 0.0f};
 		mPlayer.AddComponent(transform);
 
 		Material material;
@@ -93,7 +93,7 @@ bool MainScene::Update(const float deltaTime)
 			static int32_t prevMoveX;
 			static int32_t prevMoveY;
 
-			SDL_FPoint velocity = {};
+			Point velocity = {};
 			constexpr float MAX_SPEED = 500.0f;
 			constexpr float ACC = 40.0f;
 
@@ -134,20 +134,19 @@ bool MainScene::Update(const float deltaTime)
 			float length = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
 			if (length > 0.0f)
 			{
-				SDL_FPoint direction = { .x = velocity.x / length, .y = velocity.y / length };
+				Point direction = { .x = velocity.x / length, .y = velocity.y / length };
 
-				velocity.x = MAX_SPEED * direction.x;
-				velocity.y = MAX_SPEED * direction.y;
+				velocity = Math::ScaleVector(direction, MAX_SPEED);
 			}
 
 			Transform* transform = mPlayer.GetComponent<Transform>();
-			transform->position.x += velocity.x * deltaTime;
-			transform->position.y += velocity.y * deltaTime;
+			transform->position = Math::AddVector(transform->position, Math::ScaleVector(velocity, deltaTime));
 		}
 
 		// 카메라를 업데이트한다.
-		Transform* transform = mPlayer.GetComponent<Transform>();
-		mMainCamera.position = transform->position;
+		Transform* target = mPlayer.GetComponent<Transform>();
+		Point offset = { .x = 30.0f, .y = 10.0f };
+		mMainCamera.position = Math::AddVector(target->position, offset);
 	}
 
 	return true;

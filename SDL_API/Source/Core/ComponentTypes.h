@@ -11,7 +11,7 @@ struct Transform final : public Component
 	static constexpr uint32_t _ID = 0;
 	Transform() : Component(&_ID) {}
 
-	Position position{};
+	Point position{};
 	Scale scale{ .width = 1.0f, .height = 1.0f };
 	float angle = 0.0f;
 };
@@ -82,6 +82,6 @@ struct Camera final : public Component
 	static constexpr uint32_t _ID = 0;
 	Camera() : Component(&_ID) {}
 
-	Position position{};
+	Point position{};
 	float angle{};
 };

@@ -10,7 +10,7 @@
 #include <array>
 #include <cassert>
 
-struct Position
+struct Point
 {
 	float x;
 	float y;
@@ -29,3 +29,25 @@ struct Color
 	Uint8 b;
 	Uint8 a;
 };
+
+namespace Math
+{
+	inline Point AddVector(const Point lhs, const Point rhs);
+	inline Point SubtractVector(const Point lhs, const Point rhs);
+	inline Point ScaleVector(const Point lhs, const float rhs);
+
+	Point AddVector(const Point lhs, const Point rhs)
+	{
+		return { .x = lhs.x + rhs.x, .y = lhs.y + rhs.y };
+	}
+
+	Point SubtractVector(const Point lhs, const Point rhs)
+	{
+		return { .x = lhs.x - rhs.x, .y = lhs.y - rhs.y };
+	}
+
+	Point ScaleVector(const Point lhs, const float rhs)
+	{
+		return { .x = lhs.x * rhs, .y = lhs.y * rhs };
+	}
+}
