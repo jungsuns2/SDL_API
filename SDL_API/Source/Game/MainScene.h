@@ -59,14 +59,19 @@ private:
 	PlayerState mPlayerState{};
 	std::array<Clip, uint32_t(PlayerState::Count)> mPlayerClips{};
 
+	MonsterState mMonsterState{};
+	std::array<Clip, uint32_t(MonsterState::Count)> mMonsterClips{};
+
 	static constexpr uint32_t PLAYER_IDLE_COUNT = 5;
 	static constexpr uint32_t PLAYER_RUN_COUNT = 6;
 
-	static constexpr uint32_t MONSTER_IDLE_COUNT = 5;
-	static constexpr uint32_t MONSTER_RUN_COUNT = 6;
+	static constexpr uint32_t MONSTER_RUN_COUNT = 8;
+	static constexpr uint32_t MONSTER_ATTACK_COUNT = 7;
 
 	std::array<Texture, PLAYER_IDLE_COUNT> mPlayerIdleTextures{};
 	std::array<Texture, PLAYER_RUN_COUNT> mPlayerRunTextures{};
 
-	std::array<Texture, MONSTER_IDLE_COUNT> mMonsterRunTextures{};
+	Texture mMonsterIdleTexture{};
+	std::array<Texture, MONSTER_RUN_COUNT> mMonsterRunTextures{};
+	std::array<Texture, MONSTER_ATTACK_COUNT> mMonsterAttackTextures{};
 };

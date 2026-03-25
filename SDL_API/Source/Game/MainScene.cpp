@@ -7,30 +7,68 @@
 
 void MainScene::Initialize()
 {
-	// Texture
+	// Resource
 	{
 		mFont.Initilize("Resource/DroidSans.TTF", 50);
 
-		for (uint32_t i = 0; i < PLAYER_IDLE_COUNT; ++i)
+		// Player
 		{
-			mPlayerIdleTextures[i].Initialize(GetHelper(), "Resource/Char/Alice/Idle/" + std::to_string(i) + ".png");
+			for (uint32_t i = 0; i < PLAYER_IDLE_COUNT; ++i)
+			{
+				mPlayerIdleTextures[i].Initialize(GetHelper(), "Resource/Char/Alice/Idle/" + std::to_string(i) + ".png");
 
-			Clip::Frame frame;
-			frame.texture = &mPlayerIdleTextures[i];
-			frame.durationTime = 0.18f;
+				Clip::Frame frame;
+				frame.texture = &mPlayerIdleTextures[i];
+				frame.durationTime = 0.12f;
 
-			mPlayerClips[uint32_t(PlayerState::Idle)].AddClip(frame);
+				mPlayerClips[uint32_t(PlayerState::Idle)].AddClip(frame);
+			}
+
+			for (uint32_t i = 0; i < PLAYER_RUN_COUNT; ++i)
+			{
+				mPlayerRunTextures[i].Initialize(GetHelper(), "Resource/Char/Alice/Run/" + std::to_string(i) + ".png");
+
+				Clip::Frame frame;
+				frame.texture = &mPlayerRunTextures[i];
+				frame.durationTime = 0.12f;
+
+				mPlayerClips[uint32_t(PlayerState::Run)].AddClip(frame);
+			}
 		}
 
-		for (uint32_t i = 0; i < PLAYER_RUN_COUNT; ++i)
+		// Monster
 		{
-			mPlayerRunTextures[i].Initialize(GetHelper(), "Resource/Char/Alice/Run/" + std::to_string(i) + ".png");
+			{
+				mMonsterIdleTexture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Idle/0.png");
 
-			Clip::Frame frame;
-			frame.texture = &mPlayerRunTextures[i];
-			frame.durationTime = 0.18f;
+				Clip::Frame frame;
+				frame.texture = &mMonsterIdleTexture;
+				frame.durationTime = 0.12f;
 
-			mPlayerClips[uint32_t(PlayerState::Run)].AddClip(frame);
+				mMonsterClips[uint32_t(MonsterState::Idle)].AddClip(frame);
+			}
+
+			for (uint32_t i = 0; i < MONSTER_RUN_COUNT; ++i)
+			{
+				mMonsterRunTextures[i].Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Run/" + std::to_string(i) + ".png");
+
+				Clip::Frame frame;
+				frame.texture = &mMonsterRunTextures[i];
+				frame.durationTime = 0.12f;
+
+				mMonsterClips[uint32_t(MonsterState::Run)].AddClip(frame);
+			}
+
+			for (uint32_t i = 0; i < MONSTER_ATTACK_COUNT; ++i)
+			{
+				mMonsterAttackTextures[i].Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Attack/" + std::to_string(i) + ".png");
+
+				Clip::Frame frame;
+				frame.texture = &mMonsterAttackTextures[i];
+				frame.durationTime = 0.12f;
+
+				mMonsterClips[uint32_t(MonsterState::Attack)].AddClip(frame);
+			}
 		}
 	}
 
@@ -69,6 +107,25 @@ void MainScene::Initialize()
 
 		GetEntityWorld()->AddEntity(&mPlayer);
 	}
+
+	// Monster
+	{
+		Transform transform;
+		transform.position = { .x = 0.0f, .y = -200.0f };
+		transform.scale = { .width = 3.0f, .height = 3.0f };
+		mMonster.AddComponent(transform);
+
+		mMonsterClips[uint32_t(MonsterState::Idle)].SetLoop(true);
+		mMonsterClips[uint32_t(MonsterState::Run)].SetLoop(true);
+		mMonsterClips[uint32_t(MonsterState::Attack)].SetLoop(true);
+
+		Animator animator;
+		animator.clipState = &mMonsterClips[uint32_t(MonsterState::Idle)];
+		animator.elapsedTime = 0.0f;
+		mMonster.AddComponent(animator);
+
+		GetEntityWorld()->AddEntity(&mMonster);
+	}
 }
 
 bool MainScene::Update(const float deltaTime)
@@ -91,6 +148,11 @@ bool MainScene::Update(const float deltaTime)
 		SetClip();
 	}
 
+	// 몬스터를 업데이트한다.
+	{
+
+	}
+
 	return mIsUpdate;
 }
 
@@ -107,23 +169,22 @@ void MainScene::Finalize()
 	{
 		texture.Finalize();
 	}
+
+	mMonsterIdleTexture.Finalize();
 }
 
 void MainScene::Input()
 {
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_ESCAPE))
 	{
-		printf("ESC 종료\n");
 		mIsUpdate = false;
 	}
 
 	if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
 	{
-		printf("Left 클릭\n");
 	}
 	if (Input::Get().GetMouseButtonDown(SDL_BUTTON_RIGHT))
 	{
-		printf("Right 클릭\n");
 	}
 
 	static bool mousePositionPrint;
@@ -135,7 +196,6 @@ void MainScene::Input()
 
 	if (mousePositionPrint)
 	{
-		printf("%f, %f\n", Input::Get().GetMousePosition().x, Input::Get().GetMousePosition().y);
 	}
 }
 

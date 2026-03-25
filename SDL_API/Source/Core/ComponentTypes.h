@@ -98,8 +98,6 @@ struct Animator final : public Component
 
 		if (clipState == clip)
 		{
-			printf("%d \n", frameIndex);
-
 			return;
 		}
 
