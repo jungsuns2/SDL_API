@@ -8,6 +8,13 @@
 #include "Core/Scene.h"
 #include "Core/Texture.h"
 
+enum class PlayerState
+{
+	Idle,
+	Run,
+	Count
+};
+
 class EntityWorld;
 
 class MainScene final : public Scene
@@ -25,14 +32,21 @@ public:
 
 private:
 	Font mFont{};
-	Entity mLabel{};
 
 	Camera mMainCamera{};
 
+	Entity mLabel{};
 	Entity mPlayer{};
-	std::array<Texture, 5> mPlayerIdleTextures{};
-	Clip mPlayerIdle{};
-
 	Entity mMonster{};
+
+	PlayerState mPlayerState{};
+	std::array<Clip, uint32_t(PlayerState::Count)> mPlayerClips{};
+
+	static constexpr uint32_t IDLE_COUNT = 5;
+	static constexpr uint32_t RUN_COUNT = 6;
+
+	std::array<Texture, IDLE_COUNT> mPlayerIdleTextures{};
+	std::array<Texture, RUN_COUNT> mPlayerRunTextures{};
 	Texture mMonsterTexture{};
+
 };

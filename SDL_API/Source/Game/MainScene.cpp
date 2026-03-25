@@ -12,14 +12,26 @@ void MainScene::Initialize()
 		mFont.Initilize("Resource/DroidSans.TTF", 50);
 		mMonsterTexture.Initialize(GetHelper(), "Resource/Player.png");
 
-		for (uint32_t i = 0; i < 5; ++i)
+		for (uint32_t i = 0; i < IDLE_COUNT; ++i)
 		{
 			mPlayerIdleTextures[i].Initialize(GetHelper(), "Resource/Char/Alice/Idle/" + std::to_string(i) + ".png");
 
 			Clip::Frame frame;
 			frame.texture = &mPlayerIdleTextures[i];
 			frame.durationTime = 0.18f;
-			mPlayerIdle.AddClip(frame);
+
+			mPlayerClips[uint32_t(PlayerState::Idle)].AddClip(frame);
+		}
+
+		for (uint32_t i = 0; i < RUN_COUNT; ++i)
+		{
+			mPlayerRunTextures[i].Initialize(GetHelper(), "Resource/Char/Alice/Run/" + std::to_string(i) + ".png");
+
+			Clip::Frame frame;
+			frame.texture = &mPlayerRunTextures[i];
+			frame.durationTime = 0.18f;
+
+			mPlayerClips[uint32_t(PlayerState::Run)].AddClip(frame);
 		}
 	}
 
@@ -44,8 +56,11 @@ void MainScene::Initialize()
 		transform.scale = { .width = 3.0f, .height = 3.0f };
 		mPlayer.AddComponent(transform);
 
+		mPlayerClips[uint32_t(PlayerState::Idle)].SetLoop(true);
+		mPlayerClips[uint32_t(PlayerState::Run)].SetLoop(true);
+
 		Animator animator;
-		animator.clipState = &mPlayerIdle;
+		animator.clipState = &mPlayerClips[uint32_t(PlayerState::Idle)];
 		animator.elapsedTime = 0.0f;
 		mPlayer.AddComponent(animator);
 
@@ -72,7 +87,14 @@ void MainScene::Initialize()
 }
 
 bool MainScene::Update(const float deltaTime)
-{
+{		
+	// 카메라를 업데이트한다.
+	{
+		Transform* target = mPlayer.GetComponent<Transform>();
+		Point offset = { .x = 30.0f, .y = 10.0f };
+		mMainCamera.position = Math::AddVector(target->position, offset);
+	}
+
 	// 키 입력을 처리한다.
 	{
 		if (Input::Get().GetKeyDown(SDL_SCANCODE_ESCAPE))
@@ -155,15 +177,34 @@ bool MainScene::Update(const float deltaTime)
 
 				velocity = Math::ScaleVector(direction, MAX_SPEED);
 			}
+			
+			mPlayerState = (length != 0.0f) ? PlayerState::Run : PlayerState::Idle;
 
 			Transform* transform = mPlayer.GetComponent<Transform>();
 			transform->position = Math::AddVector(transform->position, Math::ScaleVector(velocity, deltaTime));
 		}
 
-		// 카메라를 업데이트한다.
-		Transform* target = mPlayer.GetComponent<Transform>();
-		Point offset = { .x = 30.0f, .y = 10.0f };
-		mMainCamera.position = Math::AddVector(target->position, offset);
+		// 플레이어 상태를 업데이트한다.
+		{
+			Animator* animator = mPlayer.GetComponent<Animator>();
+
+			switch (mPlayerState)
+			{
+			case PlayerState::Idle:
+				animator->SetClip(&mPlayerClips[uint32_t(PlayerState::Idle)]);
+				break;
+
+			case PlayerState::Run:
+				animator->SetClip(&mPlayerClips[uint32_t(PlayerState::Run)]);
+				break;
+
+			case PlayerState::Count:
+				break;
+
+			default:
+				break;
+			}
+		}
 	}
 
 	return true;
@@ -173,4 +214,14 @@ void MainScene::Finalize()
 {
 	mFont.Finalize();
 	mMonsterTexture.Finalize();
+
+	for (Texture& texture : mPlayerIdleTextures)
+	{
+		texture.Finalize();
+	}
+
+	for (Texture& texture : mPlayerRunTextures)
+	{
+		texture.Finalize();
+	}
 }

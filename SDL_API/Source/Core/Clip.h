@@ -1,29 +1,19 @@
 #pragma once
 
 class Texture;
-class Helper;
-
-struct ClipInitDesc
-{
-	Helper* helper;
-	const std::string& filename;
-	const uint32_t maxSize;
-	const float durationTime;
-	const bool loop;
-};
 
 class Clip
 {
 public:
 	struct Frame
 	{
-		Texture* texture;
-		float durationTime;
-
 		bool operator==(const Frame& other) const
 		{
 			return texture == other.texture and durationTime == other.durationTime;
 		}
+
+		Texture* texture;
+		float durationTime;
 	};
 
 public:

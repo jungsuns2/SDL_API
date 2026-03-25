@@ -91,26 +91,36 @@ bool Core::Update(const float deltaTime)
 			const Transform* transform = entity->GetComponent<Transform>();
 			Animator* animator = entity->GetComponent<Animator>();
 
+			Clip* clip = animator->clipState;
+			std::vector<Clip::Frame>& frames = clip->GetAllFrames();
+
+			uint32_t index = animator->frameIndex;
+			
+			animator->elapsedTime += deltaTime;
+
+			if (animator->elapsedTime >= frames[index].durationTime)
+			{
+				animator->elapsedTime = 0.0f;
+				++animator->frameIndex;
+
+				if (animator->frameIndex >= frames.size())
+				{
+					if (clip->GetLoop())
+					{
+						animator->frameIndex = 0;
+					}
+					else
+					{
+						animator->frameIndex = frames.size() - 1;
+					}
+				}
+			}
+
 			const Point centerOffset =
 			{
 				.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
 				.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
 			};
-
-			animator->elapsedTime += deltaTime;
-
-			std::vector<Clip::Frame>& frames = animator->clipState->GetAllFrames();
-			uint32_t index = animator->frameIndex;
-
-			if (animator->elapsedTime >= frames[index].durationTime)
-			{
-				if (++animator->frameIndex >= frames.size())
-				{
-					animator->frameIndex = 0;
-				}
-
-				animator->elapsedTime = 0.0f;
-			}
 
 			const SDL_FRect rect =
 			{

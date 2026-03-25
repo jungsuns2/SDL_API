@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Clip.h"
-#include "Helper.h"
 #include "Texture.h"
 
 void Clip::SetLoop(const bool loop)

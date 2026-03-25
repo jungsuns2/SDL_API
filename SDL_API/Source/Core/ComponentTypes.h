@@ -92,6 +92,22 @@ struct Animator final : public Component
 	static constexpr uint32_t _ID = 0;
 	Animator() : Component(&_ID) {}
 
+	void SetClip(Clip* clip)
+	{
+		assert(clip != nullptr);
+
+		if (clipState == clip)
+		{
+			printf("%d \n", frameIndex);
+
+			return;
+		}
+
+		clipState = clip;
+		frameIndex = 0;
+		elapsedTime = 0;
+	}
+
 	Clip* clipState = nullptr;
 	float elapsedTime{};	// »Â∏• Ω√∞£
 	uint32_t frameIndex{};

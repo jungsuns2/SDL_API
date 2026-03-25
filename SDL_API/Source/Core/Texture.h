@@ -1,5 +1,7 @@
 #pragma once
 
+class Helper;
+
 class Texture final
 {
 public:
