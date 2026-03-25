@@ -160,17 +160,33 @@ void MainScene::Finalize()
 {
 	mFont.Finalize();
 
-	for (Texture& texture : mPlayerIdleTextures)
+	// Player
 	{
-		texture.Finalize();
+		for (Texture& texture : mPlayerIdleTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mPlayerRunTextures)
+		{
+			texture.Finalize();
+		}
 	}
 
-	for (Texture& texture : mPlayerRunTextures)
+	// Monster
 	{
-		texture.Finalize();
-	}
+		mMonsterIdleTexture.Finalize();
 
-	mMonsterIdleTexture.Finalize();
+		for (Texture& texture : mMonsterRunTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mMonsterAttackTextures)
+		{
+			texture.Finalize();
+		}
+	}
 }
 
 void MainScene::Input()
