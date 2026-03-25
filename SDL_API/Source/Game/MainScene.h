@@ -15,6 +15,14 @@ enum class PlayerState
 	Count
 };
 
+enum class MonsterState
+{
+	Idle,
+	Run,
+	Attack,
+	Count
+};
+
 class EntityWorld;
 
 class MainScene final : public Scene
@@ -30,7 +38,15 @@ public:
 	bool Update(const float deltaTime) override;
 	void Finalize()  override;
 
+public:
+	void Input();
+	void State();
+	void Move(const float deltaTime);
+	void SetClip();
+
 private:
+	bool mIsUpdate = true;
+
 	Font mFont{};
 
 	Camera mMainCamera{};
@@ -39,14 +55,18 @@ private:
 	Entity mPlayer{};
 	Entity mMonster{};
 
+	float mPlayerLength{};
 	PlayerState mPlayerState{};
 	std::array<Clip, uint32_t(PlayerState::Count)> mPlayerClips{};
 
-	static constexpr uint32_t IDLE_COUNT = 5;
-	static constexpr uint32_t RUN_COUNT = 6;
+	static constexpr uint32_t PLAYER_IDLE_COUNT = 5;
+	static constexpr uint32_t PLAYER_RUN_COUNT = 6;
 
-	std::array<Texture, IDLE_COUNT> mPlayerIdleTextures{};
-	std::array<Texture, RUN_COUNT> mPlayerRunTextures{};
-	Texture mMonsterTexture{};
+	static constexpr uint32_t MONSTER_IDLE_COUNT = 5;
+	static constexpr uint32_t MONSTER_RUN_COUNT = 6;
 
+	std::array<Texture, PLAYER_IDLE_COUNT> mPlayerIdleTextures{};
+	std::array<Texture, PLAYER_RUN_COUNT> mPlayerRunTextures{};
+
+	std::array<Texture, MONSTER_IDLE_COUNT> mMonsterRunTextures{};
 };
