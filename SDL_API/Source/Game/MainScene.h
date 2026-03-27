@@ -49,8 +49,7 @@ private:
 
 	Font mFont{};
 
-	Camera mMainCamera{};
-
+	Entity mMainCamera{};
 	Entity mLabel{};
 	Entity mPlayer{};
 	Entity mMonster{};

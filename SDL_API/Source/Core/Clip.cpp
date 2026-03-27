@@ -7,7 +7,7 @@ void Clip::SetLoop(const bool loop)
 	mLoop = loop;
 }
 
-bool Clip::GetLoop() const
+bool Clip::IsLoop() const
 {
 	return mLoop;
 }
@@ -19,7 +19,12 @@ void Clip::AddClip(const Frame& frame)
 	mFrames.push_back(frame);
 }
 
-std::vector<Clip::Frame>& Clip::GetAllFrames()
+const std::vector<Clip::Frame>& Clip::GetAllFrames() const
 {
 	return mFrames;
+}
+
+uint32_t Clip::GetLastFrameIndex() const
+{
+	return uint32_t(mFrames.size());
 }

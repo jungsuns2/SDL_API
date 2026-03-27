@@ -32,9 +32,10 @@ struct Color
 
 namespace Math
 {
-	inline Point AddVector(const Point lhs, const Point rhs);
-	inline Point SubtractVector(const Point lhs, const Point rhs);
-	inline Point ScaleVector(const Point lhs, const float rhs);
+	[[nodiscard]] inline Point AddVector(const Point lhs, const Point rhs);
+	[[nodiscard]] inline Point SubtractVector(const Point lhs, const Point rhs);
+	[[nodiscard]] inline Point ScaleVector(const Point lhs, const float rhs);
+	[[nodiscard]] inline float GetVectorLength(const Point vector);
 
 	Point AddVector(const Point lhs, const Point rhs)
 	{
@@ -49,5 +50,16 @@ namespace Math
 	Point ScaleVector(const Point lhs, const float rhs)
 	{
 		return { .x = lhs.x * rhs, .y = lhs.y * rhs };
+	}
+
+	float GetVectorLength(const Point vector)
+	{
+		float length = sqrt(vector.x * vector.x + vector.y * vector.y);
+		return length;
+	}
+
+	Point Sqrt(const Point lhs, const Point rhs)
+	{
+		return { .x = lhs.x * rhs.x, .y = lhs.y + rhs.y };
 	}
 }

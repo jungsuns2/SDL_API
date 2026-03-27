@@ -16,18 +16,6 @@ void Scene::_SetHelper(Helper* helper)
 	mHelper = helper;
 }
 
-void Scene::SetCamera(Camera* camera)
-{
-	assert(camera != nullptr);
-
-	mCamera = camera;
-}
-
-const Camera* Scene::GetCamera() const
-{
-	return mCamera;
-}
-
 EntityWorld* Scene::GetEntityWorld() 
 {
 	return &mEntityWorld;

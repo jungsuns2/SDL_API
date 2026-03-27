@@ -24,10 +24,12 @@ public:
 
 public:
 	void SetLoop(const bool loop);
-	[[nodiscard]] bool GetLoop()const;
+	[[nodiscard]] bool IsLoop()const;
 
 	void AddClip(const Frame& frame);
-	std::vector<Frame>& GetAllFrames();
+	[[nodiscard]] const std::vector<Frame>& GetAllFrames() const;
+
+	[[nodiscard]] uint32_t GetLastFrameIndex() const;
 
 private:
 	std::vector<Frame> mFrames{};

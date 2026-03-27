@@ -26,14 +26,7 @@ public:
 	EntityWorld* GetEntityWorld();
 	void _SetHelper(Helper* helper);
 
-	[[nodiscard]] const Camera* GetCamera() const;
-
-protected:
-	void SetCamera(Camera* camera);
-
 private:
 	Helper* mHelper = nullptr;
 	EntityWorld mEntityWorld{};
-
-	Camera* mCamera = nullptr;
 };

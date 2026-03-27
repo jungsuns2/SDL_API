@@ -72,6 +72,17 @@ void MainScene::Initialize()
 		}
 	}
 
+	// Camera
+	{
+		Camera camera{};
+		mMainCamera.AddComponent(camera);
+
+		Transform transform{};
+		mMainCamera.AddComponent(transform);
+
+		GetEntityWorld()->AddEntity(&mMainCamera);
+	}
+
 	// Label
 	{
 		Transform transform;
@@ -88,22 +99,16 @@ void MainScene::Initialize()
 
 	// Player
 	{
-		Transform transform;
-		transform.position = {};
-		transform.scale = { .width = 3.0f, .height = 3.0f };
+		Transform transform{};
+		transform.scale = { .width = 5.0f, .height = 5.0f };
 		mPlayer.AddComponent(transform);
 
 		mPlayerClips[uint32_t(PlayerState::Idle)].SetLoop(true);
 		mPlayerClips[uint32_t(PlayerState::Run)].SetLoop(true);
 
-		Animator animator;
+		Animator animator{};
 		animator.clipState = &mPlayerClips[uint32_t(PlayerState::Idle)];
-		animator.elapsedTime = 0.0f;
 		mPlayer.AddComponent(animator);
-
-		mMainCamera.position = {};
-		mPlayer.AddComponent(mMainCamera);
-		SetCamera(&mMainCamera);
 
 		GetEntityWorld()->AddEntity(&mPlayer);
 	}
@@ -111,13 +116,13 @@ void MainScene::Initialize()
 	// Monster
 	{
 		Transform transform;
-		transform.position = { .x = 0.0f, .y = -200.0f };
+		transform.position = { .x = 0.0f, .y = -500.0f };
 		transform.scale = { .width = 3.0f, .height = 3.0f };
 		mMonster.AddComponent(transform);
 
 		mMonsterClips[uint32_t(MonsterState::Idle)].SetLoop(true);
 		mMonsterClips[uint32_t(MonsterState::Run)].SetLoop(true);
-		mMonsterClips[uint32_t(MonsterState::Attack)].SetLoop(true);
+		mMonsterClips[uint32_t(MonsterState::Attack)].SetLoop(false);
 
 		Animator animator;
 		animator.clipState = &mMonsterClips[uint32_t(MonsterState::Idle)];
@@ -129,14 +134,7 @@ void MainScene::Initialize()
 }
 
 bool MainScene::Update(const float deltaTime)
-{		
-	// 카메라를 업데이트한다.
-	{
-		Transform* target = mPlayer.GetComponent<Transform>();
-		Point offset = { .x = 30.0f, .y = 10.0f };
-		mMainCamera.position = Math::AddVector(target->position, offset);
-	}
-
+{
 	// 플레이어를 업데이트한다.
 	{
 		Input();
@@ -148,9 +146,61 @@ bool MainScene::Update(const float deltaTime)
 		SetClip();
 	}
 
+	// 카메라를 업데이트한다.
+	{
+		Transform* transform = mMainCamera.GetComponent<Transform>();
+		Transform* target = mPlayer.GetComponent<Transform>();
+		Point offset = { .x = 30.0f, .y = 10.0f };
+
+		transform->position = Math::AddVector(target->position, offset);
+	}
+
 	// 몬스터를 업데이트한다.
 	{
+		const Transform* monsterTransform = mMonster.GetComponent<Transform>();
+		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 
+		const Point monsterPosition = monsterTransform->position;
+		const Point playerPosition = playerTransform->position;
+
+		Point distanceSqrt = Math::SubtractVector(playerPosition, monsterPosition);
+		const float length = Math::GetVectorLength(distanceSqrt);
+
+		constexpr float RUN_DISTANCE = 200.0f;
+		constexpr float ATTACK_DISTANCE = 90.0f;
+
+		if (length <= ATTACK_DISTANCE)
+		{
+			mMonsterState = MonsterState::Attack;
+		}
+		else if (length <= RUN_DISTANCE)
+		{
+			mMonsterState = MonsterState::Run;
+		}
+		else
+		{
+			mMonsterState = MonsterState::Idle;
+		}
+
+		Animator* animator = mMonster.GetComponent<Animator>();
+		switch (mMonsterState)
+		{
+			case MonsterState::Idle:
+				animator->SetClip(&mMonsterClips[uint32_t(MonsterState::Idle)]);
+				break;
+
+			case MonsterState::Run:
+				animator->SetClip(&mMonsterClips[uint32_t(MonsterState::Run)]);
+				break;
+
+			case MonsterState::Attack:
+				animator->SetClip(&mMonsterClips[uint32_t(MonsterState::Attack)]);
+				break;
+
+			default:
+				assert(false && "지원하지 않는 애니메이션입니다.");
+				break;
+		}
 	}
 
 	return mIsUpdate;

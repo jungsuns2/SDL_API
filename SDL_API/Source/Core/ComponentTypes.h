@@ -82,9 +82,6 @@ struct Camera final : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	Camera() : Component(&_ID) {}
-
-	Point position{};
-	float angle{};
 };
 
 struct Animator final : public Component
@@ -107,6 +104,6 @@ struct Animator final : public Component
 	}
 
 	Clip* clipState = nullptr;
-	float elapsedTime{};	// »Â∏• Ω√∞£
+	float elapsedTime{}; // »Â∏• Ω√∞£
 	uint32_t frameIndex{};
 };

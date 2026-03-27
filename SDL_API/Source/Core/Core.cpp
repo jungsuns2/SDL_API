@@ -49,9 +49,27 @@ bool Core::Update(const float deltaTime)
 			return false;
 		}
 
-		const Camera* camera = mScene->GetCamera();
-
 		const EntityWorld* entityWorld = mScene->GetEntityWorld();
+
+		Transform* cameraTransform = nullptr;
+
+		// Camera를 업데이트한다.
+		{
+			for (const Entity* entity : entityWorld->GetAllEntites())
+			{
+				if (not entity->HasComponent<Camera>()
+					or not entity->GetComponent<Transform>())
+				{
+					continue;
+				}
+
+				cameraTransform = entity->GetComponent<Transform>();
+				break;
+			}
+
+			assert(cameraTransform != nullptr && "등록된 카메라가 없습니다.");
+		}
+
 		for (const Entity* entity : entityWorld->GetAllEntites())
 		{
 			if (not entity->HasComponent<Transform>()
@@ -71,13 +89,13 @@ bool Core::Update(const float deltaTime)
 
 			const SDL_FRect rect =
 			{
-				.x = transform->position.x - camera->position.x + centerOffset.x,
-				.y = transform->position.y - camera->position.y + centerOffset.y,
+				.x = transform->position.x - cameraTransform->position.x + centerOffset.x,
+				.y = transform->position.y - cameraTransform->position.y + centerOffset.y,
 				.w = material->texture->GetWidth() * transform->scale.width,
 				.h = material->texture->GetHeight() * transform->scale.height,
 			};
 
-			SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &rect, 0.0f, nullptr, SDL_FLIP_NONE);
+			SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &rect, transform->angle, nullptr, SDL_FLIP_NONE);
 		}
 
 		for (const Entity* entity : entityWorld->GetAllEntites())
@@ -91,29 +109,26 @@ bool Core::Update(const float deltaTime)
 			const Transform* transform = entity->GetComponent<Transform>();
 			Animator* animator = entity->GetComponent<Animator>();
 
-			Clip* clip = animator->clipState;
-			std::vector<Clip::Frame>& frames = clip->GetAllFrames();
-
-			uint32_t index = animator->frameIndex;
+			const Clip* clip = animator->clipState;
+			const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
+			const Clip::Frame& frame = frames[animator->frameIndex];
 			
 			animator->elapsedTime += deltaTime;
-
-			if (animator->elapsedTime >= frames[index].durationTime)
+			if (animator->elapsedTime >= frame.durationTime)
 			{
-				animator->elapsedTime = 0.0f;
-				++animator->frameIndex;
-
-				if (animator->frameIndex >= frames.size())
+				if (++animator->frameIndex >= frames.size())
 				{
-					if (clip->GetLoop())
+					if (clip->IsLoop())
 					{
 						animator->frameIndex = 0;
 					}
 					else
 					{
-						animator->frameIndex = frames.size() - 1;
+						animator->frameIndex = uint32_t(frames.size() - 1);
 					}
 				}
+
+				animator->elapsedTime = 0.0f;
 			}
 
 			const Point centerOffset =
@@ -124,13 +139,13 @@ bool Core::Update(const float deltaTime)
 
 			const SDL_FRect rect =
 			{
-				.x = transform->position.x - camera->position.x + centerOffset.x,
-				.y = transform->position.y - camera->position.y + centerOffset.y,
-				.w = frames[index].texture->GetWidth() * transform->scale.width,
-				.h = frames[index].texture->GetHeight() * transform->scale.height,
+				.x = centerOffset.x + transform->position.x - cameraTransform->position.x,
+				.y = centerOffset.y + transform->position.y - cameraTransform->position.y,
+				.w = frame.texture->GetWidth() * transform->scale.width,
+				.h = frame.texture->GetHeight() * transform->scale.height,
 			};
 
-			SDL_RenderCopyExF(mRenderer, frames[index].texture->GetTexture(), nullptr, &rect, 0.0f, nullptr, SDL_FLIP_NONE);
+			SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, nullptr, SDL_FLIP_NONE);
 		}
 
 		for (const Entity* entity : entityWorld->GetAllEntites())
@@ -155,7 +170,7 @@ bool Core::Update(const float deltaTime)
 			SDL_RenderCopyF(mRenderer, label->texture, nullptr, &rect);
 		}
 
-		SDL_RenderPresent(mRenderer);	// 화면에 출력한다.
+		SDL_RenderPresent(mRenderer); // 화면에 출력한다.
 	}
 
 	return true;
