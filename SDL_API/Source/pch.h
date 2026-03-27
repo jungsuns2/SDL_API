@@ -14,6 +14,34 @@ struct Point
 {
 	float x;
 	float y;
+
+	Point operator+(const Point& other)
+	{
+		return { .x = x + other.x, .y = y + other.y };
+	}
+
+	Point operator-(const Point& other)
+	{
+		return { .x = x - other.x, .y = y - other.y };
+	}
+
+	Point operator*(const Point& other)
+	{
+		return { .x = x * other.x, .y = y * other.y };
+	}
+
+	Point operator*(const float other)
+	{
+		return { .x = x * other, .y = y * other };
+	}
+
+	Point operator+=(const Point& other)
+	{
+		x += other.x;
+		y += other.y;
+
+		return *this;
+	}
 };
 
 struct Scale
@@ -32,25 +60,8 @@ struct Color
 
 namespace Math
 {
-	[[nodiscard]] inline Point AddVector(const Point lhs, const Point rhs);
-	[[nodiscard]] inline Point SubtractVector(const Point lhs, const Point rhs);
-	[[nodiscard]] inline Point ScaleVector(const Point lhs, const float rhs);
 	[[nodiscard]] inline float GetVectorLength(const Point vector);
-
-	Point AddVector(const Point lhs, const Point rhs)
-	{
-		return { .x = lhs.x + rhs.x, .y = lhs.y + rhs.y };
-	}
-
-	Point SubtractVector(const Point lhs, const Point rhs)
-	{
-		return { .x = lhs.x - rhs.x, .y = lhs.y - rhs.y };
-	}
-
-	Point ScaleVector(const Point lhs, const float rhs)
-	{
-		return { .x = lhs.x * rhs, .y = lhs.y * rhs };
-	}
+	[[nodiscard]] inline Point Sqrt(const Point lhs, const Point rhs);
 
 	float GetVectorLength(const Point vector)
 	{

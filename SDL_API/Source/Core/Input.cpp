@@ -39,12 +39,12 @@ bool Input::GetMouseButtonUp(const Uint8 virtualMouse) const
 	return not mMousePressed[index] and mPreMousePressed[index];
 }
 
-SDL_FPoint Input::GetMousePosition() const
+Point Input::GetMousePosition() const
 {
 	return MousePosition;
 }
 
-void Input::SetMousePosition(SDL_FPoint mousePosition)
+void Input::SetMousePosition(Point mousePosition)
 {
 	MousePosition = mousePosition;
 }

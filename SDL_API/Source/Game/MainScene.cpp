@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Core/Entity/EntityWorld.h"
 
+#include "Core/Constant.h"
 #include "Core/Helper.h"
 #include "Core/Input.h"
 
@@ -34,6 +35,20 @@ void MainScene::Initialize()
 				frame.durationTime = 0.12f;
 
 				mPlayerClips[uint32_t(Player::State::Run)].AddClip(frame);
+			}
+		}
+
+		// Sword
+		{
+			for (uint32_t i = 0; i < Sword::COUNT; ++i)
+			{
+				mSwordTextures[i].Initialize(GetHelper(), "Resource/Sword/" + std::to_string(i) + ".png");
+
+				Clip::Frame frame;
+				frame.texture = &mSwordTextures[i];
+				frame.durationTime = 0.12f;
+
+				mSwordClip.AddClip(frame);
 			}
 		}
 
@@ -114,6 +129,24 @@ void MainScene::Initialize()
 		GetEntityWorld()->AddEntity(&mPlayerEntity);
 	}
 
+	// Sword
+	{
+		mSword.offset = { .x = 100.0f, .y = -50.0f };
+
+		Transform transform{};
+		transform.scale = { .width = 4.0f, .height = 4.0f };
+		transform.angle = 90.0f;
+		mSwordEntity.AddComponent(transform);
+		
+		mSwordClip.SetLoop(true);
+
+		Animator animator;
+		animator.clipState = &mSwordClip;
+		mSwordEntity.AddComponent(animator);
+
+		GetEntityWorld()->AddEntity(&mSwordEntity);
+	}
+
 	// Monster
 	{
 		Transform transform;
@@ -153,7 +186,17 @@ bool MainScene::Update(const float deltaTime)
 		Transform* target = mPlayerEntity.GetComponent<Transform>();
 		Point offset = { .x = 30.0f, .y = 10.0f };
 
-		transform->position = Math::AddVector(target->position, offset);
+		transform->position = target->position + offset;
+	}
+
+	// Sword
+	{
+		Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
+		Transform* swordTransform = mSwordEntity.GetComponent<Transform>();
+		const Point mousePosition = getWorldMousePosition();
+		swordTransform->flip = (mousePosition.x > playerTransform->position.x) ? SDL_FLIP_NONE : SDL_FLIP_VERTICAL;
+
+		swordTransform->position = playerTransform->position + mSword.offset;
 	}
 
 	// 몬스터를 업데이트한다.
@@ -161,10 +204,10 @@ bool MainScene::Update(const float deltaTime)
 		const Transform* monsterTransform = mMonsterEntity.GetComponent<Transform>();
 		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
 
-		const Point monsterPosition = monsterTransform->position;
-		const Point playerPosition = playerTransform->position;
+		Point monsterPosition = monsterTransform->position;
+		Point playerPosition = playerTransform->position;
 
-		Point distanceSqrt = Math::SubtractVector(playerPosition, monsterPosition);
+		Point distanceSqrt = playerPosition - monsterPosition;
 		const float length = Math::GetVectorLength(distanceSqrt);
 
 		constexpr float RUN_DISTANCE = 200.0f;
@@ -200,7 +243,7 @@ bool MainScene::Update(const float deltaTime)
 				break;
 
 			default:
-				assert(false && "지원하지 않는 애니메이션입니다.");
+				assert(false and "지원하지 않는 애니메이션입니다.");
 				break;
 		}
 	}
@@ -321,13 +364,14 @@ void MainScene::Move(const float deltaTime)
 	mPlayer.length = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
 	if (mPlayer.length > 0.0f)
 	{
-		const Point direction = { .x = velocity.x / mPlayer.length, .y = velocity.y / mPlayer.length };
+		mPlayer.direction = { .x = velocity.x / mPlayer.length, .y = velocity.y / mPlayer.length };
 
-		velocity = Math::ScaleVector(direction, MAX_SPEED);
+		velocity = mPlayer.direction * MAX_SPEED;
 	}
 
 	Transform* transform = mPlayerEntity.GetComponent<Transform>();
-	transform->position = Math::AddVector(transform->position, Math::ScaleVector(velocity, deltaTime));
+	transform->position = transform->position + velocity * deltaTime;
+	transform->flip = (mPlayer.direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 }
 
 void MainScene::SetClip()
@@ -348,4 +392,19 @@ void MainScene::SetClip()
 		assert(false);
 		break;
 	}
+}
+
+Point MainScene::getWorldMousePosition() const
+{
+	const Point centerOffset =
+	{
+		.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
+		.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
+	};
+
+	Point mousePosition = Input::Get().GetMousePosition();
+	mousePosition = mousePosition + mMainCamera.GetComponent<Transform>()->position;
+	mousePosition = mousePosition - centerOffset;
+
+	return mousePosition;
 }

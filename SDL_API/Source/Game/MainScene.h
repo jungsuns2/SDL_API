@@ -31,6 +31,8 @@ public:
 	void Move(const float deltaTime);
 	void SetClip();
 
+	Point getWorldMousePosition() const;
+
 private:
 	bool mIsUpdate = true;
 
@@ -40,16 +42,22 @@ private:
 	Entity mLabel{};
 	Entity mPlayerEntity{};
 	Entity mMonsterEntity{};
+	Entity mSwordEntity{};
 
 	Player mPlayer{};
 	Monster mMonster{};
+	Sword mSword{};
 
 	std::array<Clip, uint32_t(Player::State::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::State::Count)> mMonsterClips{};
-
+	Clip mSwordClip{};
+	
 	std::array<Texture, Player::IDLE_COUNT> mPlayerIdleTextures{};
 	std::array<Texture, Player::RUN_COUNT> mPlayerRunTextures{};
+
 	Texture mMonsterIdleTexture{};
 	std::array<Texture, Monster::RUN_COUNT> mMonsterRunTextures{};
 	std::array<Texture, Monster::ATTACK_COUNT> mMonsterAttackTextures{};
+
+	std::array<Texture, Sword::COUNT> mSwordTextures{};
 };

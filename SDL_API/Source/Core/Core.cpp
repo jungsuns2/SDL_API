@@ -52,8 +52,6 @@ bool Core::Update(const float deltaTime)
 		const EntityWorld* entityWorld = mScene->GetEntityWorld();
 
 		Transform* cameraTransform = nullptr;
-
-		// Camera를 업데이트한다.
 		{
 			for (const Entity* entity : entityWorld->GetAllEntites())
 			{
@@ -89,8 +87,8 @@ bool Core::Update(const float deltaTime)
 
 			const SDL_FRect rect =
 			{
-				.x = transform->position.x - cameraTransform->position.x + centerOffset.x,
-				.y = transform->position.y - cameraTransform->position.y + centerOffset.y,
+				.x = centerOffset.x + transform->position.x - cameraTransform->position.x,
+				.y = centerOffset.y + transform->position.y - cameraTransform->position.y,
 				.w = material->texture->GetWidth() * transform->scale.width,
 				.h = material->texture->GetHeight() * transform->scale.height,
 			};
@@ -145,7 +143,7 @@ bool Core::Update(const float deltaTime)
 				.h = frame.texture->GetHeight() * transform->scale.height,
 			};
 
-			SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, nullptr, SDL_FLIP_NONE);
+			SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, nullptr, transform->flip);
 		}
 
 		for (const Entity* entity : entityWorld->GetAllEntites())
