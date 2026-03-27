@@ -3,6 +3,7 @@
 
 #include "Core/Helper.h"
 #include "Core/Input.h"
+
 #include "MainScene.h"
 
 void MainScene::Initialize()
@@ -13,7 +14,7 @@ void MainScene::Initialize()
 
 		// Player
 		{
-			for (uint32_t i = 0; i < PLAYER_IDLE_COUNT; ++i)
+			for (uint32_t i = 0; i < Player::IDLE_COUNT; ++i)
 			{
 				mPlayerIdleTextures[i].Initialize(GetHelper(), "Resource/Char/Alice/Idle/" + std::to_string(i) + ".png");
 
@@ -21,10 +22,10 @@ void MainScene::Initialize()
 				frame.texture = &mPlayerIdleTextures[i];
 				frame.durationTime = 0.12f;
 
-				mPlayerClips[uint32_t(PlayerState::Idle)].AddClip(frame);
+				mPlayerClips[uint32_t(Player::State::Idle)].AddClip(frame);
 			}
 
-			for (uint32_t i = 0; i < PLAYER_RUN_COUNT; ++i)
+			for (uint32_t i = 0; i < Player::RUN_COUNT; ++i)
 			{
 				mPlayerRunTextures[i].Initialize(GetHelper(), "Resource/Char/Alice/Run/" + std::to_string(i) + ".png");
 
@@ -32,7 +33,7 @@ void MainScene::Initialize()
 				frame.texture = &mPlayerRunTextures[i];
 				frame.durationTime = 0.12f;
 
-				mPlayerClips[uint32_t(PlayerState::Run)].AddClip(frame);
+				mPlayerClips[uint32_t(Player::State::Run)].AddClip(frame);
 			}
 		}
 
@@ -45,10 +46,10 @@ void MainScene::Initialize()
 				frame.texture = &mMonsterIdleTexture;
 				frame.durationTime = 0.12f;
 
-				mMonsterClips[uint32_t(MonsterState::Idle)].AddClip(frame);
+				mMonsterClips[uint32_t(Monster::State::Idle)].AddClip(frame);
 			}
 
-			for (uint32_t i = 0; i < MONSTER_RUN_COUNT; ++i)
+			for (uint32_t i = 0; i < Monster::RUN_COUNT; ++i)
 			{
 				mMonsterRunTextures[i].Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Run/" + std::to_string(i) + ".png");
 
@@ -56,10 +57,10 @@ void MainScene::Initialize()
 				frame.texture = &mMonsterRunTextures[i];
 				frame.durationTime = 0.12f;
 
-				mMonsterClips[uint32_t(MonsterState::Run)].AddClip(frame);
+				mMonsterClips[uint32_t(Monster::State::Run)].AddClip(frame);
 			}
 
-			for (uint32_t i = 0; i < MONSTER_ATTACK_COUNT; ++i)
+			for (uint32_t i = 0; i < Monster::ATTACK_COUNT; ++i)
 			{
 				mMonsterAttackTextures[i].Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Attack/" + std::to_string(i) + ".png");
 
@@ -67,7 +68,7 @@ void MainScene::Initialize()
 				frame.texture = &mMonsterAttackTextures[i];
 				frame.durationTime = 0.12f;
 
-				mMonsterClips[uint32_t(MonsterState::Attack)].AddClip(frame);
+				mMonsterClips[uint32_t(Monster::State::Attack)].AddClip(frame);
 			}
 		}
 	}
@@ -101,16 +102,16 @@ void MainScene::Initialize()
 	{
 		Transform transform{};
 		transform.scale = { .width = 5.0f, .height = 5.0f };
-		mPlayer.AddComponent(transform);
+		mPlayerEntity.AddComponent(transform);
 
-		mPlayerClips[uint32_t(PlayerState::Idle)].SetLoop(true);
-		mPlayerClips[uint32_t(PlayerState::Run)].SetLoop(true);
+		mPlayerClips[uint32_t(Player::State::Idle)].SetLoop(true);
+		mPlayerClips[uint32_t(Player::State::Run)].SetLoop(true);
 
 		Animator animator{};
-		animator.clipState = &mPlayerClips[uint32_t(PlayerState::Idle)];
-		mPlayer.AddComponent(animator);
+		animator.clipState = &mPlayerClips[uint32_t(Player::State::Idle)];
+		mPlayerEntity.AddComponent(animator);
 
-		GetEntityWorld()->AddEntity(&mPlayer);
+		GetEntityWorld()->AddEntity(&mPlayerEntity);
 	}
 
 	// Monster
@@ -118,18 +119,18 @@ void MainScene::Initialize()
 		Transform transform;
 		transform.position = { .x = 0.0f, .y = -500.0f };
 		transform.scale = { .width = 3.0f, .height = 3.0f };
-		mMonster.AddComponent(transform);
+		mMonsterEntity.AddComponent(transform);
 
-		mMonsterClips[uint32_t(MonsterState::Idle)].SetLoop(true);
-		mMonsterClips[uint32_t(MonsterState::Run)].SetLoop(true);
-		mMonsterClips[uint32_t(MonsterState::Attack)].SetLoop(false);
+		mMonsterClips[uint32_t(Monster::State::Idle)].SetLoop(true);
+		mMonsterClips[uint32_t(Monster::State::Run)].SetLoop(true);
+		mMonsterClips[uint32_t(Monster::State::Attack)].SetLoop(true);
 
 		Animator animator;
-		animator.clipState = &mMonsterClips[uint32_t(MonsterState::Idle)];
+		animator.clipState = &mMonsterClips[uint32_t(Monster::State::Idle)];
 		animator.elapsedTime = 0.0f;
-		mMonster.AddComponent(animator);
+		mMonsterEntity.AddComponent(animator);
 
-		GetEntityWorld()->AddEntity(&mMonster);
+		GetEntityWorld()->AddEntity(&mMonsterEntity);
 	}
 }
 
@@ -149,7 +150,7 @@ bool MainScene::Update(const float deltaTime)
 	// 카메라를 업데이트한다.
 	{
 		Transform* transform = mMainCamera.GetComponent<Transform>();
-		Transform* target = mPlayer.GetComponent<Transform>();
+		Transform* target = mPlayerEntity.GetComponent<Transform>();
 		Point offset = { .x = 30.0f, .y = 10.0f };
 
 		transform->position = Math::AddVector(target->position, offset);
@@ -157,8 +158,8 @@ bool MainScene::Update(const float deltaTime)
 
 	// 몬스터를 업데이트한다.
 	{
-		const Transform* monsterTransform = mMonster.GetComponent<Transform>();
-		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+		const Transform* monsterTransform = mMonsterEntity.GetComponent<Transform>();
+		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
 
 		const Point monsterPosition = monsterTransform->position;
 		const Point playerPosition = playerTransform->position;
@@ -169,32 +170,33 @@ bool MainScene::Update(const float deltaTime)
 		constexpr float RUN_DISTANCE = 200.0f;
 		constexpr float ATTACK_DISTANCE = 90.0f;
 
+		Animator* animator = mMonsterEntity.GetComponent<Animator>();
+
 		if (length <= ATTACK_DISTANCE)
 		{
-			mMonsterState = MonsterState::Attack;
+			mMonster.state = Monster::State::Attack;
 		}
 		else if (length <= RUN_DISTANCE)
 		{
-			mMonsterState = MonsterState::Run;
+			mMonster.state = Monster::State::Run;
 		}
 		else
 		{
-			mMonsterState = MonsterState::Idle;
+			mMonster.state = Monster::State::Idle;
 		}
 
-		Animator* animator = mMonster.GetComponent<Animator>();
-		switch (mMonsterState)
+		switch (mMonster.state)
 		{
-			case MonsterState::Idle:
-				animator->SetClip(&mMonsterClips[uint32_t(MonsterState::Idle)]);
+			case Monster::State::Idle:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Idle)]);
 				break;
 
-			case MonsterState::Run:
-				animator->SetClip(&mMonsterClips[uint32_t(MonsterState::Run)]);
+			case Monster::State::Run:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Run)]);
 				break;
 
-			case MonsterState::Attack:
-				animator->SetClip(&mMonsterClips[uint32_t(MonsterState::Attack)]);
+			case Monster::State::Attack:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Attack)]);
 				break;
 
 			default:
@@ -267,7 +269,7 @@ void MainScene::Input()
 
 void MainScene::State()
 {
-	mPlayerState = (mPlayerLength != 0.0f) ? PlayerState::Run : PlayerState::Idle;
+	mPlayer.state = (mPlayer.length != 0.0f) ? Player::State::Run : Player::State::Idle;
 }
 
 void MainScene::Move(const float deltaTime)
@@ -316,36 +318,34 @@ void MainScene::Move(const float deltaTime)
 		}
 	}
 
-	mPlayerLength = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-	if (mPlayerLength > 0.0f)
+	mPlayer.length = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+	if (mPlayer.length > 0.0f)
 	{
-		const Point direction = { .x = velocity.x / mPlayerLength, .y = velocity.y / mPlayerLength };
+		const Point direction = { .x = velocity.x / mPlayer.length, .y = velocity.y / mPlayer.length };
 
 		velocity = Math::ScaleVector(direction, MAX_SPEED);
 	}
 
-	Transform* transform = mPlayer.GetComponent<Transform>();
+	Transform* transform = mPlayerEntity.GetComponent<Transform>();
 	transform->position = Math::AddVector(transform->position, Math::ScaleVector(velocity, deltaTime));
 }
 
 void MainScene::SetClip()
 {
-	Animator* animator = mPlayer.GetComponent<Animator>();
-
-	switch (mPlayerState)
+	Animator* animator = mPlayerEntity.GetComponent<Animator>();
+	
+	switch (mPlayer.state)
 	{
-	case PlayerState::Idle:
-		animator->SetClip(&mPlayerClips[uint32_t(PlayerState::Idle)]);
+	case Player::State::Idle:
+		animator->SetClip(&mPlayerClips[uint32_t(Player::State::Idle)]);
 		break;
 
-	case PlayerState::Run:
-		animator->SetClip(&mPlayerClips[uint32_t(PlayerState::Run)]);
-		break;
-
-	case PlayerState::Count:
+	case Player::State::Run:
+		animator->SetClip(&mPlayerClips[uint32_t(Player::State::Run)]);
 		break;
 
 	default:
+		assert(false);
 		break;
 	}
 }

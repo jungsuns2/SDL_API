@@ -8,20 +8,7 @@
 #include "Core/Scene.h"
 #include "Core/Texture.h"
 
-enum class PlayerState
-{
-	Idle,
-	Run,
-	Count
-};
-
-enum class MonsterState
-{
-	Idle,
-	Run,
-	Attack,
-	Count
-};
+#include "GameComponentTypes.h"
 
 class EntityWorld;
 
@@ -51,26 +38,18 @@ private:
 
 	Entity mMainCamera{};
 	Entity mLabel{};
-	Entity mPlayer{};
-	Entity mMonster{};
+	Entity mPlayerEntity{};
+	Entity mMonsterEntity{};
 
-	float mPlayerLength{};
-	PlayerState mPlayerState{};
-	std::array<Clip, uint32_t(PlayerState::Count)> mPlayerClips{};
+	Player mPlayer{};
+	Monster mMonster{};
 
-	MonsterState mMonsterState{};
-	std::array<Clip, uint32_t(MonsterState::Count)> mMonsterClips{};
+	std::array<Clip, uint32_t(Player::State::Count)> mPlayerClips{};
+	std::array<Clip, uint32_t(Monster::State::Count)> mMonsterClips{};
 
-	static constexpr uint32_t PLAYER_IDLE_COUNT = 5;
-	static constexpr uint32_t PLAYER_RUN_COUNT = 6;
-
-	static constexpr uint32_t MONSTER_RUN_COUNT = 8;
-	static constexpr uint32_t MONSTER_ATTACK_COUNT = 7;
-
-	std::array<Texture, PLAYER_IDLE_COUNT> mPlayerIdleTextures{};
-	std::array<Texture, PLAYER_RUN_COUNT> mPlayerRunTextures{};
-
+	std::array<Texture, Player::IDLE_COUNT> mPlayerIdleTextures{};
+	std::array<Texture, Player::RUN_COUNT> mPlayerRunTextures{};
 	Texture mMonsterIdleTexture{};
-	std::array<Texture, MONSTER_RUN_COUNT> mMonsterRunTextures{};
-	std::array<Texture, MONSTER_ATTACK_COUNT> mMonsterAttackTextures{};
+	std::array<Texture, Monster::RUN_COUNT> mMonsterRunTextures{};
+	std::array<Texture, Monster::ATTACK_COUNT> mMonsterAttackTextures{};
 };
