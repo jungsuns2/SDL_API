@@ -76,8 +76,11 @@ bool Core::Update(const float deltaTime)
 				continue;
 			}
 
-			const Transform* transform = entity->GetComponent<Transform>();
 			const Material* material = entity->GetComponent<Material>();
+			if (not material->active)
+			{
+				continue;
+			}
 
 			const Point centerOffset =
 			{
@@ -85,6 +88,7 @@ bool Core::Update(const float deltaTime)
 				.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
 			};
 
+			const Transform* transform = entity->GetComponent<Transform>();
 			const SDL_FRect rect =
 			{
 				.x = centerOffset.x + transform->position.x - cameraTransform->position.x,
@@ -104,8 +108,11 @@ bool Core::Update(const float deltaTime)
 				continue;
 			}
 
-			const Transform* transform = entity->GetComponent<Transform>();
 			Animator* animator = entity->GetComponent<Animator>();
+			if (not animator->active)
+			{
+				continue;
+			}
 
 			const Clip* clip = animator->clipState;
 			const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
@@ -135,6 +142,7 @@ bool Core::Update(const float deltaTime)
 				.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
 			};
 
+			const Transform* transform = entity->GetComponent<Transform>();
 			const SDL_FRect rect =
 			{
 				.x = centerOffset.x + transform->position.x - cameraTransform->position.x,
@@ -154,10 +162,14 @@ bool Core::Update(const float deltaTime)
 				continue;
 			}
 
-			Transform* transform = entity->GetComponent<Transform>();
-			Label* label = entity->GetComponent<Label>();
+			const Label* label = entity->GetComponent<Label>();
+			if (not label->active)
+			{
+				continue;
+			}
 
-			SDL_FRect rect =
+			const Transform* transform = entity->GetComponent<Transform>();
+			const SDL_FRect rect =
 			{
 				.x = transform->position.x,
 				.y = transform->position.y,

@@ -24,6 +24,7 @@ struct Material final : public Component
 	Material() : Component(&_ID) {}
 
 	Texture* texture = nullptr;
+	bool active = false;
 };
 
 struct Label final : public Component
@@ -77,6 +78,8 @@ struct Label final : public Component
 
 	float width = 0.0f;
 	float height = 0.0f;
+
+	bool active = false;
 };
 
 struct Camera final : public Component
@@ -107,4 +110,5 @@ struct Animator final : public Component
 	Clip* clipState = nullptr;
 	float elapsedTime{}; // »Â∏• Ω√∞£
 	uint32_t frameIndex{};
+	bool active = false;
 };

@@ -107,6 +107,7 @@ void MainScene::Initialize()
 
 		Label label;
 		label.font = &mFont;
+		label.active = true;
 		label.SetText(GetHelper(), "UI Label");
 		mLabel.AddComponent(label);
 
@@ -124,6 +125,7 @@ void MainScene::Initialize()
 
 		Animator animator{};
 		animator.clipState = &mPlayerClips[uint32_t(Player::State::Idle)];
+		animator.active = true;
 		mPlayerEntity.AddComponent(animator);
 
 		GetEntityWorld()->AddEntity(&mPlayerEntity);
@@ -140,8 +142,9 @@ void MainScene::Initialize()
 		
 		mSwordClip.SetLoop(true);
 
-		Animator animator;
+		Animator animator{};
 		animator.clipState = &mSwordClip;
+		animator.active = true;
 		mSwordEntity.AddComponent(animator);
 
 		GetEntityWorld()->AddEntity(&mSwordEntity);
@@ -149,7 +152,7 @@ void MainScene::Initialize()
 
 	// Monster
 	{
-		Transform transform;
+		Transform transform{};
 		transform.position = { .x = 0.0f, .y = -500.0f };
 		transform.scale = { .width = 3.0f, .height = 3.0f };
 		mMonsterEntity.AddComponent(transform);
@@ -158,9 +161,9 @@ void MainScene::Initialize()
 		mMonsterClips[uint32_t(Monster::State::Run)].SetLoop(true);
 		mMonsterClips[uint32_t(Monster::State::Attack)].SetLoop(true);
 
-		Animator animator;
+		Animator animator{};
 		animator.clipState = &mMonsterClips[uint32_t(Monster::State::Idle)];
-		animator.elapsedTime = 0.0f;
+		animator.active = true;
 		mMonsterEntity.AddComponent(animator);
 
 		GetEntityWorld()->AddEntity(&mMonsterEntity);
