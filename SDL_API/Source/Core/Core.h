@@ -17,6 +17,11 @@ public:
 	bool Update(const float deltaTime);
 	void Finalize();
 
+	void materialSystem(const Entity* entity, const Point cameraPosition);
+	void animatorSystem(const Entity* entity, const Point cameraPosition, const float deltaTime);
+
+	[[nodiscard]] Point getCenterOffset() const;
+
 public:
 	[[nodiscard]] SDL_Window* GetWindow() const;
 

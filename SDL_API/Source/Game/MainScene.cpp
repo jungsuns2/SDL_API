@@ -199,6 +199,16 @@ bool MainScene::Update(const float deltaTime)
 		const Point mousePosition = getWorldMousePosition();
 		swordTransform->flip = (mousePosition.x > playerTransform->position.x) ? SDL_FLIP_NONE : SDL_FLIP_VERTICAL;
 
+		float radius = 90.0f;
+		float speed = 300.0f; 
+		static float angle{};
+
+		if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
+		{
+			angle += speed * deltaTime;
+			swordTransform->angle = cos(angle) * radius;
+		}
+
 		swordTransform->position = playerTransform->position + mSword.offset;
 	}
 
@@ -285,6 +295,11 @@ void MainScene::Finalize()
 			texture.Finalize();
 		}
 	}
+
+	for (Texture& texture : mSwordTextures)
+	{
+		texture.Finalize();
+	}
 }
 
 void MainScene::Input()
@@ -294,9 +309,6 @@ void MainScene::Input()
 		mIsUpdate = false;
 	}
 
-	if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
-	{
-	}
 	if (Input::Get().GetMouseButtonDown(SDL_BUTTON_RIGHT))
 	{
 	}

@@ -20,6 +20,11 @@ struct Point
 		return { .x = x + other.x, .y = y + other.y };
 	}
 
+	Point operator+(const float other)
+	{
+		return { .x = x + other, .y = y + other };
+	}
+
 	Point operator-(const Point& other)
 	{
 		return { .x = x - other.x, .y = y - other.y };
