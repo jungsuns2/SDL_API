@@ -117,7 +117,7 @@ void MainScene::Initialize()
 	// Player
 	{
 		Transform transform{};
-		transform.scale = { .width = 5.0f, .height = 5.0f };
+		transform.scale = { .width = 4.0f, .height = 4.0f };
 		mPlayerEntity.AddComponent(transform);
 
 		mPlayerClips[uint32_t(Player::State::Idle)].SetLoop(true);
@@ -133,11 +133,17 @@ void MainScene::Initialize()
 
 	// Sword
 	{
-		mSword.offset = { .x = 100.0f, .y = -50.0f };
+		mSword.offset = { .x = 25.0f, .y = -100.0f };
+		mSword.swingTime = 0.25f;
+		mSword.coolTime = 0.8f;
 
 		Transform transform{};
-		transform.scale = { .width = 4.0f, .height = 4.0f };
-		transform.angle = 90.0f;
+		transform.scale = { .width = 3.0f, .height = 3.0f };
+		transform.center = 
+		{ 
+			.x = float(mSwordTextures[0].GetWidth()) * 0.5f * transform.scale.width, 
+			.y = float(mSwordTextures[0].GetHeight()) * transform.scale.height 
+		};
 		mSwordEntity.AddComponent(transform);
 		
 		mSwordClip.SetLoop(true);
@@ -187,29 +193,45 @@ bool MainScene::Update(const float deltaTime)
 	{
 		Transform* transform = mMainCamera.GetComponent<Transform>();
 		Transform* target = mPlayerEntity.GetComponent<Transform>();
-		Point offset = { .x = 30.0f, .y = 10.0f };
+		constexpr Point OFFSET = { .x = 30.0f, .y = 10.0f };
 
-		transform->position = target->position + offset;
+		transform->position = target->position + OFFSET;
 	}
 
 	// Sword
 	{
 		Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
 		Transform* swordTransform = mSwordEntity.GetComponent<Transform>();
-		const Point mousePosition = getWorldMousePosition();
-		swordTransform->flip = (mousePosition.x > playerTransform->position.x) ? SDL_FLIP_NONE : SDL_FLIP_VERTICAL;
-
-		float radius = 90.0f;
-		float speed = 300.0f; 
-		static float angle{};
-
-		if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
-		{
-			angle += speed * deltaTime;
-			swordTransform->angle = cos(angle) * radius;
-		}
-
+		
 		swordTransform->position = playerTransform->position + mSword.offset;
+
+		bool isRight = getWorldMousePosition().x > playerTransform->position.x;
+		mSword.dir = (isRight) ? 1.0f : -1.0f;
+
+		mSword.coolTimer += deltaTime;
+		if (not mSword.isSwinging)
+		{
+			swordTransform->angle = mSword.dir * mSword.INIT_ANGLE;
+
+			if (mSword.coolTimer >= mSword.coolTime)
+			{
+				mSword.isSwinging = true;
+				mSword.coolTimer = 0.0f;
+			}
+		}
+		else
+		{
+			float t = mSword.coolTimer / mSword.swingTime;
+
+			if (t >= 1.0f)
+			{
+				t = 1.0f;
+				mSword.isSwinging = false;
+				mSword.coolTimer = 0.0f;
+			}
+
+			swordTransform->angle = mSword.dir * mSword.MAX_ANGLE * t;
+		}
 	}
 
 	// 몬스터를 업데이트한다.

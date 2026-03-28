@@ -163,7 +163,7 @@ void Core::materialSystem(const Entity* entity, const Point cameraPosition)
 		.h = material->texture->GetHeight() * transform->scale.height,
 	};
 
-	SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &rect, transform->angle, nullptr, SDL_FLIP_NONE);
+	SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &rect, transform->angle, &transform->center, SDL_FLIP_NONE);
 
 }
 
@@ -203,7 +203,10 @@ void Core::animatorSystem(const Entity* entity, const Point cameraPosition, cons
 		.h = frame.texture->GetHeight() * transform->scale.height,
 	};
 
-	SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, nullptr, transform->flip);
+	// TODO: center = 이미지 사이즈의 절반, 정규화로 바꾸자
+	SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, &transform->center, transform->flip);
+
+	printf("%f, %f \n", transform->center.x, transform->center.y);
 }
 
 Point Core::getCenterOffset() const
