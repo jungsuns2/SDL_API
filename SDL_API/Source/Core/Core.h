@@ -18,7 +18,7 @@ public:
 	void Finalize();
 
 	void materialSystem(const Entity* entity, const Point cameraPosition);
-	void animatorSystem(const Entity* entity, const Point cameraPosition, const float deltaTime);
+	void animatorSystem(const EntityWorld* entityWorld, const Point cameraOffset, const float deltaTime);
 
 	[[nodiscard]] Point getCenterOffset() const;
 
@@ -31,5 +31,4 @@ private:
 
 	Helper mHelper{};
 	Scene* mScene = nullptr;
-	EntityWorld* mEntityWorld = nullptr;
 };

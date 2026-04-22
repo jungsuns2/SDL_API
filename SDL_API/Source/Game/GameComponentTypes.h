@@ -36,6 +36,9 @@ struct Monster : public GameComponent
 	static constexpr uint32_t RUN_COUNT = 8;
 	static constexpr uint32_t ATTACK_COUNT = 7;
 	State state{};
+	Point direction{};
+	Point difference{};
+	float length{};
 };
 
 struct Sword : public GameComponent
@@ -49,7 +52,7 @@ struct Sword : public GameComponent
 	static constexpr float MAX_ANGLE = 180.0f;	
 
 	Point offset{};
-	float dir{};
+	float directionX{};
 
 	float coolTimer{};
 	bool isSwinging = false;

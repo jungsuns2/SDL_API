@@ -39,14 +39,6 @@ struct Point
 	{
 		return { .x = x * other, .y = y * other };
 	}
-
-	Point operator+=(const Point other)
-	{
-		x += other.x;
-		y += other.y;
-
-		return *this;
-	}
 };
 
 struct Scale

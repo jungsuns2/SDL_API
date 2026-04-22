@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Core.h"
 
 #include "Entity/Entity.h"
 #include "Entity/EntityWorld.h"
@@ -6,7 +7,7 @@
 #include "Clip.h"
 #include "ComponentTypes.h"
 #include "Constant.h"
-#include "Core.h"
+#include "Texture.h"
 
 void Core::Initialize(Scene* scene)
 {
@@ -68,6 +69,12 @@ bool Core::Update(const float deltaTime)
 			assert(cameraTransform != nullptr && "등록된 카메라가 없습니다.");
 		}
 
+		const Point cameraOffset =
+		{
+			.x = getCenterOffset().x - cameraTransform->position.x,
+			.y = getCenterOffset().y - cameraTransform->position.y,
+		};
+
 		// Material
 		for (const Entity* entity : entityWorld->GetAllEntites())
 		{
@@ -86,23 +93,7 @@ bool Core::Update(const float deltaTime)
 			materialSystem(entity, cameraTransform->position);
 		}
 
-		// Animator
-		for (const Entity* entity : entityWorld->GetAllEntites())
-		{
-			if (not entity->HasComponent<Transform>()
-				or not entity->HasComponent<Animator>())
-			{
-				continue;
-			}
-
-			Animator* animator = entity->GetComponent<Animator>();
-			if (not animator->active)
-			{
-				continue;
-			}
-
-			animatorSystem(entity, cameraTransform->position, deltaTime);
-		}
+		animatorSystem(entityWorld, cameraOffset, deltaTime);
 
 		// Label
 		for (const Entity* entity : entityWorld->GetAllEntites())
@@ -167,46 +158,72 @@ void Core::materialSystem(const Entity* entity, const Point cameraPosition)
 
 }
 
-void Core::animatorSystem(const Entity* entity, const Point cameraPosition, const float deltaTime)
+void Core::animatorSystem(const EntityWorld* entityWorld, const Point cameraOffset, const float deltaTime)
 {
-	assert(entity != nullptr);
+	assert(entityWorld != nullptr);
 
-	Animator* animator = entity->GetComponent<Animator>();
-	const Clip* clip = animator->clipState;
-	const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
-	const Clip::Frame& frame = frames[animator->frameIndex];
-
-	animator->elapsedTime += deltaTime;
-	if (animator->elapsedTime >= frame.durationTime)
+	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
-		if (++animator->frameIndex >= frames.size())
+		if (not entity->HasComponent<Transform>()
+			or not entity->HasComponent<Animator>())
 		{
-			if (clip->IsLoop())
-			{
-				animator->frameIndex = 0;
-			}
-			else
-			{
-				animator->frameIndex = uint32_t(frames.size() - 1);
-			}
+			continue;
 		}
 
-		animator->elapsedTime = 0.0f;
+		Animator* animator = entity->GetComponent<Animator>();
+		if (not animator->active)
+		{
+			continue;
+		}
+
+		const Clip* clip = animator->clipState;
+		const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
+		const Clip::Frame& frame = frames[animator->frameIndex];
+
+		animator->elapsedTime += deltaTime;
+		if (animator->elapsedTime >= frame.durationTime)
+		{
+			if (++animator->frameIndex >= frames.size())
+			{
+				if (clip->IsLoop())
+				{
+					animator->frameIndex = 0;
+				}
+				else
+				{
+					animator->frameIndex = uint32_t(frames.size() - 1);
+				}
+			}
+
+			animator->elapsedTime = 0.0f;
+		}
+
+		const Transform* transform = entity->GetComponent<Transform>();
+
+		Scale textureSize =
+		{
+			.width = frame.texture->GetWidth() * transform->scale.width,
+			.height = frame.texture->GetHeight() * transform->scale.height
+		};
+
+		Point offset =
+		{
+			.x = (transform->center.x + 0.5f) * textureSize.width,
+			.y = (transform->center.y + 0.5f) * textureSize.height
+		};
+
+		const SDL_FRect rect =
+		{
+			.x = cameraOffset.x + transform->position.x - offset.x,
+			.y = cameraOffset.y + transform->position.y - offset.y,
+			.w = textureSize.width,
+			.h = textureSize.height,
+		};
+
+		const SDL_FPoint angleCenter = { .x = offset.x, .y = offset.y };
+
+		SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
 	}
-
-	const Transform* transform = entity->GetComponent<Transform>();
-	const SDL_FRect rect =
-	{
-		.x = getCenterOffset().x + transform->position.x - cameraPosition.x,
-		.y = getCenterOffset().y + transform->position.y - cameraPosition.y,
-		.w = frame.texture->GetWidth() * transform->scale.width,
-		.h = frame.texture->GetHeight() * transform->scale.height,
-	};
-
-	// TODO: center = 이미지 사이즈의 절반, 정규화로 바꾸자
-	SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, &transform->center, transform->flip);
-
-	printf("%f, %f \n", transform->center.x, transform->center.y);
 }
 
 Point Core::getCenterOffset() const

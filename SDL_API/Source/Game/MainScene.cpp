@@ -139,11 +139,7 @@ void MainScene::Initialize()
 
 		Transform transform{};
 		transform.scale = { .width = 3.0f, .height = 3.0f };
-		transform.center = 
-		{ 
-			.x = float(mSwordTextures[0].GetWidth()) * 0.5f * transform.scale.width, 
-			.y = float(mSwordTextures[0].GetHeight()) * transform.scale.height 
-		};
+		transform.center = { .x = 0.0f,.y = 0.5f };
 		mSwordEntity.AddComponent(transform);
 		
 		mSwordClip.SetLoop(true);
@@ -160,7 +156,7 @@ void MainScene::Initialize()
 	{
 		Transform transform{};
 		transform.position = { .x = 0.0f, .y = -500.0f };
-		transform.scale = { .width = 3.0f, .height = 3.0f };
+		transform.scale = { .width = 4.0f, .height = 4.0f };
 		mMonsterEntity.AddComponent(transform);
 
 		mMonsterClips[uint32_t(Monster::State::Idle)].SetLoop(true);
@@ -193,25 +189,23 @@ bool MainScene::Update(const float deltaTime)
 	{
 		Transform* transform = mMainCamera.GetComponent<Transform>();
 		Transform* target = mPlayerEntity.GetComponent<Transform>();
-		constexpr Point OFFSET = { .x = 30.0f, .y = 10.0f };
-
-		transform->position = target->position + OFFSET;
+		transform->position = target->position;
 	}
 
 	// Sword
 	{
-		Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
+		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
 		Transform* swordTransform = mSwordEntity.GetComponent<Transform>();
 		
 		swordTransform->position = playerTransform->position + mSword.offset;
 
 		bool isRight = getWorldMousePosition().x > playerTransform->position.x;
-		mSword.dir = (isRight) ? 1.0f : -1.0f;
+		mSword.directionX = (isRight) ? 1.0f : -1.0f;
 
 		mSword.coolTimer += deltaTime;
 		if (not mSword.isSwinging)
 		{
-			swordTransform->angle = mSword.dir * mSword.INIT_ANGLE;
+			swordTransform->angle = mSword.directionX * mSword.INIT_ANGLE;
 
 			if (mSword.coolTimer >= mSword.coolTime)
 			{
@@ -230,41 +224,72 @@ bool MainScene::Update(const float deltaTime)
 				mSword.coolTimer = 0.0f;
 			}
 
-			swordTransform->angle = mSword.dir * mSword.MAX_ANGLE * t;
+			swordTransform->angle = mSword.directionX * mSword.MAX_ANGLE * t;
 		}
 	}
 
 	// 몬스터를 업데이트한다.
 	{
-		const Transform* monsterTransform = mMonsterEntity.GetComponent<Transform>();
-		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
-
-		Point monsterPosition = monsterTransform->position;
-		Point playerPosition = playerTransform->position;
-
-		Point distanceSqrt = playerPosition - monsterPosition;
-		const float length = Math::GetVectorLength(distanceSqrt);
-
-		constexpr float RUN_DISTANCE = 200.0f;
-		constexpr float ATTACK_DISTANCE = 90.0f;
-
-		Animator* animator = mMonsterEntity.GetComponent<Animator>();
-
-		if (length <= ATTACK_DISTANCE)
+		// State
 		{
-			mMonster.state = Monster::State::Attack;
+			const Transform* monsterTransform = mMonsterEntity.GetComponent<Transform>();
+			const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
+
+			const Point monsterPosition = monsterTransform->position;
+			const Point playerPosition = playerTransform->position;
+
+			mMonster.difference = playerPosition - monsterPosition;
+			mMonster.length = Math::GetVectorLength(mMonster.difference);
+
+			constexpr float RUN_DISTANCE = 400.0f;
+			constexpr float ATTACK_DISTANCE = 90.0f;
+
+			if (mMonster.length <= ATTACK_DISTANCE)
+			{
+				mMonster.state = Monster::State::Attack;
+			}
+			else if (mMonster.length <= RUN_DISTANCE)
+			{
+				mMonster.state = Monster::State::Run;
+			}
+			else
+			{
+				mMonster.state = Monster::State::Idle;
+			}
 		}
-		else if (length <= RUN_DISTANCE)
+
+		// Move
 		{
-			mMonster.state = Monster::State::Run;
-		}
-		else
-		{
-			mMonster.state = Monster::State::Idle;
+			Transform* transfrom = mMonsterEntity.GetComponent<Transform>();
+			Point position = transfrom->position;
+
+			constexpr float MAX_SPEED = 300.0f;
+			Point velocity = {};
+
+			if (mMonster.state == Monster::State::Run)
+			{
+				if (mMonster.length > 0.0f)
+				{
+					mMonster.direction = 
+					{ 
+						.x = mMonster.difference.x / mMonster.length, 
+						.y = mMonster.difference.y / mMonster.length 
+					};
+
+					velocity = mMonster.direction * MAX_SPEED;
+				}
+			}
+
+			transfrom->position = transfrom->position + velocity * deltaTime;
+			transfrom->flip = (mMonster.direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 		}
 
-		switch (mMonster.state)
+		// Set Clip
 		{
+			Animator* animator = mMonsterEntity.GetComponent<Animator>();
+
+			switch (mMonster.state)
+			{
 			case Monster::State::Idle:
 				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Idle)]);
 				break;
@@ -280,6 +305,7 @@ bool MainScene::Update(const float deltaTime)
 			default:
 				assert(false and "지원하지 않는 애니메이션입니다.");
 				break;
+			}
 		}
 	}
 

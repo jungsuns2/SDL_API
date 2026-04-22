@@ -2,10 +2,11 @@
 #include "Entity/Component.h"
 #include "Entity/Entity.h"
 
-#include "Clip.h"
 #include "Font.h"
 #include "Helper.h"
-#include "Texture.h"
+
+class Clip;
+class Texture;
 
 struct Transform final : public Component
 {
