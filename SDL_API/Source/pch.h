@@ -65,3 +65,13 @@ namespace Math
 		return length;
 	}
 }
+
+[[nodiscard]] inline Point operator+(const Point& p, const Scale& s)
+{
+	return { p.x + s.width, p.y + s.height };
+}
+
+[[nodiscard]] inline Point operator-(const Point& p, const Scale& s)
+{
+	return { p.x - s.width, p.y - s.height };
+}

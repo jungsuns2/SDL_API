@@ -154,7 +154,7 @@ void Core::materialSystem(const Entity* entity, const Point cameraPosition)
 		.h = material->texture->GetHeight() * transform->scale.height,
 	};
 
-	SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &rect, transform->angle, &transform->center, SDL_FLIP_NONE);
+	SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &rect, transform->angle, &transform->center, transform->flip);
 
 }
 

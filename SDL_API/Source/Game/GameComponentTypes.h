@@ -48,8 +48,7 @@ struct Sword : public GameComponent
 
 	static constexpr uint32_t COUNT = 12;
 
-	static constexpr float INIT_ANGLE = 90.0f;
-	static constexpr float MAX_ANGLE = 180.0f;	
+	static constexpr float ANGLE = 60.0f;
 
 	Point offset{};
 	float directionX{};
@@ -60,13 +59,42 @@ struct Sword : public GameComponent
 	float coolTime{};
 };
 
+struct Gun : public GameComponent
+{
+	static constexpr uint32_t _ID = 0;
+	Gun() : GameComponent(&_ID) {}
+
+	Point offset{};
+	float directionX{};
+};
+
 struct Effect : public GameComponent
 {
 	static constexpr uint32_t _ID = 0;
 	Effect() : GameComponent(&_ID) {}
 
 	static constexpr uint32_t COUNT = 5;
+	static constexpr uint32_t BULLET_COUNT = 8;
 
 	Point offset{};
-	float dir{};
+	float directionX{};
+};
+
+struct Bullet : public GameComponent
+{
+	static constexpr uint32_t _ID = 0;
+	Bullet() : GameComponent(&_ID) {}
+
+	static constexpr uint32_t COUNT = 8;
+	static constexpr float LENGTH = 300.0f;
+	static constexpr float COOLTIMER = 1.0f;
+	static constexpr float SPEED = 1300.0f;
+
+	Point offset{};
+	Point direction{};
+
+	bool isFile = false;
+	float fireTime{};
+	float coolTime{};
+
 };

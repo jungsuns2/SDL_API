@@ -35,6 +35,7 @@ public:
 
 private:
 	bool mIsUpdate = true;
+	static constexpr Point PLAYER_HAND = { .x = 15.0f, .y = 30.0f };
 
 	Font mFont{};
 
@@ -43,15 +44,22 @@ private:
 	Entity mPlayerEntity{};
 	Entity mMonsterEntity{};
 	Entity mSwordEntity{};
+	Entity mGunEntity{};
+	Entity mBulletEntity{};
 
 	Player mPlayer{};
 	Monster mMonster{};
 	Sword mSword{};
+	Gun mGun{};
+	Bullet mBullet{};
+
 
 	std::array<Clip, uint32_t(Player::State::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::State::Count)> mMonsterClips{};
 	Clip mSwordClip{};
-	
+	Clip mSwordSkillClip{};
+	Clip mBulletClip{};
+
 	std::array<Texture, Player::IDLE_COUNT> mPlayerIdleTextures{};
 	std::array<Texture, Player::RUN_COUNT> mPlayerRunTextures{};
 
@@ -60,4 +68,7 @@ private:
 	std::array<Texture, Monster::ATTACK_COUNT> mMonsterAttackTextures{};
 
 	std::array<Texture, Sword::COUNT> mSwordTextures{};
+
+	Texture mGunTexture{};
+	std::array<Texture, Effect::BULLET_COUNT> mBulletTextures{};
 };

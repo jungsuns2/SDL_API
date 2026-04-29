@@ -52,6 +52,23 @@ void MainScene::Initialize()
 			}
 		}
 
+		// Gun
+		mGunTexture.Initialize(GetHelper(), "Resource/Gun/0.png");
+
+		// Bullet
+		{
+			for (uint32_t i = 0; i < Effect::BULLET_COUNT; ++i)
+			{
+				mBulletTextures[i].Initialize(GetHelper(), "Resource/Gun/Bullet/" + std::to_string(i) + ".png");
+
+				Clip::Frame frame;
+				frame.texture = &mBulletTextures[i];
+				frame.durationTime = 0.02f;
+
+				mBulletClip.AddClip(frame);
+			}
+		}
+
 		// Monster
 		{
 			{
@@ -133,7 +150,7 @@ void MainScene::Initialize()
 
 	// Sword
 	{
-		mSword.offset = { .x = 25.0f, .y = -100.0f };
+		mSword.offset = PLAYER_HAND;
 		mSword.swingTime = 0.25f;
 		mSword.coolTime = 0.8f;
 
@@ -141,7 +158,7 @@ void MainScene::Initialize()
 		transform.scale = { .width = 3.0f, .height = 3.0f };
 		transform.center = { .x = 0.0f,.y = 0.5f };
 		mSwordEntity.AddComponent(transform);
-		
+
 		mSwordClip.SetLoop(true);
 
 		Animator animator{};
@@ -150,6 +167,38 @@ void MainScene::Initialize()
 		mSwordEntity.AddComponent(animator);
 
 		GetEntityWorld()->AddEntity(&mSwordEntity);
+	}
+
+	// Gun
+	{
+		mGun.offset = { .x = -70.0f, .y = 5.0f };
+
+		Transform transform{};
+		transform.scale = { .width = 3.0f, .height = 3.0f };
+		transform.center = { .x = 0.0f,.y = 0.0f };
+		mGunEntity.AddComponent(transform);
+
+		Material material;
+		material.texture = &mGunTexture;
+		material.active = true;
+		mGunEntity.AddComponent(material);
+
+		GetEntityWorld()->AddEntity(&mGunEntity);
+	}
+
+	// Bullet
+	{
+		Transform transform{};
+		transform.scale = { .width = 2.0f, .height = 2.0f };
+		mBulletEntity.AddComponent(transform);
+
+		mBulletClip.SetLoop(true);
+
+		Animator animator{};
+		animator.clipState = &mBulletClip;
+		mBulletEntity.AddComponent(animator);
+
+		GetEntityWorld()->AddEntity(&mBulletEntity);
 	}
 
 	// Monster
@@ -195,17 +244,30 @@ bool MainScene::Update(const float deltaTime)
 	// Sword
 	{
 		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
+		const bool isRight = getWorldMousePosition().x > playerTransform->position.x;
+		mSword.directionX = (isRight) ? 1.0f : -1.0f;
+
 		Transform* swordTransform = mSwordEntity.GetComponent<Transform>();
-		
 		swordTransform->position = playerTransform->position + mSword.offset;
 
-		bool isRight = getWorldMousePosition().x > playerTransform->position.x;
-		mSword.directionX = (isRight) ? 1.0f : -1.0f;
+		Point diffence = getWorldMousePosition() - swordTransform->position;
+		diffence.y *= -1.0f;
+		const float degree = std::atan2(diffence.x, diffence.y) * (180.0f / 3.141592f);
+		swordTransform->angle = degree;
+		float centerAngle = swordTransform->angle;
+
+		constexpr float swordLength = 100.0f;
+		const Point tip =
+		{
+			.x = swordTransform->position.x + std::cos(degree) * swordLength,
+			.y = swordTransform->position.y + std::sin(degree) * swordLength
+
+		};
 
 		mSword.coolTimer += deltaTime;
 		if (not mSword.isSwinging)
 		{
-			swordTransform->angle = mSword.directionX * mSword.INIT_ANGLE;
+			swordTransform->angle = centerAngle - mSword.ANGLE;
 
 			if (mSword.coolTimer >= mSword.coolTime)
 			{
@@ -224,7 +286,80 @@ bool MainScene::Update(const float deltaTime)
 				mSword.coolTimer = 0.0f;
 			}
 
-			swordTransform->angle = mSword.directionX * mSword.MAX_ANGLE * t;
+			swordTransform->angle = centerAngle + mSword.ANGLE;
+		}
+
+		swordTransform->flip = (mSword.directionX > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+	}
+
+	// Gun
+	{
+		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
+		const bool isRight = getWorldMousePosition().x > playerTransform->position.x;
+
+		if (isRight)
+		{
+			mGun.directionX = 1.0f;
+			mGun.offset = { .x = 10.0f, .y = 5.0f };
+		}
+		else
+		{
+			mGun.directionX = -1.0f;
+			mGun.offset = { .x = -70.0f, .y = 5.0f };
+		}
+
+		Transform* transform = mGunEntity.GetComponent<Transform>();
+		transform->position = playerTransform->position + mGun.offset;
+		transform->flip = (mGun.directionX > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+	}
+
+	// Bullet
+	{
+		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
+		const bool isRight = getWorldMousePosition().x > playerTransform->position.x;
+		mBullet.offset.x = (isRight) ? 10.0f : -70.0f;
+
+		Transform* bulletTransform = mBulletEntity.GetComponent<Transform>();
+		Animator* anim = mBulletEntity.GetComponent<Animator>();
+
+		mBullet.coolTime += deltaTime;
+		if (mBullet.coolTime >= Bullet::COOLTIMER)
+		{
+			anim->frameIndex = 0;
+			anim->elapsedTime = 0.0f;
+
+			anim->active = true;
+			bulletTransform->position = playerTransform->position;
+
+			const Point difference = getWorldMousePosition() - playerTransform->position;
+			const float length = Math::GetVectorLength(difference);
+
+			mBullet.direction =
+			{
+				.x = difference.x / length,
+				.y = difference.y / length
+			};
+
+			mBullet.coolTime = 0.0f;
+		}
+
+
+		Point velocity{};
+		velocity = mBullet.direction * Bullet::SPEED;
+		bulletTransform->position = bulletTransform->position + velocity * deltaTime;
+
+		const Point toBullet =
+		{
+			.x = bulletTransform->position.x - playerTransform->position.x,
+			.y = bulletTransform->position.y - playerTransform->position.y,
+		};
+
+		const float distSq = (toBullet.x * toBullet.x) + (toBullet.y * toBullet.y);
+		const float rangeSq = Bullet::LENGTH * Bullet::LENGTH;
+		
+		if (distSq >= rangeSq)
+		{
+			anim->active = false;
 		}
 	}
 
@@ -270,10 +405,10 @@ bool MainScene::Update(const float deltaTime)
 			{
 				if (mMonster.length > 0.0f)
 				{
-					mMonster.direction = 
-					{ 
-						.x = mMonster.difference.x / mMonster.length, 
-						.y = mMonster.difference.y / mMonster.length 
+					mMonster.direction =
+					{
+						.x = mMonster.difference.x / mMonster.length,
+						.y = mMonster.difference.y / mMonster.length
 					};
 
 					velocity = mMonster.direction * MAX_SPEED;
@@ -440,7 +575,7 @@ void MainScene::Move(const float deltaTime)
 void MainScene::SetClip()
 {
 	Animator* animator = mPlayerEntity.GetComponent<Animator>();
-	
+
 	switch (mPlayer.state)
 	{
 	case Player::State::Idle:
