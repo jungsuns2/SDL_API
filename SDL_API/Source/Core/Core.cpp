@@ -75,22 +75,22 @@ bool Core::Update(const float deltaTime)
 			.y = getCenterOffset().y - cameraTransform->position.y,
 		};
 
-		// Material
+		// Image
 		for (const Entity* entity : entityWorld->GetAllEntites())
 		{
 			if (not entity->HasComponent<Transform>()
-				or not entity->HasComponent<Material>())
+				or not entity->HasComponent<Image>())
 			{
 				continue;
 			}
 
-			const Material* material = entity->GetComponent<Material>();
+			const Image* material = entity->GetComponent<Image>();
 			if (not material->active)
 			{
 				continue;
 			}
 
-			materialSystem(entity, cameraTransform->position);
+			ImageSystem(entity, cameraTransform->position);
 		}
 
 		animatorSystem(entityWorld, cameraOffset, deltaTime);
@@ -140,12 +140,12 @@ void Core::Finalize()
 	SDL_Quit();
 }
 
-void Core::materialSystem(const Entity* entity, const Point cameraPosition)
+void Core::ImageSystem(const Entity* entity, const Point cameraPosition)
 {
 	assert(entity != nullptr);
 
 	const Transform* transform = entity->GetComponent<Transform>();
-	const Material* material = entity->GetComponent<Material>();
+	const Image* material = entity->GetComponent<Image>();
 	const SDL_FRect rect =
 	{
 		.x = getCenterOffset().x + transform->position.x - cameraPosition.x,
@@ -200,16 +200,22 @@ void Core::animatorSystem(const EntityWorld* entityWorld, const Point cameraOffs
 
 		const Transform* transform = entity->GetComponent<Transform>();
 
-		Scale textureSize =
+		const Scale textureSize =
 		{
 			.width = frame.texture->GetWidth() * transform->scale.width,
 			.height = frame.texture->GetHeight() * transform->scale.height
 		};
-
-		Point offset =
+		
+		const Point center =
 		{
-			.x = (transform->center.x + 0.5f) * textureSize.width,
-			.y = (transform->center.y + 0.5f) * textureSize.height
+			.x = (transform->center.x + 1.0f) * 0.5f,
+			.y = (transform->center.y + 1.0f) * 0.5f,
+		};
+
+		const Point offset =
+		{
+			.x = center.x * textureSize.width,
+			.y = center.y * textureSize.height
 		};
 
 		const SDL_FRect rect =

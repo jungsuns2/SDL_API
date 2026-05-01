@@ -20,10 +20,10 @@ struct Transform final : public Component
 	SDL_RendererFlip flip{};
 };
 
-struct Material final : public Component
+struct Image final : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	Material() : Component(&_ID) {}
+	Image() : Component(&_ID) {}
 
 	Texture* texture = nullptr;
 	bool active = false;

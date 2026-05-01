@@ -154,7 +154,7 @@ void MainScene::Initialize()
 
 		Transform transform{};
 		transform.scale = { .width = 3.0f, .height = 3.0f };
-		transform.center = { .x = 0.0f,.y = 0.5f };
+		transform.center = { .x = 0.0f,.y = 1.0f };
 		mSwordEntity.AddComponent(transform);
 
 		mSwordClip.SetLoop(true);
@@ -176,7 +176,7 @@ void MainScene::Initialize()
 		transform.center = { .x = 0.0f,.y = 0.0f };
 		mGunEntity.AddComponent(transform);
 
-		Material material;
+		Image material;
 		material.texture = &mGunTexture;
 		material.active = true;
 		mGunEntity.AddComponent(material);
