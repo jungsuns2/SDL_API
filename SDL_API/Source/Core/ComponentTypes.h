@@ -114,3 +114,9 @@ struct Animator final : public Component
 	uint32_t frameIndex{};
 	bool active = false;
 };
+
+struct Collider final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Collider() : Component(&_ID) {}
+};

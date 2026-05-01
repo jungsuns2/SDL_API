@@ -173,7 +173,7 @@ void MainScene::Initialize()
 
 		Transform transform{};
 		transform.scale = { .width = 3.0f, .height = 3.0f };
-		transform.center = { .x = 0.0f,.y = 0.0f };
+		transform.center = { .x = 0.0f,.y = 1.0f };
 		mGunEntity.AddComponent(transform);
 
 		Image material;
@@ -241,11 +241,12 @@ bool MainScene::Update(const float deltaTime)
 
 	// Sword
 	{
+		constexpr float PLAYER_RADIUS = 13.0f;
+
 		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
 		Transform* swordTransform = mSwordEntity.GetComponent<Transform>();
 
 		Animator* anim = mSwordEntity.GetComponent<Animator>();
-		constexpr float RADIUS = 13.0f;
 
 		if (not mSword.isFlying)
 		{
@@ -261,7 +262,7 @@ bool MainScene::Update(const float deltaTime)
 
 			mSword.direction = mouseToPlayer / length;
 
-			swordTransform->position = mSword.direction * RADIUS * 3.141592f;
+			swordTransform->position = mSword.direction * PLAYER_RADIUS * 3.141592f;
 
 			mSword.coolTime += deltaTime;
 			if (mSword.coolTime >= Sword::COOLTIMER)
@@ -287,7 +288,7 @@ bool MainScene::Update(const float deltaTime)
 		{
 			mSword.isFlying = false;
 			anim->active = false;
-			swordTransform->position = mSword.direction * RADIUS * 3.141592f;
+			swordTransform->position = mSword.direction * PLAYER_RADIUS * 3.141592f;
 		}
 
 		swordTransform->flip = (mSword.direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
@@ -309,8 +310,10 @@ bool MainScene::Update(const float deltaTime)
 			mGun.offset = { .x = -70.0f, .y = 5.0f };
 		}
 
+		constexpr float PLAYER_RADIUS = 20.0f;
 		Transform* transform = mGunEntity.GetComponent<Transform>();
-		transform->position = playerTransform->position + mGun.offset;
+		transform->position = mSword.direction * PLAYER_RADIUS * 3.141592f;
+
 		transform->flip = (mGun.directionX > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 	}
 

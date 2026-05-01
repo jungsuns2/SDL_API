@@ -1,6 +1,16 @@
 #pragma once
-#include "Scene.h"
+#include "ComponentTypes.h"
 #include "Helper.h"
+#include "Scene.h"
+
+struct TextureSystemDesc
+{
+	const Scale textureScale;
+	Transform* textureTransform;
+	Transform* cameraTransform;
+	SDL_FRect* rect;
+	SDL_FPoint* angleCenter;
+};
 
 class EntityWorld;
 
@@ -17,10 +27,11 @@ public:
 	bool Update(const float deltaTime);
 	void Finalize();
 
-	void ImageSystem(const Entity* entity, const Point cameraPosition);
-	void animatorSystem(const EntityWorld* entityWorld, const Point cameraOffset, const float deltaTime);
-
-	[[nodiscard]] Point getCenterOffset() const;
+	Transform* cameraSystem(const EntityWorld* entityWorld);
+	void textureSystem(const TextureSystemDesc& desc);
+	void imageSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
+	void animatorSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime);
+	void labelSystem(const EntityWorld* entityWorld);
 
 public:
 	[[nodiscard]] SDL_Window* GetWindow() const;

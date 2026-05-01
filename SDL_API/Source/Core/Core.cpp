@@ -5,7 +5,6 @@
 #include "Entity/EntityWorld.h"
 
 #include "Clip.h"
-#include "ComponentTypes.h"
 #include "Constant.h"
 #include "Texture.h"
 
@@ -51,76 +50,13 @@ bool Core::Update(const float deltaTime)
 		}
 
 		const EntityWorld* entityWorld = mScene->GetEntityWorld();
+		Transform* cameraTransform = cameraSystem(entityWorld);
 
-		Transform* cameraTransform = nullptr;
-		{
-			for (const Entity* entity : entityWorld->GetAllEntites())
-			{
-				if (not entity->HasComponent<Camera>()
-					or not entity->GetComponent<Transform>())
-				{
-					continue;
-				}
+		imageSystem(entityWorld, cameraTransform);
 
-				cameraTransform = entity->GetComponent<Transform>();
-				break;
-			}
+		animatorSystem(entityWorld, cameraTransform, deltaTime);
 
-			assert(cameraTransform != nullptr && "등록된 카메라가 없습니다.");
-		}
-
-		const Point cameraOffset =
-		{
-			.x = getCenterOffset().x - cameraTransform->position.x,
-			.y = getCenterOffset().y - cameraTransform->position.y,
-		};
-
-		// Image
-		for (const Entity* entity : entityWorld->GetAllEntites())
-		{
-			if (not entity->HasComponent<Transform>()
-				or not entity->HasComponent<Image>())
-			{
-				continue;
-			}
-
-			const Image* material = entity->GetComponent<Image>();
-			if (not material->active)
-			{
-				continue;
-			}
-
-			ImageSystem(entity, cameraTransform->position);
-		}
-
-		animatorSystem(entityWorld, cameraOffset, deltaTime);
-
-		// Label
-		for (const Entity* entity : entityWorld->GetAllEntites())
-		{
-			if (not entity->HasComponent<Transform>()
-				or not entity->HasComponent<Label>())
-			{
-				continue;
-			}
-
-			const Label* label = entity->GetComponent<Label>();
-			if (not label->active)
-			{
-				continue;
-			}
-
-			const Transform* transform = entity->GetComponent<Transform>();
-			const SDL_FRect rect =
-			{
-				.x = transform->position.x,
-				.y = transform->position.y,
-				.w = label->width,
-				.h = label->height,
-			};
-
-			SDL_RenderCopyF(mRenderer, label->texture, nullptr, &rect);
-		}
+		labelSystem(entityWorld);
 
 		SDL_RenderPresent(mRenderer); // 화면에 출력한다.
 	}
@@ -140,27 +76,114 @@ void Core::Finalize()
 	SDL_Quit();
 }
 
-void Core::ImageSystem(const Entity* entity, const Point cameraPosition)
-{
-	assert(entity != nullptr);
-
-	const Transform* transform = entity->GetComponent<Transform>();
-	const Image* material = entity->GetComponent<Image>();
-	const SDL_FRect rect =
-	{
-		.x = getCenterOffset().x + transform->position.x - cameraPosition.x,
-		.y = getCenterOffset().y + transform->position.y - cameraPosition.y,
-		.w = material->texture->GetWidth() * transform->scale.width,
-		.h = material->texture->GetHeight() * transform->scale.height,
-	};
-
-	SDL_RenderCopyExF(mRenderer, material->texture->GetTexture(), nullptr, &rect, transform->angle, &transform->center, transform->flip);
-
-}
-
-void Core::animatorSystem(const EntityWorld* entityWorld, const Point cameraOffset, const float deltaTime)
+Transform* Core::cameraSystem(const EntityWorld* entityWorld)
 {
 	assert(entityWorld != nullptr);
+
+	Transform* cameraTransform = nullptr;
+
+	for (const Entity* entity : entityWorld->GetAllEntites())
+	{
+		if (not entity->HasComponent<Camera>()
+			or not entity->GetComponent<Transform>())
+		{
+			continue;
+		}
+
+		cameraTransform = entity->GetComponent<Transform>();
+		break;
+	}
+
+	assert(cameraTransform != nullptr and "등록된 카메라가 없습니다.");
+
+	return cameraTransform;
+}
+
+void Core::textureSystem(const TextureSystemDesc& desc)
+{
+	const Scale textureScale = desc.textureScale;
+	Transform* textureTransform = desc.textureTransform;
+	Transform* cameraTransform = desc.cameraTransform;
+	SDL_FRect* rect = desc.rect;
+	SDL_FPoint* angleCenter = desc.angleCenter;
+
+	const Point center =
+	{
+		.x = (textureTransform->center.x + 1.0f) * 0.5f,
+		.y = (textureTransform->center.y + 1.0f) * 0.5f,
+	};
+
+	const Point offset =
+	{
+		.x = center.x * (textureScale.width * textureTransform->scale.width),
+		.y = center.y * (textureScale.height * textureTransform->scale.height)
+	};
+
+	const Point cameraCenter =
+	{
+		.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
+		.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
+	};
+
+	const Point cameraOffset =
+	{
+		.x = cameraCenter.x - cameraTransform->position.x,
+		.y = cameraCenter.y - cameraTransform->position.y,
+	};
+
+	rect->x = cameraOffset.x + textureTransform->position.x - offset.x;
+	rect->y = cameraOffset.y + textureTransform->position.y - offset.y;
+	rect->w = textureScale.width * textureTransform->scale.width;
+	rect->h = textureScale.height * textureTransform->scale.height;
+
+
+	angleCenter->x = offset.x;
+	angleCenter->y = offset.y;
+}
+
+void Core::imageSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+{
+	assert(entityWorld != nullptr);
+	assert(cameraTransform != nullptr);
+
+	for (const Entity* entity : entityWorld->GetAllEntites())
+	{
+		if (not entity->HasComponent<Transform>()
+			or not entity->HasComponent<Image>())
+		{
+			continue;
+		}
+
+		const Image* image = entity->GetComponent<Image>();
+		if (not image->active)
+		{
+			continue;
+		}
+
+		Transform* transform = entity->GetComponent<Transform>();
+
+		SDL_FRect rect{};
+		SDL_FPoint angleCenter{};
+
+		textureSystem
+		(
+			{
+				.textureScale = {.width = float(image->texture->GetWidth()), .height = float(image->texture->GetHeight()) },
+				.textureTransform = transform,
+				.cameraTransform = cameraTransform,
+				.rect = &rect,
+				.angleCenter = &angleCenter
+			}
+		);
+
+		SDL_RenderCopyExF(mRenderer, image->texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
+	}
+}
+
+void Core::animatorSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime)
+{
+	assert(entityWorld != nullptr);
+	assert(cameraTransform != nullptr);
 
 	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
@@ -198,49 +221,55 @@ void Core::animatorSystem(const EntityWorld* entityWorld, const Point cameraOffs
 			animator->elapsedTime = 0.0f;
 		}
 
-		const Transform* transform = entity->GetComponent<Transform>();
+		Transform* transform = entity->GetComponent<Transform>();
 
-		const Scale textureSize =
-		{
-			.width = frame.texture->GetWidth() * transform->scale.width,
-			.height = frame.texture->GetHeight() * transform->scale.height
-		};
-		
-		const Point center =
-		{
-			.x = (transform->center.x + 1.0f) * 0.5f,
-			.y = (transform->center.y + 1.0f) * 0.5f,
-		};
+		SDL_FRect rect{};
+		SDL_FPoint angleCenter{};
 
-		const Point offset =
-		{
-			.x = center.x * textureSize.width,
-			.y = center.y * textureSize.height
-		};
-
-		const SDL_FRect rect =
-		{
-			.x = cameraOffset.x + transform->position.x - offset.x,
-			.y = cameraOffset.y + transform->position.y - offset.y,
-			.w = textureSize.width,
-			.h = textureSize.height,
-		};
-
-		const SDL_FPoint angleCenter = { .x = offset.x, .y = offset.y };
+		textureSystem
+		(
+			{
+				.textureScale = {.width = float(frame.texture->GetWidth()), .height = float(frame.texture->GetHeight()) },
+				.textureTransform = transform,
+				.cameraTransform = cameraTransform,
+				.rect = &rect,
+				.angleCenter = &angleCenter
+			}
+		);
 
 		SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
 	}
 }
 
-Point Core::getCenterOffset() const
+void Core::labelSystem(const EntityWorld* entityWorld)
 {
-	const Point result =
-	{
-		.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
-		.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
-	};
+	assert(entityWorld != nullptr);
 
-	return result;
+	for (const Entity* entity : entityWorld->GetAllEntites())
+	{
+		if (not entity->HasComponent<Transform>()
+			or not entity->HasComponent<Label>())
+		{
+			continue;
+		}
+
+		const Label* label = entity->GetComponent<Label>();
+		if (not label->active)
+		{
+			continue;
+		}
+
+		const Transform* transform = entity->GetComponent<Transform>();
+		const SDL_FRect rect =
+		{
+			.x = transform->position.x,
+			.y = transform->position.y,
+			.w = label->width,
+			.h = label->height,
+		};
+
+		SDL_RenderCopyF(mRenderer, label->texture, nullptr, &rect);
+	}
 }
 
 SDL_Window* Core::GetWindow() const
