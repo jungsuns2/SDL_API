@@ -39,6 +39,13 @@ struct Point
 	{
 		return { .x = x * other, .y = y * other };
 	}
+
+	[[nodiscard]] Point operator/(const float other) const
+	{
+		assert(other != 0.0f and "Division Error");
+
+		return { .x = x / other, .y = y / other };
+	}
 };
 
 struct Scale

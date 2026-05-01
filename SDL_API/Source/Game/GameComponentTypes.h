@@ -48,14 +48,14 @@ struct Sword : public GameComponent
 
 	static constexpr uint32_t COUNT = 12;
 
-	static constexpr float ANGLE = 60.0f;
+	static constexpr float COOLTIMER = 1.0f;
+	static constexpr float LENGTH = 200.0f;
+	static constexpr float SPEED = 1300.0f;
 
 	Point offset{};
-	float directionX{};
+	Point direction{};
 
-	float coolTimer{};
-	bool isSwinging = false;
-	float swingTime{};
+	bool isFlying = false;
 	float coolTime{};
 };
 
@@ -96,5 +96,4 @@ struct Bullet : public GameComponent
 	bool isFile = false;
 	float fireTime{};
 	float coolTime{};
-
 };

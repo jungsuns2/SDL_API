@@ -151,8 +151,6 @@ void MainScene::Initialize()
 	// Sword
 	{
 		mSword.offset = PLAYER_HAND;
-		mSword.swingTime = 0.25f;
-		mSword.coolTime = 0.8f;
 
 		Transform transform{};
 		transform.scale = { .width = 3.0f, .height = 3.0f };
@@ -244,52 +242,55 @@ bool MainScene::Update(const float deltaTime)
 	// Sword
 	{
 		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
-		const bool isRight = getWorldMousePosition().x > playerTransform->position.x;
-		mSword.directionX = (isRight) ? 1.0f : -1.0f;
-
 		Transform* swordTransform = mSwordEntity.GetComponent<Transform>();
-		swordTransform->position = playerTransform->position + mSword.offset;
 
-		Point diffence = getWorldMousePosition() - swordTransform->position;
-		diffence.y *= -1.0f;
-		const float degree = std::atan2(diffence.x, diffence.y) * (180.0f / 3.141592f);
-		swordTransform->angle = degree;
-		float centerAngle = swordTransform->angle;
+		Animator* anim = mSwordEntity.GetComponent<Animator>();
+		constexpr float RADIUS = 13.0f;
 
-		constexpr float swordLength = 100.0f;
-		const Point tip =
+		if (not mSword.isFlying)
 		{
-			.x = swordTransform->position.x + std::cos(degree) * swordLength,
-			.y = swordTransform->position.y + std::sin(degree) * swordLength
+			anim->active = true;
 
+			Point mouseToSword = getWorldMousePosition() - swordTransform->position;
+			mouseToSword.y *= -1.0f;
+			const float degree = std::atan2(mouseToSword.x, mouseToSword.y) * (180.0f / 3.141592f);
+			swordTransform->angle = degree;
+
+			const Point mouseToPlayer = getWorldMousePosition() - playerTransform->position;
+			const float length = Math::GetVectorLength(mouseToPlayer);
+
+			mSword.direction = mouseToPlayer / length;
+
+			swordTransform->position = mSword.direction * RADIUS * 3.141592f;
+
+			mSword.coolTime += deltaTime;
+			if (mSword.coolTime >= Sword::COOLTIMER)
+			{
+				mSword.isFlying = true;
+				mSword.coolTime = 0.0f;
+			}
+		}
+
+		Point velocity = mSword.direction * Sword::SPEED;
+		swordTransform->position = swordTransform->position + velocity * deltaTime;
+
+		const Point toSword =
+		{
+			.x = swordTransform->position.x - playerTransform->position.x,
+			.y = swordTransform->position.y - playerTransform->position.y,
 		};
 
-		mSword.coolTimer += deltaTime;
-		if (not mSword.isSwinging)
+		const float distSq = (toSword.x * toSword.x) + (toSword.y * toSword.y);
+		const float rangeSq = Sword::LENGTH * Sword::LENGTH;
+
+		if (distSq >= rangeSq)
 		{
-			swordTransform->angle = centerAngle - mSword.ANGLE;
-
-			if (mSword.coolTimer >= mSword.coolTime)
-			{
-				mSword.isSwinging = true;
-				mSword.coolTimer = 0.0f;
-			}
-		}
-		else
-		{
-			float t = mSword.coolTimer / mSword.swingTime;
-
-			if (t >= 1.0f)
-			{
-				t = 1.0f;
-				mSword.isSwinging = false;
-				mSword.coolTimer = 0.0f;
-			}
-
-			swordTransform->angle = centerAngle + mSword.ANGLE;
+			mSword.isFlying = false;
+			anim->active = false;
+			swordTransform->position = mSword.direction * RADIUS * 3.141592f;
 		}
 
-		swordTransform->flip = (mSword.directionX > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+		swordTransform->flip = (mSword.direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 	}
 
 	// Gun
@@ -343,9 +344,7 @@ bool MainScene::Update(const float deltaTime)
 			mBullet.coolTime = 0.0f;
 		}
 
-
-		Point velocity{};
-		velocity = mBullet.direction * Bullet::SPEED;
+		Point velocity = mBullet.direction * Bullet::SPEED;
 		bulletTransform->position = bulletTransform->position + velocity * deltaTime;
 
 		const Point toBullet =
