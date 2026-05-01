@@ -128,11 +128,11 @@ void Core::textureSystem(const TextureSystemDesc& desc)
 	const Point cameraOffset =
 	{
 		.x = cameraCenter.x - cameraTransform->position.x,
-		.y = cameraCenter.y - cameraTransform->position.y,
+		.y = cameraCenter.y + cameraTransform->position.y,
 	};
 
 	rect->x = cameraOffset.x + textureTransform->position.x - offset.x;
-	rect->y = cameraOffset.y + textureTransform->position.y - offset.y;
+	rect->y = cameraOffset.y - textureTransform->position.y - offset.y;
 	rect->w = textureScale.width * textureTransform->scale.width;
 	rect->h = textureScale.height * textureTransform->scale.height;
 

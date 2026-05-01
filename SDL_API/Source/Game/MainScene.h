@@ -32,6 +32,7 @@ public:
 	void SetClip();
 
 	Point getWorldMousePosition() const;
+	Point getWeaponPosition(Transform* swordTransform, Transform* playerTransform, float playerRadius);
 
 private:
 	bool mIsUpdate = true;

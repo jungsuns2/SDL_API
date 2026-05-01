@@ -202,7 +202,7 @@ void MainScene::Initialize()
 	// Monster
 	{
 		Transform transform{};
-		transform.position = { .x = 0.0f, .y = -500.0f };
+		transform.position = { .x = 0.0f, .y = 500.0f };
 		transform.scale = { .width = 4.0f, .height = 4.0f };
 		mMonsterEntity.AddComponent(transform);
 
@@ -518,7 +518,7 @@ void MainScene::State()
 void MainScene::Move(const float deltaTime)
 {
 	const int32_t moveX = Input::Get().GetKey(SDL_SCANCODE_D) - Input::Get().GetKey(SDL_SCANCODE_A);
-	const int32_t moveY = Input::Get().GetKey(SDL_SCANCODE_S) - Input::Get().GetKey(SDL_SCANCODE_W);
+	const int32_t moveY = Input::Get().GetKey(SDL_SCANCODE_W) - Input::Get().GetKey(SDL_SCANCODE_S);
 
 	static int32_t prevMoveX;
 	static int32_t prevMoveY;
@@ -607,4 +607,24 @@ Point MainScene::getWorldMousePosition() const
 	mousePosition = mousePosition - centerOffset;
 
 	return mousePosition;
+}
+
+Point MainScene::getWeaponPosition(Transform* swordTransform, Transform* playerTransform, float playerRadius)
+{
+	assert(swordTransform != nullptr);
+	assert(playerTransform != nullptr);
+
+	Point mouseToSword = getWorldMousePosition() - swordTransform->position;
+	mouseToSword.y *= -1.0f;
+	const float degree = std::atan2(mouseToSword.x, mouseToSword.y) * (180.0f / 3.141592f);
+	swordTransform->angle = degree;
+
+	const Point mouseToPlayer = getWorldMousePosition() - playerTransform->position;
+	const float length = Math::GetVectorLength(mouseToPlayer);
+
+	mSword.direction = mouseToPlayer / length;
+
+	swordTransform->position = mSword.direction * playerRadius * 3.141592f;
+
+	return swordTransform->position;
 }
