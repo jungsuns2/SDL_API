@@ -72,13 +72,13 @@ void MainScene::Initialize()
 		// Monster
 		{
 			{
-				mMonsterIdleTexture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Idle/0.png");
+				mMonsterIdleTexture.Initialize(GetHelper(), "Resource/Monster/Effect/Die/Die01.png");
 
 				Clip::Frame frame;
 				frame.texture = &mMonsterIdleTexture;
 				frame.durationTime = 0.12f;
 
-				mMonsterClips[uint32_t(Monster::State::Idle)].AddClip(frame);
+				mMonsterClips[uint32_t(Monster::State::Spwan)].AddClip(frame);
 			}
 
 			for (uint32_t i = 0; i < Monster::RUN_COUNT; ++i)
@@ -201,18 +201,19 @@ void MainScene::Initialize()
 
 	// Monster
 	{
+		mMonster.state = Monster::State::Dead;
+
 		Transform transform{};
-		transform.position = { .x = 0.0f, .y = 500.0f };
+		transform.position = { .x = 0.0f, .y = 300.0f };
 		transform.scale = { .width = 4.0f, .height = 4.0f };
 		mMonsterEntity.AddComponent(transform);
 
-		mMonsterClips[uint32_t(Monster::State::Idle)].SetLoop(true);
+		mMonsterClips[uint32_t(Monster::State::Spwan)].SetLoop(true);
 		mMonsterClips[uint32_t(Monster::State::Run)].SetLoop(true);
 		mMonsterClips[uint32_t(Monster::State::Attack)].SetLoop(true);
 
 		Animator animator{};
-		animator.clipState = &mMonsterClips[uint32_t(Monster::State::Idle)];
-		animator.active = true;
+		animator.clipState = &mMonsterClips[uint32_t(Monster::State::Dead)];
 		mMonsterEntity.AddComponent(animator);
 
 		GetEntityWorld()->AddEntity(&mMonsterEntity);
@@ -263,11 +264,11 @@ bool MainScene::Update(const float deltaTime)
 
 			swordTransform->position = mSword.direction * PLAYER_RADIUS * 3.141592f + playerTransform->position;
 
-			mSword.coolTime += deltaTime;
-			if (mSword.coolTime >= Sword::COOLTIMER)
+			mSword.coolTimer += deltaTime;
+			if (mSword.coolTimer >= Sword::COOLTIME)
 			{
 				mSword.isFlying = true;
-				mSword.coolTime = 0.0f;
+				mSword.coolTimer = 0.0f;
 			}
 		}
 
@@ -318,8 +319,8 @@ bool MainScene::Update(const float deltaTime)
 		Transform* bulletTransform = mBulletEntity.GetComponent<Transform>();
 		Animator* anim = mBulletEntity.GetComponent<Animator>();
 
-		mBullet.coolTime += deltaTime;
-		if (mBullet.coolTime >= Bullet::COOLTIMER)
+		mBullet.coolTimer += deltaTime;
+		if (mBullet.coolTimer >= Bullet::COOLTIME)
 		{
 			anim->frameIndex = 0;
 			anim->elapsedTime = 0.0f;
@@ -336,7 +337,7 @@ bool MainScene::Update(const float deltaTime)
 				.y = difference.y / length
 			};
 
-			mBullet.coolTime = 0.0f;
+			mBullet.coolTimer = 0.0f;
 		}
 
 		Point velocity = mBullet.direction * Bullet::SPEED;
@@ -370,21 +371,59 @@ bool MainScene::Update(const float deltaTime)
 			mMonster.difference = playerPosition - monsterPosition;
 			mMonster.length = Math::GetVectorLength(mMonster.difference);
 
-			constexpr float RUN_DISTANCE = 400.0f;
 			constexpr float ATTACK_DISTANCE = 90.0f;
 
-			if (mMonster.length <= ATTACK_DISTANCE)
+			mMonster.spwanPositionTimer += deltaTime;
+			if (!mMonster.isSpwan 
+				and mMonster.spwanPositionTimer >= 2.0f)
 			{
-				mMonster.state = Monster::State::Attack;
+				mMonster.state = Monster::State::Spwan;
+				mMonster.isSpwan = true;
+
+				Animator* anim = mMonsterEntity.GetComponent<Animator>();
+				anim->active = true;
+
+				mMonster.spwanWaitingTimer = 0.0f;
+				mMonster.spwanPositionTimer = 0.0f;
 			}
-			else if (mMonster.length <= RUN_DISTANCE)
+
+			if (mMonster.state == Monster::State::Spwan)
 			{
-				mMonster.state = Monster::State::Run;
+				mMonster.spwanWaitingTimer += deltaTime;
+				Animator* anim = mMonsterEntity.GetComponent<Animator>();
+
+				if (mMonster.spwanWaitingTimer >= 0.5f)
+				{
+					mMonster.spwanBlinkTimer += deltaTime;
+					if (mMonster.spwanBlinkTimer >= 0.06f)
+					{
+						anim->active = !anim->active;
+						mMonster.spwanBlinkTimer = 0.0f;
+					}
+				}
+				if (mMonster.spwanWaitingTimer >= 1.0f)
+				{
+					mMonster.state = Monster::State::Run;
+					anim->active = true;
+					mMonster.spwanWaitingTimer = 0.0f;
+				}
 			}
-			else
+			else if (mMonster.state == Monster::State::Attack)
 			{
-				mMonster.state = Monster::State::Idle;
+				if (mMonster.length > ATTACK_DISTANCE)
+				{
+					mMonster.state = Monster::State::Run;
+				}
 			}
+			else if (mMonster.state == Monster::State::Run)
+			{
+				if (mMonster.length <= ATTACK_DISTANCE)
+				{
+					mMonster.state = Monster::State::Attack;
+				}
+			}
+
+			printf("%d\n", mMonster.state);
 		}
 
 		// Move
@@ -419,8 +458,8 @@ bool MainScene::Update(const float deltaTime)
 
 			switch (mMonster.state)
 			{
-			case Monster::State::Idle:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Idle)]);
+			case Monster::State::Spwan:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Spwan)]);
 				break;
 
 			case Monster::State::Run:
@@ -429,6 +468,10 @@ bool MainScene::Update(const float deltaTime)
 
 			case Monster::State::Attack:
 				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Attack)]);
+				break;
+
+			case Monster::State::Dead:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Spwan)]);
 				break;
 
 			default:

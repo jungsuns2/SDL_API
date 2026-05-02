@@ -24,9 +24,10 @@ struct Monster : public GameComponent
 {
 	enum class State
 	{
-		Idle,
+		Spwan,
 		Run,
 		Attack,
+		Dead,
 		Count
 	};
 
@@ -35,10 +36,18 @@ struct Monster : public GameComponent
 
 	static constexpr uint32_t RUN_COUNT = 8;
 	static constexpr uint32_t ATTACK_COUNT = 7;
+	static constexpr uint32_t SPWAN_POSITION_TIME = 2.0f;
+	static constexpr uint32_t SPWAN_WAITING_TIME = 1.0f;
+	static constexpr uint32_t RUN_TIME = 2.0f;
 	State state{};
 	Point direction{};
 	Point difference{};
 	float length{};
+	float spwanPositionTimer{};
+	float spwanWaitingTimer{};
+	float spwanBlinkTimer{};
+	bool isSpwan = false;
+	bool isBlinkOn = false;
 };
 
 struct Sword : public GameComponent
@@ -48,7 +57,7 @@ struct Sword : public GameComponent
 
 	static constexpr uint32_t COUNT = 12;
 
-	static constexpr float COOLTIMER = 1.0f;
+	static constexpr float COOLTIME = 1.0f;
 	static constexpr float LENGTH = 200.0f;
 	static constexpr float SPEED = 1300.0f;
 
@@ -56,7 +65,7 @@ struct Sword : public GameComponent
 	Point direction{};
 
 	bool isFlying = false;
-	float coolTime{};
+	float coolTimer{};
 };
 
 struct Gun : public GameComponent
@@ -87,13 +96,13 @@ struct Bullet : public GameComponent
 
 	static constexpr uint32_t COUNT = 8;
 	static constexpr float LENGTH = 300.0f;
-	static constexpr float COOLTIMER = 1.0f;
+	static constexpr float COOLTIME = 1.0f;
 	static constexpr float SPEED = 1300.0f;
 
 	Point offset{};
 	Point direction{};
 
 	bool isFile = false;
-	float fireTime{};
-	float coolTime{};
+	float fireTimer{};
+	float coolTimer{};
 };
