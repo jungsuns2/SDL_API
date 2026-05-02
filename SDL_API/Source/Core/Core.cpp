@@ -56,6 +56,8 @@ bool Core::Update(const float deltaTime)
 
 		animatorSystem(entityWorld, cameraTransform, deltaTime);
 
+		colliderSystem(entityWorld, cameraTransform);
+
 		labelSystem(entityWorld);
 
 		SDL_RenderPresent(mRenderer); // 화면에 출력한다.
@@ -238,6 +240,41 @@ void Core::animatorSystem(const EntityWorld* entityWorld, Transform* cameraTrans
 		);
 
 		SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
+	}
+}
+
+void Core::colliderSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+{
+	assert(entityWorld != nullptr);
+	assert(cameraTransform != nullptr);
+
+	for (const Entity* entity : entityWorld->GetAllEntites())
+	{
+		if (not entity->HasComponent<Transform>()
+			or not entity->HasComponent<Image>()
+			or not entity->HasComponent<Collider>())
+		{
+			continue;
+		}
+
+		const Image* image = entity->GetComponent<Image>();
+		Transform* transform = entity->GetComponent<Transform>();
+
+		SDL_FRect rect{};
+		SDL_FPoint angleCenter{};
+
+		textureSystem
+		(
+			{
+				.textureScale = {.width = float(image->texture->GetWidth()), .height = float(image->texture->GetHeight()) },
+				.textureTransform = transform,
+				.cameraTransform = cameraTransform,
+				.rect = &rect,
+				.angleCenter = &angleCenter
+			}
+		);
+
+		SDL_RenderCopyExF(mRenderer, image->texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
 	}
 }
 

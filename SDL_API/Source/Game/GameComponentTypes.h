@@ -65,7 +65,7 @@ struct Gun : public GameComponent
 	Gun() : GameComponent(&_ID) {}
 
 	Point offset{};
-	float directionX{};
+	Point direction{};
 };
 
 struct Effect : public GameComponent

@@ -173,7 +173,7 @@ void MainScene::Initialize()
 
 		Transform transform{};
 		transform.scale = { .width = 3.0f, .height = 3.0f };
-		transform.center = { .x = 0.0f,.y = 1.0f };
+		transform.center = { .x = 0.0f,.y = 0.5f };
 		mGunEntity.AddComponent(transform);
 
 		Image material;
@@ -252,17 +252,16 @@ bool MainScene::Update(const float deltaTime)
 		{
 			anim->active = true;
 
-			Point mouseToSword = getWorldMousePosition() - swordTransform->position;
-			mouseToSword.y *= -1.0f;
-			const float degree = std::atan2(mouseToSword.x, mouseToSword.y) * (180.0f / 3.141592f);
-			swordTransform->angle = degree;
-
 			const Point mouseToPlayer = getWorldMousePosition() - playerTransform->position;
+			float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
+			degree -= 90.0f;
+			swordTransform->angle = -degree;
+
 			const float length = Math::GetVectorLength(mouseToPlayer);
 
 			mSword.direction = mouseToPlayer / length;
 
-			swordTransform->position = mSword.direction * PLAYER_RADIUS * 3.141592f;
+			swordTransform->position = mSword.direction * PLAYER_RADIUS * 3.141592f + playerTransform->position;
 
 			mSword.coolTime += deltaTime;
 			if (mSword.coolTime >= Sword::COOLTIMER)
@@ -297,31 +296,24 @@ bool MainScene::Update(const float deltaTime)
 	// Gun
 	{
 		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
-		const bool isRight = getWorldMousePosition().x > playerTransform->position.x;
+		const Point mouseToPlayer = getWorldMousePosition() - playerTransform->position;
+		float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
 
-		if (isRight)
-		{
-			mGun.directionX = 1.0f;
-			mGun.offset = { .x = 10.0f, .y = 5.0f };
-		}
-		else
-		{
-			mGun.directionX = -1.0f;
-			mGun.offset = { .x = -70.0f, .y = 5.0f };
-		}
+		Transform* gunTransform = mGunEntity.GetComponent<Transform>();
+		gunTransform->angle = -degree;
+
+		const float length = Math::GetVectorLength(mouseToPlayer);
+		mGun.direction = mouseToPlayer / length;
 
 		constexpr float PLAYER_RADIUS = 20.0f;
-		Transform* transform = mGunEntity.GetComponent<Transform>();
-		transform->position = mSword.direction * PLAYER_RADIUS * 3.141592f;
+		gunTransform->position = mGun.direction * PLAYER_RADIUS * 3.141592f + playerTransform->position;
 
-		transform->flip = (mGun.directionX > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+		gunTransform->flip = (mGun.direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_VERTICAL;
 	}
 
 	// Bullet
 	{
-		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
-		const bool isRight = getWorldMousePosition().x > playerTransform->position.x;
-		mBullet.offset.x = (isRight) ? 10.0f : -70.0f;
+		const Transform* gunTransform = mGunEntity.GetComponent<Transform>();
 
 		Transform* bulletTransform = mBulletEntity.GetComponent<Transform>();
 		Animator* anim = mBulletEntity.GetComponent<Animator>();
@@ -333,9 +325,9 @@ bool MainScene::Update(const float deltaTime)
 			anim->elapsedTime = 0.0f;
 
 			anim->active = true;
-			bulletTransform->position = playerTransform->position;
+			bulletTransform->position = gunTransform->position;
 
-			const Point difference = getWorldMousePosition() - playerTransform->position;
+			const Point difference = getWorldMousePosition() - gunTransform->position;
 			const float length = Math::GetVectorLength(difference);
 
 			mBullet.direction =
@@ -352,8 +344,8 @@ bool MainScene::Update(const float deltaTime)
 
 		const Point toBullet =
 		{
-			.x = bulletTransform->position.x - playerTransform->position.x,
-			.y = bulletTransform->position.y - playerTransform->position.y,
+			.x = bulletTransform->position.x - gunTransform->position.x,
+			.y = bulletTransform->position.y - gunTransform->position.y,
 		};
 
 		const float distSq = (toBullet.x * toBullet.x) + (toBullet.y * toBullet.y);
@@ -604,7 +596,11 @@ Point MainScene::getWorldMousePosition() const
 
 	Point mousePosition = Input::Get().GetMousePosition();
 	mousePosition = mousePosition + mMainCamera.GetComponent<Transform>()->position;
-	mousePosition = mousePosition - centerOffset;
+	mousePosition =
+	{
+		.x = mousePosition.x - centerOffset.x,
+		.y = centerOffset.y - mousePosition.y
+	};
 
 	return mousePosition;
 }

@@ -16,7 +16,7 @@ struct Transform final : public Component
 	Point position{};
 	Scale scale{ .width = 1.0f, .height = 1.0f };
 	float angle = 0.0f;
-	SDL_FPoint center{};
+	Point center{};
 	SDL_RendererFlip flip{};
 };
 
