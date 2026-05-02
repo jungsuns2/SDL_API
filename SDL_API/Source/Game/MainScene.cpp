@@ -13,6 +13,10 @@ void MainScene::Initialize()
 	{
 		mFont.Initilize("Resource/DroidSans.TTF", 50);
 
+		// Tile
+		mTileTextures[0].Initialize(GetHelper(), "Resource/Tile/0.png");
+		mTileTextures[1].Initialize(GetHelper(), "Resource/Tile/1.png");
+
 		// Player
 		{
 			for (uint32_t i = 0; i < Player::IDLE_COUNT; ++i)
@@ -72,10 +76,10 @@ void MainScene::Initialize()
 		// Monster
 		{
 			{
-				mMonsterIdleTexture.Initialize(GetHelper(), "Resource/Monster/Effect/Die/Die01.png");
+				mMonsterSpwanTexture.Initialize(GetHelper(), "Resource/Monster/Effect/Die/Die01.png");
 
 				Clip::Frame frame;
-				frame.texture = &mMonsterIdleTexture;
+				frame.texture = &mMonsterSpwanTexture;
 				frame.durationTime = 0.12f;
 
 				mMonsterClips[uint32_t(Monster::State::Spwan)].AddClip(frame);
@@ -116,19 +120,70 @@ void MainScene::Initialize()
 		GetEntityWorld()->AddEntity(&mMainCamera);
 	}
 
+	// Tile
+	{
+		constexpr uint32_t TILE_SIZE = 16;
+		constexpr float TILE_SCALE = 4.0f;
+
+		FILE* file = nullptr;
+		fopen_s(&file, "Resource/Tile/Tile.txt", "r");
+		assert(file != nullptr);
+
+		uint32_t width = uint32_t(mTileScale.width);
+		uint32_t height = uint32_t(mTileScale.height);
+
+		fscanf_s(file, "%d %d", &width, &height);
+		printf("tileMap: %d %d \n", width, height);
+
+		mTileEntities = new Entity * [height];
+
+		for (uint32_t y = 0; y < height; ++y)
+		{
+			const float offsetY = height * (TILE_SIZE - 1);
+
+			mTileEntities[y] = new Entity[width];
+
+			for (uint32_t x = 0; x < width; ++x)
+			{
+				uint32_t tileIndex = 0;
+				fscanf_s(file, "%d", &tileIndex);
+				assert(mTileTextures.size() > tileIndex and "지원하지 않는 타일입니다.");
+
+				Texture& tileTexture = mTileTextures[tileIndex];
+				assert(tileTexture.GetWidth() == TILE_SIZE and tileTexture.GetHeight() == TILE_SIZE and "지원하지 않는 타일 사이즈입니다.");
+
+				Entity& tile = mTileEntities[y][x];
+
+				Transform transform{};
+				transform.scale = { .width = TILE_SCALE, .height = TILE_SCALE };
+				transform.position = { .x = x * TILE_SIZE * TILE_SCALE, .y = (offsetY - y * TILE_SIZE) * TILE_SCALE };
+				tile.AddComponent(transform);
+
+				Image image{};
+				image.texture = &tileTexture;
+				image.active = true;
+				tile.AddComponent(image);
+
+				GetEntityWorld()->AddEntity(&tile);
+			}
+		}
+
+		fclose(file);
+	}
+
 	// Label
 	{
 		Transform transform;
 		transform.position = {};
-		mLabel.AddComponent(transform);
+		mLabelEntity.AddComponent(transform);
 
 		Label label;
 		label.font = &mFont;
 		label.active = true;
 		label.SetText(GetHelper(), "UI Label");
-		mLabel.AddComponent(label);
+		mLabelEntity.AddComponent(label);
 
-		GetEntityWorld()->AddEntity(&mLabel);
+		GetEntityWorld()->AddEntity(&mLabelEntity);
 	}
 
 	// Player
@@ -176,10 +231,10 @@ void MainScene::Initialize()
 		transform.center = { .x = 0.0f,.y = 0.5f };
 		mGunEntity.AddComponent(transform);
 
-		Image material;
-		material.texture = &mGunTexture;
-		material.active = true;
-		mGunEntity.AddComponent(material);
+		Image image;
+		image.texture = &mGunTexture;
+		image.active = true;
+		mGunEntity.AddComponent(image);
 
 		GetEntityWorld()->AddEntity(&mGunEntity);
 	}
@@ -222,6 +277,11 @@ void MainScene::Initialize()
 
 bool MainScene::Update(const float deltaTime)
 {
+	// 타일을 업데이트한다.
+	{
+
+	}
+
 	// 플레이어를 업데이트한다.
 	{
 		Input();
@@ -422,8 +482,6 @@ bool MainScene::Update(const float deltaTime)
 					mMonster.state = Monster::State::Attack;
 				}
 			}
-
-			printf("%d\n", mMonster.state);
 		}
 
 		// Move
@@ -503,7 +561,8 @@ void MainScene::Finalize()
 
 	// Monster
 	{
-		mMonsterIdleTexture.Finalize();
+		mMonsterSpwanTexture.Finalize();
+		mGunTexture.Finalize();
 
 		for (Texture& texture : mMonsterRunTextures)
 		{
@@ -517,6 +576,16 @@ void MainScene::Finalize()
 	}
 
 	for (Texture& texture : mSwordTextures)
+	{
+		texture.Finalize();
+	}
+
+	for (Texture& texture : mTileTextures)
+	{
+		texture.Finalize();
+	}
+
+	for (Texture& texture : mBulletTextures)
 	{
 		texture.Finalize();
 	}

@@ -36,9 +36,9 @@ struct Monster : public GameComponent
 
 	static constexpr uint32_t RUN_COUNT = 8;
 	static constexpr uint32_t ATTACK_COUNT = 7;
-	static constexpr uint32_t SPWAN_POSITION_TIME = 2.0f;
-	static constexpr uint32_t SPWAN_WAITING_TIME = 1.0f;
-	static constexpr uint32_t RUN_TIME = 2.0f;
+	static constexpr float SPWAN_POSITION_TIME = 2.0f;
+	static constexpr float SPWAN_WAITING_TIME = 1.0f;
+	static constexpr float RUN_TIME = 2.0f;
 	State state{};
 	Point direction{};
 	Point difference{};
@@ -105,4 +105,19 @@ struct Bullet : public GameComponent
 	bool isFile = false;
 	float fireTimer{};
 	float coolTimer{};
+};
+
+struct Tile : public GameComponent
+{
+	enum class Type
+	{
+		Green,
+		BB,
+		Count
+	};
+
+	static constexpr uint32_t _ID = 0;
+	Tile() : GameComponent(&_ID) {}
+
+	Type type;
 };
