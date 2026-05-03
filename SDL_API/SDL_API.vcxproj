@@ -31,7 +31,6 @@
     <ClCompile Include="Source\Core\Input.cpp" />
     <ClCompile Include="Source\Core\Scene.cpp" />
     <ClCompile Include="Source\Core\Texture.cpp" />
-    <ClCompile Include="Source\Game\GameComponent.cpp" />
     <ClCompile Include="Source\Game\GameComponentTypes.cpp" />
     <ClCompile Include="Source\Game\MainScene.cpp" />
     <ClCompile Include="Source\main.cpp" />
@@ -55,7 +54,6 @@
     <ClInclude Include="Source\Core\Input.h" />
     <ClInclude Include="Source\Core\Scene.h" />
     <ClInclude Include="Source\Core\Texture.h" />
-    <ClInclude Include="Source\Game\GameComponent.h" />
     <ClInclude Include="Source\Game\GameComponentTypes.h" />
     <ClInclude Include="Source\Game\MainScene.h" />
     <ClInclude Include="Source\pch.h" />

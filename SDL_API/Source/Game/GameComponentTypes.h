@@ -1,7 +1,7 @@
 #pragma once
-#include "GameComponent.h"
+#include "Core/Entity/Component.h"
 
-struct Player : public GameComponent
+struct Player : public Component
 {
 	enum class State
 	{
@@ -11,7 +11,7 @@ struct Player : public GameComponent
 	};
 
 	static constexpr uint32_t _ID = 0;
-	Player() : GameComponent(&_ID) {}
+	Player() : Component(&_ID) {}
 
 	static constexpr uint32_t IDLE_COUNT = 5;
 	static constexpr uint32_t RUN_COUNT = 6;
@@ -20,7 +20,7 @@ struct Player : public GameComponent
 	Point direction{};
 };
 
-struct Monster : public GameComponent
+struct Monster : public Component
 {
 	enum class State
 	{
@@ -32,7 +32,7 @@ struct Monster : public GameComponent
 	};
 
 	static constexpr uint32_t _ID = 0;
-	Monster() : GameComponent(&_ID) {}
+	Monster() : Component(&_ID) {}
 
 	static constexpr uint32_t RUN_COUNT = 8;
 	static constexpr uint32_t ATTACK_COUNT = 7;
@@ -50,10 +50,10 @@ struct Monster : public GameComponent
 	bool isBlinkOn = false;
 };
 
-struct Sword : public GameComponent
+struct Sword : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	Sword() : GameComponent(&_ID) {}
+	Sword() : Component(&_ID) {}
 
 	static constexpr uint32_t COUNT = 12;
 
@@ -68,19 +68,19 @@ struct Sword : public GameComponent
 	float coolTimer{};
 };
 
-struct Gun : public GameComponent
+struct Gun : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	Gun() : GameComponent(&_ID) {}
+	Gun() : Component(&_ID) {}
 
 	Point offset{};
 	Point direction{};
 };
 
-struct Effect : public GameComponent
+struct Effect : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	Effect() : GameComponent(&_ID) {}
+	Effect() : Component(&_ID) {}
 
 	static constexpr uint32_t COUNT = 5;
 	static constexpr uint32_t BULLET_COUNT = 8;
@@ -89,10 +89,10 @@ struct Effect : public GameComponent
 	float directionX{};
 };
 
-struct Bullet : public GameComponent
+struct Bullet : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	Bullet() : GameComponent(&_ID) {}
+	Bullet() : Component(&_ID) {}
 
 	static constexpr uint32_t COUNT = 8;
 	static constexpr float LENGTH = 300.0f;
@@ -107,7 +107,7 @@ struct Bullet : public GameComponent
 	float coolTimer{};
 };
 
-struct Tile : public GameComponent
+struct Tile : public Component
 {
 	enum class Type
 	{
@@ -117,7 +117,7 @@ struct Tile : public GameComponent
 	};
 
 	static constexpr uint32_t _ID = 0;
-	Tile() : GameComponent(&_ID) {}
+	Tile() : Component(&_ID) {}
 
 	Type type{};
 };
