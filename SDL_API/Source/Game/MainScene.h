@@ -31,13 +31,14 @@ public:
 	void Move(const float deltaTime);
 	void SetClip();
 
-	Point getWorldMousePosition() const;
+	Point getScreenMousePosition() const;
 	Point getWeaponPosition(Transform* swordTransform, Transform* playerTransform, float playerRadius);
 
 private:
 	bool mIsUpdate = true;
 	static constexpr Point PLAYER_HAND = { .x = 15.0f, .y = 30.0f };
-	Scale mTileScale{};
+	uint32_t mTileWidth{};
+	uint32_t mTileHeight{};
 
 	Font mFont{};
 

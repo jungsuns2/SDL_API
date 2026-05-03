@@ -129,17 +129,18 @@ void MainScene::Initialize()
 		fopen_s(&file, "Resource/Tile/Tile.txt", "r");
 		assert(file != nullptr);
 
-		uint32_t width = uint32_t(mTileScale.width);
-		uint32_t height = uint32_t(mTileScale.height);
+		uint32_t width{};
+		uint32_t height{};
 
 		fscanf_s(file, "%d %d", &width, &height);
-		printf("tileMap: %d %d \n", width, height);
 
+		mTileWidth = width;
+		mTileHeight = height;
 		mTileEntities = new Entity * [height];
 
 		for (uint32_t y = 0; y < height; ++y)
 		{
-			const float offsetY = height * (TILE_SIZE - 1);
+			const float offsetY = float(height) * float(TILE_SIZE - 1);
 
 			mTileEntities[y] = new Entity[width];
 
@@ -313,7 +314,7 @@ bool MainScene::Update(const float deltaTime)
 		{
 			anim->active = true;
 
-			const Point mouseToPlayer = getWorldMousePosition() - playerTransform->position;
+			const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
 			float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
 			degree -= 90.0f;
 			swordTransform->angle = -degree;
@@ -357,7 +358,7 @@ bool MainScene::Update(const float deltaTime)
 	// Gun
 	{
 		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
-		const Point mouseToPlayer = getWorldMousePosition() - playerTransform->position;
+		const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
 		float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
 
 		Transform* gunTransform = mGunEntity.GetComponent<Transform>();
@@ -388,7 +389,7 @@ bool MainScene::Update(const float deltaTime)
 			anim->active = true;
 			bulletTransform->position = gunTransform->position;
 
-			const Point difference = getWorldMousePosition() - gunTransform->position;
+			const Point difference = getScreenMousePosition() - gunTransform->position;
 			const float length = Math::GetVectorLength(difference);
 
 			mBullet.direction =
@@ -589,6 +590,15 @@ void MainScene::Finalize()
 	{
 		texture.Finalize();
 	}
+
+	{
+		for (uint32_t y = 0; y < mTileHeight; ++y)
+		{
+			delete[] mTileEntities[y];
+		}
+
+		delete[] mTileEntities;
+	}
 }
 
 void MainScene::Input()
@@ -698,23 +708,24 @@ void MainScene::SetClip()
 	}
 }
 
-Point MainScene::getWorldMousePosition() const
+Point MainScene::getScreenMousePosition() const
 {
 	const Point centerOffset =
 	{
 		.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
-		.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
+		.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f
 	};
 
-	Point mousePosition = Input::Get().GetMousePosition();
-	mousePosition = mousePosition + mMainCamera.GetComponent<Transform>()->position;
-	mousePosition =
+	const Point mousePosition = Input::Get().GetMousePosition();
+	Point screenPosition =
 	{
 		.x = mousePosition.x - centerOffset.x,
 		.y = centerOffset.y - mousePosition.y
 	};
+	
+	screenPosition = screenPosition + mMainCamera.GetComponent<Transform>()->position;
 
-	return mousePosition;
+	return screenPosition;
 }
 
 Point MainScene::getWeaponPosition(Transform* swordTransform, Transform* playerTransform, float playerRadius)
@@ -722,12 +733,12 @@ Point MainScene::getWeaponPosition(Transform* swordTransform, Transform* playerT
 	assert(swordTransform != nullptr);
 	assert(playerTransform != nullptr);
 
-	Point mouseToSword = getWorldMousePosition() - swordTransform->position;
+	Point mouseToSword = getScreenMousePosition() - swordTransform->position;
 	mouseToSword.y *= -1.0f;
 	const float degree = std::atan2(mouseToSword.x, mouseToSword.y) * (180.0f / 3.141592f);
 	swordTransform->angle = degree;
 
-	const Point mouseToPlayer = getWorldMousePosition() - playerTransform->position;
+	const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
 	const float length = Math::GetVectorLength(mouseToPlayer);
 
 	mSword.direction = mouseToPlayer / length;

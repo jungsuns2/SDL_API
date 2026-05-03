@@ -119,5 +119,5 @@ struct Tile : public GameComponent
 	static constexpr uint32_t _ID = 0;
 	Tile() : GameComponent(&_ID) {}
 
-	Type type;
+	Type type{};
 };
