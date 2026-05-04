@@ -27,7 +27,7 @@ void MainScene::Initialize()
 				frame.texture = &mPlayerIdleTextures[i];
 				frame.durationTime = 0.12f;
 
-				mPlayerClips[uint32_t(Player::State::Idle)].AddClip(frame);
+				mPlayerClips[uint32_t(Player::eState::Idle)].AddClip(frame);
 			}
 
 			for (uint32_t i = 0; i < Player::RUN_COUNT; ++i)
@@ -38,7 +38,7 @@ void MainScene::Initialize()
 				frame.texture = &mPlayerRunTextures[i];
 				frame.durationTime = 0.12f;
 
-				mPlayerClips[uint32_t(Player::State::Run)].AddClip(frame);
+				mPlayerClips[uint32_t(Player::eState::Run)].AddClip(frame);
 			}
 		}
 
@@ -83,7 +83,7 @@ void MainScene::Initialize()
 				frame.texture = &mMonsterSpwanTexture;
 				frame.durationTime = 0.12f;
 
-				mMonsterClips[uint32_t(Monster::State::Spwan)].AddClip(frame);
+				mMonsterClips[uint32_t(Monster::eState::Spwan)].AddClip(frame);
 			}
 
 			// Idle
@@ -94,7 +94,7 @@ void MainScene::Initialize()
 				frame.texture = &mMonsterIdleTexture;
 				frame.durationTime = 0.12f;
 
-				mMonsterClips[uint32_t(Monster::State::Idle)].AddClip(frame);
+				mMonsterClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
 			}
 
 			// Run
@@ -106,7 +106,7 @@ void MainScene::Initialize()
 				frame.texture = &mMonsterRunTextures[i];
 				frame.durationTime = 0.12f;
 
-				mMonsterClips[uint32_t(Monster::State::Run)].AddClip(frame);
+				mMonsterClips[uint32_t(Monster::eState::Run)].AddClip(frame);
 			}
 
 			// Attack
@@ -118,7 +118,7 @@ void MainScene::Initialize()
 				frame.texture = &mMonsterAttackTextures[i];
 				frame.durationTime = 0.12f;
 
-				mMonsterClips[uint32_t(Monster::State::Attack)].AddClip(frame);
+				mMonsterClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
 			}
 		}
 	}
@@ -221,11 +221,11 @@ void MainScene::Initialize()
 		transform.scale = { .width = 4.0f, .height = 4.0f };
 		mPlayerEntity.AddComponent(transform);
 
-		mPlayerClips[uint32_t(Player::State::Idle)].SetLoop(true);
-		mPlayerClips[uint32_t(Player::State::Run)].SetLoop(true);
+		mPlayerClips[uint32_t(Player::eState::Idle)].SetLoop(true);
+		mPlayerClips[uint32_t(Player::eState::Run)].SetLoop(true);
 
 		Animator animator{};
-		animator.clipState = &mPlayerClips[uint32_t(Player::State::Idle)];
+		animator.clipState = &mPlayerClips[uint32_t(Player::eState::Idle)];
 		animator.active = true;
 		mPlayerEntity.AddComponent(animator);
 
@@ -313,7 +313,7 @@ void MainScene::Initialize()
 
 	// Monster
 	{
-		mMonster.state = Monster::State::Dead;
+		mMonster.state = Monster::eState::Dead;
 		mMonster.hp = 10;
 
 		Transform transform{};
@@ -321,12 +321,12 @@ void MainScene::Initialize()
 		transform.scale = { .width = 4.0f, .height = 4.0f };
 		mMonsterEntity.AddComponent(transform);
 
-		mMonsterClips[uint32_t(Monster::State::Spwan)].SetLoop(true);
-		mMonsterClips[uint32_t(Monster::State::Run)].SetLoop(true);
-		mMonsterClips[uint32_t(Monster::State::Attack)].SetLoop(true);
+		mMonsterClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
+		mMonsterClips[uint32_t(Monster::eState::Run)].SetLoop(true);
+		mMonsterClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
 		Animator animator{};
-		animator.clipState = &mMonsterClips[uint32_t(Monster::State::Dead)];
+		animator.clipState = &mMonsterClips[uint32_t(Monster::eState::Dead)];
 		mMonsterEntity.AddComponent(animator);
 
 		Color color{};
@@ -500,7 +500,7 @@ bool MainScene::Update(const float deltaTime)
 				mMonster.spwanPositionTimer += deltaTime;
 				if (mMonster.spwanPositionTimer >= 2.0f)
 				{
-					mMonster.state = Monster::State::Spwan;
+					mMonster.state = Monster::eState::Spwan;
 					mMonster.isSpwan = true;
 					anim->active = true;
 
@@ -509,7 +509,7 @@ bool MainScene::Update(const float deltaTime)
 				}
 			}
 
-			if (mMonster.state == Monster::State::Spwan)
+			if (mMonster.state == Monster::eState::Spwan)
 			{
 				mMonster.spwanWaitingTimer += deltaTime;
 				if (mMonster.spwanWaitingTimer >= 0.5f)
@@ -524,36 +524,36 @@ bool MainScene::Update(const float deltaTime)
 				}
 				if (mMonster.spwanWaitingTimer >= 1.0f)
 				{
-					mMonster.state = Monster::State::Run;
+					mMonster.state = Monster::eState::Run;
 					anim->active = true;
 					mMonster.spwanBlinkTimer = 0.0f;
 					mMonster.spwanWaitingTimer = 0.0f;
 				}
 			}
 
-			Clip& attackClip = mMonsterClips[uint32_t(Monster::State::Attack)];
-			if (mMonster.state == Monster::State::Attack)
+			Clip& attackClip = mMonsterClips[uint32_t(Monster::eState::Attack)];
+			if (mMonster.state == Monster::eState::Attack)
 			{
 				if (anim->clipState == &attackClip
 					and anim->frameIndex >= attackClip.GetLastFrameIndex() - 1)
 				{
 					if (mMonster.length > ATTACK_DISTANCE)
 					{
-						mMonster.state = Monster::State::Run;
+						mMonster.state = Monster::eState::Run;
 					}
 				}
 			}
-			else if (mMonster.state == Monster::State::Run)
+			else if (mMonster.state == Monster::eState::Run)
 			{
 				if (mMonster.length <= ATTACK_DISTANCE)
 				{
-					mMonster.state = Monster::State::Attack;
+					mMonster.state = Monster::eState::Attack;
 				}
 			}
 
 			// 충돌했을 때 애니메이션 처리
-			if (mMonster.state != Monster::State::Spwan
-				and mMonster.state != Monster::State::Dead)
+			if (mMonster.state != Monster::eState::Spwan
+				and mMonster.state != Monster::eState::Dead)
 			{
 				if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
 				{
@@ -572,7 +572,7 @@ bool MainScene::Update(const float deltaTime)
 				mMonster.damageTimer += deltaTime;
 				if (mMonster.damageTimer >= Monster::DAMAGE_TIME)
 				{
-					mMonster.state = Monster::State::Run;
+					mMonster.state = Monster::eState::Run;
 					Color* color = mMonsterEntity.GetComponent<Color>();
 					color->r = 255;
 					color->g = 255;
@@ -585,7 +585,7 @@ bool MainScene::Update(const float deltaTime)
 
 			if (mMonster.hp <= 0)
 			{
-				mMonster.state = Monster::State::Dead;
+				mMonster.state = Monster::eState::Dead;
 				Animator* anim = mMonsterEntity.GetComponent<Animator>();
 				anim->active = false;
 
@@ -607,7 +607,7 @@ bool MainScene::Update(const float deltaTime)
 			constexpr float MAX_SPEED = 300.0f;
 			Point velocity = {};
 
-			if (mMonster.state == Monster::State::Run)
+			if (mMonster.state == Monster::eState::Run)
 			{
 				if (mMonster.length > 0.0f)
 				{
@@ -631,24 +631,24 @@ bool MainScene::Update(const float deltaTime)
 
 			switch (mMonster.state)
 			{
-			case Monster::State::Spwan:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Spwan)]);
+			case Monster::eState::Spwan:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Spwan)]);
 				break;
 
-			case Monster::State::Idle:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Idle)]);
+			case Monster::eState::Idle:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Idle)]);
 				break;
 
-			case Monster::State::Run:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Run)]);
+			case Monster::eState::Run:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Run)]);
 				break;
 
-			case Monster::State::Attack:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Attack)]);
+			case Monster::eState::Attack:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Attack)]);
 				break;
 
-			case Monster::State::Dead:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Spwan)]);
+			case Monster::eState::Dead:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Spwan)]);
 				break;
 
 			default:
@@ -729,7 +729,7 @@ void MainScene::Input()
 
 void MainScene::State()
 {
-	mPlayer.state = (mPlayer.length != 0.0f) ? Player::State::Run : Player::State::Idle;
+	mPlayer.state = (mPlayer.length != 0.0f) ? Player::eState::Run : Player::eState::Idle;
 }
 
 void MainScene::Move(const float deltaTime)
@@ -797,12 +797,12 @@ void MainScene::SetClip()
 
 	switch (mPlayer.state)
 	{
-	case Player::State::Idle:
-		animator->SetClip(&mPlayerClips[uint32_t(Player::State::Idle)]);
+	case Player::eState::Idle:
+		animator->SetClip(&mPlayerClips[uint32_t(Player::eState::Idle)]);
 		break;
 
-	case Player::State::Run:
-		animator->SetClip(&mPlayerClips[uint32_t(Player::State::Run)]);
+	case Player::eState::Run:
+		animator->SetClip(&mPlayerClips[uint32_t(Player::eState::Run)]);
 		break;
 
 	default:

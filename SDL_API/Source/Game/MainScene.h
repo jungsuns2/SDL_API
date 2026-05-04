@@ -58,8 +58,8 @@ private:
 	Bullet mBullet{};
 	Tile mTile[20][20]{};
 
-	std::array<Clip, uint32_t(Player::State::Count)> mPlayerClips{};
-	std::array<Clip, uint32_t(Monster::State::Count)> mMonsterClips{};
+	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
+	std::array<Clip, uint32_t(Monster::eState::Count)> mMonsterClips{};
 	Clip mSwordClip{};
 	Clip mSwordSkillClip{};
 	Clip mBulletClip{};

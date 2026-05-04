@@ -3,7 +3,7 @@
 
 struct Player : public Component
 {
-	enum class State
+	enum class eState
 	{
 		Idle,
 		Run,
@@ -15,14 +15,14 @@ struct Player : public Component
 
 	static constexpr uint32_t IDLE_COUNT = 5;
 	static constexpr uint32_t RUN_COUNT = 6;
-	State state{};
+	eState state{};
 	float length{};
 	Point direction{};
 };
 
 struct Monster : public Component
 {
-	enum class State
+	enum class eState
 	{
 		Spwan,
 		Idle,
@@ -39,8 +39,10 @@ struct Monster : public Component
 	static constexpr uint32_t ATTACK_COUNT = 7;
 	static constexpr float SPWAN_POSITION_TIME = 2.0f;
 	static constexpr float SPWAN_WAITING_TIME = 1.0f;
-	static constexpr float RUN_TIME = 2.0f;
-	State state{};
+	static constexpr float DAMAGE_TIME = 0.3f;
+	static constexpr float DEAD_TIME = 1.0f;
+
+	eState state{};
 	Point direction{};
 	Point difference{};
 	float length{};
@@ -50,6 +52,8 @@ struct Monster : public Component
 	bool isSpwan = false;
 	bool isBlinkOn = false;
 	int32_t hp{};
+	float damageTimer{};
+	float deadTimer{};
 };
 
 struct Sword : public Component
@@ -111,7 +115,7 @@ struct Bullet : public Component
 
 struct Tile : public Component
 {
-	enum class Type
+	enum class eType
 	{
 		Green,
 		BB,
@@ -121,5 +125,5 @@ struct Tile : public Component
 	static constexpr uint32_t _ID = 0;
 	Tile() : Component(&_ID) {}
 
-	Type type{};
+	eType type{};
 };
