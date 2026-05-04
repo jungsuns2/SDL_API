@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\Clip.cpp" />
+    <ClCompile Include="Source\Core\Collision.cpp" />
     <ClCompile Include="Source\Core\ComponentTypes.cpp" />
     <ClCompile Include="Source\Core\Constant.cpp" />
     <ClCompile Include="Source\Core\Core.cpp" />
@@ -33,6 +34,7 @@
     <ClCompile Include="Source\Core\Texture.cpp" />
     <ClCompile Include="Source\Game\GameComponentTypes.cpp" />
     <ClCompile Include="Source\Game\MainScene.cpp" />
+    <ClCompile Include="Source\Game\StudyScene.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -43,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Core\Clip.h" />
+    <ClInclude Include="Source\Core\Collision.h" />
     <ClInclude Include="Source\Core\ComponentTypes.h" />
     <ClInclude Include="Source\Core\Constant.h" />
     <ClInclude Include="Source\Core\Core.h" />
@@ -56,6 +59,7 @@
     <ClInclude Include="Source\Core\Texture.h" />
     <ClInclude Include="Source\Game\GameComponentTypes.h" />
     <ClInclude Include="Source\Game\MainScene.h" />
+    <ClInclude Include="Source\Game\StudyScene.h" />
     <ClInclude Include="Source\pch.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
