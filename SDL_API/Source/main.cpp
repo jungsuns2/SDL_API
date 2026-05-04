@@ -2,6 +2,7 @@
 #include "Core/Core.h"
 #include "Core/Input.h"
 #include "Game/MainScene.h"
+#include "Game/StudyScene.h"
 
 Core gCore;
 

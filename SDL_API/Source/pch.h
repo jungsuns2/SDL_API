@@ -76,14 +76,6 @@ struct Ellipse
 	float radiusY;
 };
 
-struct Color
-{
-	Uint8 r;
-	Uint8 g;
-	Uint8 b;
-	Uint8 a;
-};
-
 namespace Math
 {
 	[[nodiscard]] inline float GetVectorLength(const Point vector);

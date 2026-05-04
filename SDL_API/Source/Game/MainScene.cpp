@@ -75,6 +75,7 @@ void MainScene::Initialize()
 
 		// Monster
 		{
+			// Spwan
 			{
 				mMonsterSpwanTexture.Initialize(GetHelper(), "Resource/Monster/Effect/Die/Die01.png");
 
@@ -85,6 +86,18 @@ void MainScene::Initialize()
 				mMonsterClips[uint32_t(Monster::State::Spwan)].AddClip(frame);
 			}
 
+			// Idle
+			{
+				mMonsterIdleTexture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Idle/0.png");
+
+				Clip::Frame frame;
+				frame.texture = &mMonsterIdleTexture;
+				frame.durationTime = 0.12f;
+
+				mMonsterClips[uint32_t(Monster::State::Idle)].AddClip(frame);
+			}
+
+			// Run
 			for (uint32_t i = 0; i < Monster::RUN_COUNT; ++i)
 			{
 				mMonsterRunTextures[i].Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Run/" + std::to_string(i) + ".png");
@@ -96,6 +109,7 @@ void MainScene::Initialize()
 				mMonsterClips[uint32_t(Monster::State::Run)].AddClip(frame);
 			}
 
+			// Attack
 			for (uint32_t i = 0; i < Monster::ATTACK_COUNT; ++i)
 			{
 				mMonsterAttackTextures[i].Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Attack/" + std::to_string(i) + ".png");
@@ -164,6 +178,13 @@ void MainScene::Initialize()
 				image.texture = &tileTexture;
 				image.active = true;
 				tile.AddComponent(image);
+				
+				Color color{};
+				color.r = 255;
+				color.g = 255;
+				color.b = 255;
+				color.a = 255;
+				tile.AddComponent(color);
 
 				GetEntityWorld()->AddEntity(&tile);
 			}
@@ -184,6 +205,13 @@ void MainScene::Initialize()
 		label.SetText(GetHelper(), "UI Label");
 		mLabelEntity.AddComponent(label);
 
+		Color color{};
+		color.r = 255;
+		color.g = 255;
+		color.b = 255;
+		color.a = 255;
+		mLabelEntity.AddComponent(color);
+
 		GetEntityWorld()->AddEntity(&mLabelEntity);
 	}
 
@@ -200,6 +228,13 @@ void MainScene::Initialize()
 		animator.clipState = &mPlayerClips[uint32_t(Player::State::Idle)];
 		animator.active = true;
 		mPlayerEntity.AddComponent(animator);
+
+		Color color{};
+		color.r = 255;
+		color.g = 255;
+		color.b = 255;
+		color.a = 255;
+		mPlayerEntity.AddComponent(color);
 
 		GetEntityWorld()->AddEntity(&mPlayerEntity);
 	}
@@ -220,6 +255,13 @@ void MainScene::Initialize()
 		animator.active = true;
 		mSwordEntity.AddComponent(animator);
 
+		Color color{};
+		color.r = 255;
+		color.g = 255;
+		color.b = 255;
+		color.a = 255;
+		mSwordEntity.AddComponent(color);
+
 		GetEntityWorld()->AddEntity(&mSwordEntity);
 	}
 
@@ -237,6 +279,13 @@ void MainScene::Initialize()
 		image.active = true;
 		mGunEntity.AddComponent(image);
 
+		Color color{};
+		color.r = 255;
+		color.g = 255;
+		color.b = 255;
+		color.a = 255;
+		mGunEntity.AddComponent(color);
+
 		GetEntityWorld()->AddEntity(&mGunEntity);
 	}
 
@@ -252,12 +301,20 @@ void MainScene::Initialize()
 		animator.clipState = &mBulletClip;
 		mBulletEntity.AddComponent(animator);
 
+		Color color{};
+		color.r = 255;
+		color.g = 255;
+		color.b = 255;
+		color.a = 255;
+		mBulletEntity.AddComponent(color);
+
 		GetEntityWorld()->AddEntity(&mBulletEntity);
 	}
 
 	// Monster
 	{
 		mMonster.state = Monster::State::Dead;
+		mMonster.hp = 10;
 
 		Transform transform{};
 		transform.position = { .x = 0.0f, .y = 300.0f };
@@ -272,17 +329,19 @@ void MainScene::Initialize()
 		animator.clipState = &mMonsterClips[uint32_t(Monster::State::Dead)];
 		mMonsterEntity.AddComponent(animator);
 
+		Color color{};
+		color.r = 255;
+		color.g = 255;
+		color.b = 255;
+		color.a = 255;
+		mMonsterEntity.AddComponent(color);
+
 		GetEntityWorld()->AddEntity(&mMonsterEntity);
 	}
 }
 
 bool MainScene::Update(const float deltaTime)
 {
-	// 타일을 업데이트한다.
-	{
-
-	}
-
 	// 플레이어를 업데이트한다.
 	{
 		Input();
@@ -301,7 +360,7 @@ bool MainScene::Update(const float deltaTime)
 		transform->position = target->position;
 	}
 
-	// Sword
+	// 칼을 업데이트한다.
 	{
 		constexpr float PLAYER_RADIUS = 13.0f;
 
@@ -355,7 +414,7 @@ bool MainScene::Update(const float deltaTime)
 		swordTransform->flip = (mSword.direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 	}
 
-	// Gun
+	// 총을 업데이트한다.
 	{
 		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
 		const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
@@ -373,7 +432,7 @@ bool MainScene::Update(const float deltaTime)
 		gunTransform->flip = (mGun.direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_VERTICAL;
 	}
 
-	// Bullet
+	// 총알을 업데이트한다.
 	{
 		const Transform* gunTransform = mGunEntity.GetComponent<Transform>();
 
@@ -433,6 +492,7 @@ bool MainScene::Update(const float deltaTime)
 			mMonster.length = Math::GetVectorLength(mMonster.difference);
 
 			constexpr float ATTACK_DISTANCE = 90.0f;
+			Animator* anim = mMonsterEntity.GetComponent<Animator>();
 
 			mMonster.spwanPositionTimer += deltaTime;
 			if (!mMonster.isSpwan 
@@ -441,18 +501,16 @@ bool MainScene::Update(const float deltaTime)
 				mMonster.state = Monster::State::Spwan;
 				mMonster.isSpwan = true;
 
-				Animator* anim = mMonsterEntity.GetComponent<Animator>();
 				anim->active = true;
 
 				mMonster.spwanWaitingTimer = 0.0f;
 				mMonster.spwanPositionTimer = 0.0f;
 			}
 
+			Clip& attackClip = mMonsterClips[uint32_t(Monster::State::Attack)];
 			if (mMonster.state == Monster::State::Spwan)
 			{
 				mMonster.spwanWaitingTimer += deltaTime;
-				Animator* anim = mMonsterEntity.GetComponent<Animator>();
-
 				if (mMonster.spwanWaitingTimer >= 0.5f)
 				{
 					mMonster.spwanBlinkTimer += deltaTime;
@@ -471,9 +529,13 @@ bool MainScene::Update(const float deltaTime)
 			}
 			else if (mMonster.state == Monster::State::Attack)
 			{
-				if (mMonster.length > ATTACK_DISTANCE)
+				if (anim->clipState == &attackClip
+					and anim->frameIndex >= attackClip.GetLastFrameIndex() - 1)
 				{
-					mMonster.state = Monster::State::Run;
+					if (mMonster.length > ATTACK_DISTANCE)
+					{
+						mMonster.state = Monster::State::Run;
+					}
 				}
 			}
 			else if (mMonster.state == Monster::State::Run)
@@ -482,6 +544,19 @@ bool MainScene::Update(const float deltaTime)
 				{
 					mMonster.state = Monster::State::Attack;
 				}
+			}
+
+			printf("%f\n", anim->elapsedTime);
+
+			// 충돌했을 때 애니메이션 처리
+			if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
+			{
+				mMonster.state = Monster::State::Idle;
+				mMonster.hp -= 1;
+				Color* color = mMonsterEntity.GetComponent<Color>();
+				color->r = 240;
+				color->g = 0;
+				color->b = 0;
 			}
 		}
 
@@ -519,6 +594,10 @@ bool MainScene::Update(const float deltaTime)
 			{
 			case Monster::State::Spwan:
 				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Spwan)]);
+				break;
+
+			case Monster::State::Idle:
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::State::Idle)]);
 				break;
 
 			case Monster::State::Run:

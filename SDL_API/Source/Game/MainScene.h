@@ -68,6 +68,7 @@ private:
 	std::array<Texture, Player::RUN_COUNT> mPlayerRunTextures{};
 
 	Texture mMonsterSpwanTexture{};
+	Texture mMonsterIdleTexture{};
 	std::array<Texture, Monster::RUN_COUNT> mMonsterRunTextures{};
 	std::array<Texture, Monster::ATTACK_COUNT> mMonsterAttackTextures{};
 

@@ -52,11 +52,11 @@ bool Core::Update(const float deltaTime)
 		const EntityWorld* entityWorld = mScene->GetEntityWorld();
 		Transform* cameraTransform = cameraSystem(entityWorld);
 
-		imageSystem(entityWorld, cameraTransform);
+		imageRenderingSystem(entityWorld, cameraTransform);
 
-		animatorSystem(entityWorld, cameraTransform, deltaTime);
+		animatorRenderingSystem(entityWorld, cameraTransform, deltaTime);
 
-		colliderSystem(entityWorld, cameraTransform);
+		colliderRenderingSystem(entityWorld, cameraTransform);
 
 		labelSystem(entityWorld);
 
@@ -143,7 +143,7 @@ void Core::textureSystem(const TextureSystemDesc& desc)
 	angleCenter->y = offset.y;
 }
 
-void Core::imageSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+void Core::imageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
 {
 	assert(entityWorld != nullptr);
 	assert(cameraTransform != nullptr);
@@ -151,7 +151,8 @@ void Core::imageSystem(const EntityWorld* entityWorld, Transform* cameraTransfor
 	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
 		if (not entity->HasComponent<Transform>()
-			or not entity->HasComponent<Image>())
+			or not entity->HasComponent<Image>()
+			or not entity->HasComponent<Color>())
 		{
 			continue;
 		}
@@ -163,7 +164,7 @@ void Core::imageSystem(const EntityWorld* entityWorld, Transform* cameraTransfor
 		}
 
 		Transform* transform = entity->GetComponent<Transform>();
-
+		Color* color = entity->GetComponent<Color>();
 		SDL_FRect rect{};
 		SDL_FPoint angleCenter{};
 
@@ -178,11 +179,13 @@ void Core::imageSystem(const EntityWorld* entityWorld, Transform* cameraTransfor
 			}
 		);
 
+		SDL_SetTextureColorMod(image->texture->GetTexture(), color->r, color->g, color->b);
+		SDL_SetTextureAlphaMod(image->texture->GetTexture(), color->a);
 		SDL_RenderCopyExF(mRenderer, image->texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
 	}
 }
 
-void Core::animatorSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime)
+void Core::animatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime)
 {
 	assert(entityWorld != nullptr);
 	assert(cameraTransform != nullptr);
@@ -190,7 +193,8 @@ void Core::animatorSystem(const EntityWorld* entityWorld, Transform* cameraTrans
 	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
 		if (not entity->HasComponent<Transform>()
-			or not entity->HasComponent<Animator>())
+			or not entity->HasComponent<Animator>()
+			or not entity->HasComponent<Color>())
 		{
 			continue;
 		}
@@ -224,7 +228,7 @@ void Core::animatorSystem(const EntityWorld* entityWorld, Transform* cameraTrans
 		}
 
 		Transform* transform = entity->GetComponent<Transform>();
-
+		Color* color = entity->GetComponent<Color>();
 		SDL_FRect rect{};
 		SDL_FPoint angleCenter{};
 
@@ -239,16 +243,18 @@ void Core::animatorSystem(const EntityWorld* entityWorld, Transform* cameraTrans
 			}
 		);
 
+		SDL_SetTextureColorMod(frame.texture->GetTexture(), color->r, color->g, color->b);
+		SDL_SetTextureAlphaMod(frame.texture->GetTexture(), color->a);
 		SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
 	}
 }
 
-void Core::colliderSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+void Core::colliderRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
 {
-	assert(entityWorld != nullptr);
-	assert(cameraTransform != nullptr);
+	//assert(entityWorld != nullptr);
+	//assert(cameraTransform != nullptr);
 
-	for (const Entity* entity : entityWorld->GetAllEntites())
+	/*for (const Entity* entity : entityWorld->GetAllEntites())
 	{
 		if (not entity->HasComponent<Transform>()
 			or not entity->HasComponent<Image>()
@@ -275,7 +281,7 @@ void Core::colliderSystem(const EntityWorld* entityWorld, Transform* cameraTrans
 		);
 
 		SDL_RenderCopyExF(mRenderer, image->texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
-	}
+	}*/
 }
 
 void Core::labelSystem(const EntityWorld* entityWorld)
@@ -305,6 +311,9 @@ void Core::labelSystem(const EntityWorld* entityWorld)
 			.h = label->height,
 		};
 
+		Color* color = entity->GetComponent<Color>();
+		SDL_SetTextureColorMod(label->texture, color->r, color->g, color->b);
+		SDL_SetTextureAlphaMod(label->texture, color->a);
 		SDL_RenderCopyF(mRenderer, label->texture, nullptr, &rect);
 	}
 }

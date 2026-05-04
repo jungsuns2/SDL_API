@@ -29,9 +29,9 @@ public:
 
 	Transform* cameraSystem(const EntityWorld* entityWorld);
 	void textureSystem(const TextureSystemDesc& desc);
-	void imageSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
-	void animatorSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime);
-	void colliderSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
+	void imageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
+	void animatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime);
+	void colliderRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
 	void labelSystem(const EntityWorld* entityWorld);
 
 public:

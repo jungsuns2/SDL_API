@@ -25,6 +25,7 @@ struct Monster : public Component
 	enum class State
 	{
 		Spwan,
+		Idle,
 		Run,
 		Attack,
 		Dead,
@@ -48,6 +49,7 @@ struct Monster : public Component
 	float spwanBlinkTimer{};
 	bool isSpwan = false;
 	bool isBlinkOn = false;
+	int32_t hp{};
 };
 
 struct Sword : public Component
