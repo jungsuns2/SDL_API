@@ -494,25 +494,27 @@ bool MainScene::Update(const float deltaTime)
 			constexpr float ATTACK_DISTANCE = 90.0f;
 			Animator* anim = mMonsterEntity.GetComponent<Animator>();
 
-			mMonster.spwanPositionTimer += deltaTime;
-			if (!mMonster.isSpwan 
-				and mMonster.spwanPositionTimer >= 2.0f)
+			if (not anim->active
+				and not mMonster.isSpwan)
 			{
-				mMonster.state = Monster::State::Spwan;
-				mMonster.isSpwan = true;
+				mMonster.spwanPositionTimer += deltaTime;
+				if (mMonster.spwanPositionTimer >= 2.0f)
+				{
+					mMonster.state = Monster::State::Spwan;
+					mMonster.isSpwan = true;
+					anim->active = true;
 
-				anim->active = true;
-
-				mMonster.spwanWaitingTimer = 0.0f;
-				mMonster.spwanPositionTimer = 0.0f;
+					mMonster.spwanWaitingTimer = 0.0f;
+					mMonster.spwanPositionTimer = 0.0f;
+				}
 			}
 
-			Clip& attackClip = mMonsterClips[uint32_t(Monster::State::Attack)];
 			if (mMonster.state == Monster::State::Spwan)
 			{
 				mMonster.spwanWaitingTimer += deltaTime;
 				if (mMonster.spwanWaitingTimer >= 0.5f)
 				{
+
 					mMonster.spwanBlinkTimer += deltaTime;
 					if (mMonster.spwanBlinkTimer >= 0.06f)
 					{
@@ -524,10 +526,13 @@ bool MainScene::Update(const float deltaTime)
 				{
 					mMonster.state = Monster::State::Run;
 					anim->active = true;
+					mMonster.spwanBlinkTimer = 0.0f;
 					mMonster.spwanWaitingTimer = 0.0f;
 				}
 			}
-			else if (mMonster.state == Monster::State::Attack)
+
+			Clip& attackClip = mMonsterClips[uint32_t(Monster::State::Attack)];
+			if (mMonster.state == Monster::State::Attack)
 			{
 				if (anim->clipState == &attackClip
 					and anim->frameIndex >= attackClip.GetLastFrameIndex() - 1)
@@ -546,17 +551,51 @@ bool MainScene::Update(const float deltaTime)
 				}
 			}
 
-			printf("%f\n", anim->elapsedTime);
-
 			// 충돌했을 때 애니메이션 처리
-			if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
+			if (mMonster.state != Monster::State::Spwan
+				and mMonster.state != Monster::State::Dead)
 			{
-				mMonster.state = Monster::State::Idle;
-				mMonster.hp -= 1;
+				if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
+				{
+					mMonster.hp -= 1;
+				}
+			}
+
+			static int32_t prevHp = mMonster.hp;
+			if (prevHp != mMonster.hp)
+			{
 				Color* color = mMonsterEntity.GetComponent<Color>();
 				color->r = 240;
 				color->g = 0;
 				color->b = 0;
+
+				mMonster.damageTimer += deltaTime;
+				if (mMonster.damageTimer >= Monster::DAMAGE_TIME)
+				{
+					mMonster.state = Monster::State::Run;
+					Color* color = mMonsterEntity.GetComponent<Color>();
+					color->r = 255;
+					color->g = 255;
+					color->b = 255;
+
+					prevHp = mMonster.hp;
+					mMonster.damageTimer = 0.0f;
+				}
+			}
+
+			if (mMonster.hp <= 0)
+			{
+				mMonster.state = Monster::State::Dead;
+				Animator* anim = mMonsterEntity.GetComponent<Animator>();
+				anim->active = false;
+
+				mMonster.deadTimer += deltaTime;
+				if (mMonster.deadTimer >= Monster::DEAD_TIME)
+				{
+					mMonster.hp = 10;
+					mMonster.isSpwan = false;
+					mMonster.deadTimer = 0.0f;
+				}
 			}
 		}
 
@@ -685,21 +724,6 @@ void MainScene::Input()
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_ESCAPE))
 	{
 		mIsUpdate = false;
-	}
-
-	if (Input::Get().GetMouseButtonDown(SDL_BUTTON_RIGHT))
-	{
-	}
-
-	static bool mousePositionPrint;
-
-	if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
-	{
-		mousePositionPrint = !mousePositionPrint;
-	}
-
-	if (mousePositionPrint)
-	{
 	}
 }
 
