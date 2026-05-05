@@ -8,6 +8,8 @@ void Texture::Initialize(Helper* helper, const std::string& filename)
 	assert(helper != nullptr);
 
 	mSurface = IMG_Load(filename.c_str());
+	assert(mSurface != nullptr and "이미지를 찾을 수 없습니다.");
+
 	mTexture = SDL_CreateTextureFromSurface(helper->GetRenderer(), mSurface);
 }
 
