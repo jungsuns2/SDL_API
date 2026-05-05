@@ -17,6 +17,8 @@ void MainScene::Initialize()
 		mTileTextures[0].Initialize(GetHelper(), "Resource/Tile/0.png");
 		mTileTextures[1].Initialize(GetHelper(), "Resource/Tile/1.png");
 
+		mDeadParticleTexture.Initialize(GetHelper(), "Resource/RedRectangle.png");
+
 		// Player
 		{
 			for (uint32_t i = 0; i < Player::IDLE_COUNT; ++i)
@@ -312,13 +314,35 @@ void MainScene::Initialize()
 	}
 
 	// Monster
-	{
+	{	
+		// Dead Particle
+		{
+			for (uint32_t i = 0; i < DEAD_PARTICLE_COUNT; ++i)
+			{
+				Transform transform{};
+				transform.scale = { .width = 0.3f, .height = 0.3f };
+				mDeadParticleEntities[i].AddComponent(transform);
+
+				Image image{};
+				image.texture = &mDeadParticleTexture;
+				mDeadParticleEntities[i].AddComponent(image);
+
+				Color color{};
+				color.r = 255;
+				color.g = 255;
+				color.b = 255;
+				color.a = 255;
+				mDeadParticleEntities[i].AddComponent(color);
+
+				GetEntityWorld()->AddEntity(&mDeadParticleEntities[i]);
+			}
+		}
+
 		mMonster.state = Monster::eState::Dead;
 		mMonster.hp = 10;
 
 		Transform transform{};
 		transform.position = { .x = 0.0f, .y = 300.0f };
-		transform.scale = { .width = 4.0f, .height = 4.0f };
 		mMonsterEntity.AddComponent(transform);
 
 		mMonsterClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
@@ -482,7 +506,7 @@ bool MainScene::Update(const float deltaTime)
 	{
 		// State
 		{
-			const Transform* monsterTransform = mMonsterEntity.GetComponent<Transform>();
+			Transform* monsterTransform = mMonsterEntity.GetComponent<Transform>();
 			const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
 
 			const Point monsterPosition = monsterTransform->position;
@@ -502,6 +526,7 @@ bool MainScene::Update(const float deltaTime)
 				{
 					mMonster.state = Monster::eState::Spwan;
 					mMonster.isSpwan = true;
+					monsterTransform->scale = { .width = Monster::SPWAN_SCALE, .height = Monster::SPWAN_SCALE };
 					anim->active = true;
 
 					mMonster.spwanWaitingTimer = 0.0f;
@@ -524,6 +549,8 @@ bool MainScene::Update(const float deltaTime)
 				}
 				if (mMonster.spwanWaitingTimer >= 1.0f)
 				{
+					monsterTransform->scale = { .width = Monster::ORIGNAL_SCALE, .height = Monster::ORIGNAL_SCALE };
+
 					mMonster.state = Monster::eState::Run;
 					anim->active = true;
 					mMonster.spwanBlinkTimer = 0.0f;
@@ -583,15 +610,31 @@ bool MainScene::Update(const float deltaTime)
 				}
 			}
 
+			// TODO: 파티클은 몬스터 정규화 반대 방향으로 * speed까지 하기
 			if (mMonster.hp <= 0)
 			{
 				mMonster.state = Monster::eState::Dead;
 				Animator* anim = mMonsterEntity.GetComponent<Animator>();
 				anim->active = false;
 
+				for (uint32_t i = 0; i < DEAD_PARTICLE_COUNT; ++i)
+				{
+					Transform* transform = mDeadParticleEntities[i].GetComponent<Transform>();
+					transform->position = monsterPosition;
+
+					Image* image = mDeadParticleEntities[i].GetComponent<Image>();
+					image->active = true;
+				}
+
 				mMonster.deadTimer += deltaTime;
 				if (mMonster.deadTimer >= Monster::DEAD_TIME)
 				{
+					for (uint32_t i = 0; i < DEAD_PARTICLE_COUNT; ++i)
+					{
+						Image* image = mDeadParticleEntities[i].GetComponent<Image>();
+						image->active = false;
+					}
+
 					mMonster.hp = 10;
 					mMonster.isSpwan = false;
 					mMonster.deadTimer = 0.0f;
@@ -648,7 +691,7 @@ bool MainScene::Update(const float deltaTime)
 				break;
 
 			case Monster::eState::Dead:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Spwan)]);
+				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Idle)]);
 				break;
 
 			default:
@@ -681,7 +724,7 @@ void MainScene::Finalize()
 	// Monster
 	{
 		mMonsterSpwanTexture.Finalize();
-		mGunTexture.Finalize();
+		mMonsterIdleTexture.Finalize();
 
 		for (Texture& texture : mMonsterRunTextures)
 		{
@@ -704,11 +747,14 @@ void MainScene::Finalize()
 		texture.Finalize();
 	}
 
+	mGunTexture.Finalize();
+
 	for (Texture& texture : mBulletTextures)
 	{
 		texture.Finalize();
 	}
 
+	// Tile
 	{
 		for (uint32_t y = 0; y < mTileHeight; ++y)
 		{
@@ -717,6 +763,8 @@ void MainScene::Finalize()
 
 		delete[] mTileEntities;
 	}
+
+	mDeadParticleTexture.Finalize();
 }
 
 void MainScene::Input()

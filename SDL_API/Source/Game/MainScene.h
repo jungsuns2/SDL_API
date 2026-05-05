@@ -37,6 +37,7 @@ public:
 private:
 	bool mIsUpdate = true;
 	static constexpr Point PLAYER_HAND = { .x = 15.0f, .y = 30.0f };
+	static constexpr uint32_t DEAD_PARTICLE_COUNT = 6;
 	uint32_t mTileWidth{};
 	uint32_t mTileHeight{};
 
@@ -50,6 +51,7 @@ private:
 	Entity mGunEntity{};
 	Entity mBulletEntity{};
 	Entity** mTileEntities = nullptr;
+	std::array<Entity, DEAD_PARTICLE_COUNT> mDeadParticleEntities{};
 
 	Player mPlayer{};
 	Monster mMonster{};
@@ -57,6 +59,7 @@ private:
 	Gun mGun{};
 	Bullet mBullet{};
 	Tile mTile[20][20]{};
+	Particle mDeadParticle{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mMonsterClips{};
@@ -77,5 +80,7 @@ private:
 	Texture mGunTexture{};
 	std::array<Texture, Effect::BULLET_COUNT> mBulletTextures{};
 
-	std::array<Texture, 2> mTileTextures;
+	std::array<Texture, 2> mTileTextures{};
+
+	Texture mDeadParticleTexture{};
 };

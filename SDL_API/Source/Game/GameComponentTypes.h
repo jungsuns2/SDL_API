@@ -37,6 +37,8 @@ struct Monster : public Component
 
 	static constexpr uint32_t RUN_COUNT = 8;
 	static constexpr uint32_t ATTACK_COUNT = 7;
+	static constexpr float SPWAN_SCALE = 2.0f;
+	static constexpr float ORIGNAL_SCALE = 4.0f;
 	static constexpr float SPWAN_POSITION_TIME = 2.0f;
 	static constexpr float SPWAN_WAITING_TIME = 1.0f;
 	static constexpr float DAMAGE_TIME = 0.3f;
@@ -126,4 +128,13 @@ struct Tile : public Component
 	Tile() : Component(&_ID) {}
 
 	eType type{};
+};
+
+struct Particle : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Particle() : Component(&_ID) {}
+
+	Point direction{};
+	float speed{};
 };
