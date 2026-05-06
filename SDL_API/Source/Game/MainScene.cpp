@@ -53,16 +53,16 @@ bool MainScene::Update(const float deltaTime)
 		{
 			anim->active = true;
 
-			const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
-			float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
-			degree -= 90.0f;
-			swordTransform->angle = -degree;
-
-			const float length = Math::GetVectorLength(mouseToPlayer);
-
-			direction->point = mouseToPlayer / length;
-
-			swordTransform->position = direction->point * PLAYER_RADIUS * 3.141592f + playerTransform->position;
+			setWeaponPosition
+			(
+				{
+					.weaponEntity = &mSwordEntity,
+					.playerRadius = PLAYER_RADIUS,
+					.dgreeOffset = -90.0f,
+					.flipX = SDL_FLIP_NONE,
+					.flipY = SDL_FLIP_HORIZONTAL
+				}
+			);
 
 			swordState->fireCoolTimer += deltaTime;
 			if (swordState->fireCoolTimer >= COOLTIME)
@@ -90,29 +90,21 @@ bool MainScene::Update(const float deltaTime)
 			anim->active = false;
 			swordTransform->position = direction->point * PLAYER_RADIUS * 3.141592f;
 		}
-
-		swordTransform->flip = (direction->point.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 	}
 
 	// 총을 업데이트한다.
 	{
-		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
-		const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
-		float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
-
-		Transform* gunTransform = mGunEntity.GetComponent<Transform>();
-		gunTransform->angle = -degree;
-
-		const float length = Math::GetVectorLength(mouseToPlayer);
-		Gun* gun = mGunEntity.GetComponent<Gun>();
-
-		Direction* direction = mGunEntity.GetComponent<Direction>();
-		direction->point = mouseToPlayer / length;
-
 		constexpr float PLAYER_RADIUS = 20.0f;
-		gunTransform->position = direction->point * PLAYER_RADIUS * 3.141592f + playerTransform->position;
-
-		gunTransform->flip = (direction->point.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_VERTICAL;
+		setWeaponPosition
+		(
+			{
+				.weaponEntity = &mGunEntity,
+				.playerRadius = PLAYER_RADIUS,
+				.dgreeOffset = 0.0f,
+				.flipX = SDL_FLIP_NONE, 
+				.flipY = SDL_FLIP_VERTICAL
+			}
+		);
 	}
 
 	// 총알을 업데이트한다.
@@ -141,12 +133,7 @@ bool MainScene::Update(const float deltaTime)
 			const Point difference = getScreenMousePosition() - gunTransform->position;
 			const float length = Math::GetVectorLength(difference);
 
-			bulletDirection->point =
-			{
-				.x = difference.x / length,
-				.y = difference.y / length
-			};
-
+			bulletDirection->point = difference / length;
 			bulletState->fireCoolTimer = 0.0f;
 		}
 
@@ -586,7 +573,7 @@ void MainScene::Initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Attack/" + std::to_string(cnt++) + ".png");
 
-			Clip::Frame frame;
+			Clip::Frame frame{};
 			frame.texture = &texture;
 			frame.durationTime = 0.12f;
 
@@ -1025,25 +1012,28 @@ Point MainScene::getScreenMousePosition() const
 	return screenPosition;
 }
 
-Transform* MainScene::getWeaponPosition(Entity* weaponEntity, const Entity& playerEntity, float playerRadius, float deltaTime) const
+void MainScene::setWeaponPosition(const SetWeaponDesc& desc)
 {
-	//assert(weaponEntity != nullptr);
+	Entity* weaponEntity = desc.weaponEntity;
+	float playerRadius = desc.playerRadius;
+	float dgreeOffset = desc.dgreeOffset;
+	SDL_RendererFlip flipX = desc.flipX;
+	SDL_RendererFlip flipY = desc.flipY;
 
-	//const Transform* playerTransform = playerEntity.GetComponent<Transform>();
-	//const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
-	//float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
+	Transform* transform = weaponEntity->GetComponent<Transform>();
+	Direction* direction = weaponEntity->GetComponent<Direction>();
 
-	Transform* transform = mGunEntity.GetComponent<Transform>();
-	//transform->angle = -degree;
+	const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
+	const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
+	float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
+	degree = degree + dgreeOffset;
+	transform->angle = -degree;
 
-	//const float length = Math::GetVectorLength(mouseToPlayer);
-	//mGun.direction = mouseToPlayer / length;
+	const float length = Math::GetVectorLength(mouseToPlayer);
+	direction->point = mouseToPlayer / length;
 
-	//transform->position = playerTransform->position + mGun.direction * playerRadius * 3.141592f;
-
-	//transform->flip = (mGun.direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_VERTICAL;
-
-	return transform;
+	transform->position = playerTransform->position + direction->point * playerRadius * 3.141592f;
+	transform->flip = (direction->point.x > 0.0f) ? flipX : flipY;
 }
 
 float MainScene::getRandom(const float min, const float max)

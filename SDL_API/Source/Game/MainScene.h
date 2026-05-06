@@ -10,6 +10,15 @@
 
 #include "GameComponentTypes.h"
 
+struct SetWeaponDesc
+{
+	Entity* weaponEntity;
+	float playerRadius;
+	float dgreeOffset;
+	SDL_RendererFlip flipX;
+	SDL_RendererFlip flipY;
+};
+
 class EntityWorld;
 
 class MainScene final : public Scene
@@ -35,7 +44,7 @@ public:
 	void SetClip();
 
 	Point getScreenMousePosition() const;
-	Transform* getWeaponPosition(Entity* weaponEntity, const Entity& playerEntity, float playerRadius, float deltaTime) const;
+	void setWeaponPosition(const SetWeaponDesc& desc);
 
 	float getRandom(const float min, const float max);
 
