@@ -42,7 +42,7 @@ struct Monster : public Component
 	static constexpr float SPWAN_POSITION_TIME = 2.0f;
 	static constexpr float SPWAN_WAITING_TIME = 1.0f;
 	static constexpr float DAMAGE_TIME = 0.3f;
-	static constexpr float DEAD_TIME = 1.0f;
+	static constexpr float DEAD_TIME = 0.5f;
 
 	eState state{};
 	Point direction{};
@@ -111,7 +111,6 @@ struct Bullet : public Component
 	Point direction{};
 
 	bool isFile = false;
-	float fireTimer{};
 	float coolTimer{};
 };
 

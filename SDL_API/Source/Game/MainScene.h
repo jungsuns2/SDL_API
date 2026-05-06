@@ -34,6 +34,8 @@ public:
 	Point getScreenMousePosition() const;
 	Point getWeaponPosition(Transform* swordTransform, Transform* playerTransform, float playerRadius);
 
+	float getRandom(const float min, const float max);
+
 private:
 	bool mIsUpdate = true;
 	static constexpr Point PLAYER_HAND = { .x = 15.0f, .y = 30.0f };
@@ -59,7 +61,7 @@ private:
 	Gun mGun{};
 	Bullet mBullet{};
 	Tile mTile[20][20]{};
-	Particle mDeadParticle{};
+	Particle mDeadParticle[DEAD_PARTICLE_COUNT]{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mMonsterClips{};

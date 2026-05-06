@@ -109,6 +109,21 @@ namespace Math
 		Point result{ .x = vector.x / length, .y = vector.y / length };
 		return result;
 	}
+
+	[[nodiscard]] inline Point RotatePoint(const Point point, const float degree)
+	{
+		const float radian = degree * (180.0f / 3.141592f);
+		const float cosTheta = cos(radian);
+		const float sinTheta = sin(radian);
+
+		Point result =
+		{
+			.x = cosTheta * point.x - sinTheta * point.y,
+			.y = sinTheta * point.x + cosTheta * point.y,
+		};
+
+		return result;
+	}
 }
 
 [[nodiscard]] inline Point operator+(const Point& p, const Scale& s)

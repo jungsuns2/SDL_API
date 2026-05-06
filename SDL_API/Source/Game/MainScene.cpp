@@ -613,17 +613,32 @@ bool MainScene::Update(const float deltaTime)
 			// TODO: 파티클은 몬스터 정규화 반대 방향으로 * speed까지 하기
 			if (mMonster.hp <= 0)
 			{
+				if (mMonster.state != Monster::eState::Dead)
+				{
+					for (uint32_t i = 0; i < DEAD_PARTICLE_COUNT; ++i)
+					{
+						Transform* transform = mDeadParticleEntities[i].GetComponent<Transform>();
+						transform->position = monsterPosition;
+						mDeadParticle[i].direction = getScreenMousePosition() - monsterPosition;
+						mDeadParticle[i].direction = Math::NormalizeVector(mDeadParticle[i].direction);
+						mDeadParticle[i].direction = Math::RotatePoint(mDeadParticle[i].direction, getRandom(-60.0f, 60.0f));
+					}
+				}
+
 				mMonster.state = Monster::eState::Dead;
 				Animator* anim = mMonsterEntity.GetComponent<Animator>();
 				anim->active = false;
 
 				for (uint32_t i = 0; i < DEAD_PARTICLE_COUNT; ++i)
 				{
-					Transform* transform = mDeadParticleEntities[i].GetComponent<Transform>();
-					transform->position = monsterPosition;
+					if (not anim->active)
+					{
+						Image* image = mDeadParticleEntities[i].GetComponent<Image>();
+						image->active = true;
 
-					Image* image = mDeadParticleEntities[i].GetComponent<Image>();
-					image->active = true;
+						Transform* transform = mDeadParticleEntities[i].GetComponent<Transform>();
+						transform->position = transform->position + mDeadParticle[i].direction * 300.0f * deltaTime;
+					}
 				}
 
 				mMonster.deadTimer += deltaTime;
@@ -897,4 +912,10 @@ Point MainScene::getWeaponPosition(Transform* swordTransform, Transform* playerT
 	swordTransform->position = mSword.direction * playerRadius * 3.141592f;
 
 	return swordTransform->position;
+}
+
+float MainScene::getRandom(const float min, const float max)
+{
+	const float result = float(rand()) / RAND_MAX * (max - min) + min;
+	return result;
 }
