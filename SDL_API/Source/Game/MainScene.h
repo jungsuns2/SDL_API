@@ -26,20 +26,21 @@ public:
 	void Finalize()  override;
 
 public:
+	void Initialize_Resource();
+	void Initialize_Entity();
+
 	void Input();
 	void State();
 	void Move(const float deltaTime);
 	void SetClip();
 
 	Point getScreenMousePosition() const;
-	Point getWeaponPosition(Transform* swordTransform, Transform* playerTransform, float playerRadius);
+	Transform* getWeaponPosition(Entity* weaponEntity, const Entity& playerEntity, float playerRadius, float deltaTime) const;
 
 	float getRandom(const float min, const float max);
 
 private:
 	bool mIsUpdate = true;
-	static constexpr Point PLAYER_HAND = { .x = 15.0f, .y = 30.0f };
-	static constexpr uint32_t DEAD_PARTICLE_COUNT = 6;
 	uint32_t mTileWidth{};
 	uint32_t mTileHeight{};
 
@@ -53,15 +54,7 @@ private:
 	Entity mGunEntity{};
 	Entity mBulletEntity{};
 	Entity** mTileEntities = nullptr;
-	std::array<Entity, DEAD_PARTICLE_COUNT> mDeadParticleEntities{};
-
-	Player mPlayer{};
-	Monster mMonster{};
-	Sword mSword{};
-	Gun mGun{};
-	Bullet mBullet{};
-	Tile mTile[20][20]{};
-	Particle mDeadParticle[DEAD_PARTICLE_COUNT]{};
+	std::array<Entity, 6> mDeadParticleEntities{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mMonsterClips{};
@@ -69,18 +62,18 @@ private:
 	Clip mSwordSkillClip{};
 	Clip mBulletClip{};
 
-	std::array<Texture, Player::IDLE_COUNT> mPlayerIdleTextures{};
-	std::array<Texture, Player::RUN_COUNT> mPlayerRunTextures{};
+	std::array<Texture, 5> mPlayerIdleTextures{};
+	std::array<Texture, 6> mPlayerRunTextures{};
 
 	Texture mMonsterSpwanTexture{};
 	Texture mMonsterIdleTexture{};
-	std::array<Texture, Monster::RUN_COUNT> mMonsterRunTextures{};
-	std::array<Texture, Monster::ATTACK_COUNT> mMonsterAttackTextures{};
+	std::array<Texture, 8> mMonsterRunTextures{};
+	std::array<Texture, 7> mMonsterAttackTextures{};
 
-	std::array<Texture, Sword::COUNT> mSwordTextures{};
+	std::array<Texture, 12> mSwordTextures{};
 
 	Texture mGunTexture{};
-	std::array<Texture, Effect::BULLET_COUNT> mBulletTextures{};
+	std::array<Texture, 8> mBulletTextures{};
 
 	std::array<Texture, 2> mTileTextures{};
 

@@ -125,3 +125,11 @@ struct Color final : public Component
 	Uint8 b = 255;
 	Uint8 a = 255;
 };
+
+struct Direction final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Direction() : Component(&_ID) {}
+
+	Point point{};
+};
