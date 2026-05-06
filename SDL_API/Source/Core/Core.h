@@ -12,6 +12,14 @@ struct TextureSystemDesc
 	SDL_FPoint* angleCenter;
 };
 
+struct DrawSystemDesc
+{
+	const Scale textureScale;
+	Transform* transform;
+	Transform* cameraTransform;
+	SDL_FRect* rect;
+};
+
 class EntityWorld;
 
 class Core final
@@ -29,6 +37,7 @@ public:
 
 	Transform* cameraSystem(const EntityWorld* entityWorld);
 	void textureSystem(const TextureSystemDesc& desc);
+	void drawSystem(const DrawSystemDesc& desc);
 	void imageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
 	void animatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime);
 	void colliderRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);

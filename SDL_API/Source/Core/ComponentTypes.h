@@ -26,7 +26,6 @@ struct Image final : public Component
 	Image() : Component(&_ID) {}
 
 	Texture* texture = nullptr;
-	bool active = false;
 };
 
 struct Label final : public Component
@@ -112,7 +111,6 @@ struct Animator final : public Component
 	Clip* clipState = nullptr;
 	float elapsedTime{}; // »Â∏• Ω√∞£
 	uint32_t frameIndex{};
-	bool active = false;
 };
 
 struct Color final : public Component
@@ -132,4 +130,29 @@ struct Direction final : public Component
 	Direction() : Component(&_ID) {}
 
 	Point point{};
+};
+
+//struct Collider final : public Component
+//{
+//	enum class CollisionLayer
+//	{
+//		Player,
+//		Monster,
+//		Wall,
+//		Count
+//	};
+//
+//	static constexpr uint32_t _ID = 0;
+//	Collider(const uint32_t layer) : Component(&_ID), Layer(layer) {}
+//
+//	const uint32_t Layer = 0;
+//	std::bitset<64> CollisionLayerMask{};
+//};
+
+struct Active final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Active() : Component(&_ID) {}
+
+	bool value = false;
 };

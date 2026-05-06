@@ -57,7 +57,9 @@ void StudyScene::Initialize()
 
 		Image image{};
 		image.texture = &mBoxTexture;
-		image.active = true;
+		
+		Active active{};
+		active.value = true;
 
 		Color color{};
 
@@ -65,6 +67,7 @@ void StudyScene::Initialize()
 		mob.AddComponent(collider);
 		mob.AddComponent(image);
 		mob.AddComponent(color);
+		mob.AddComponent(active);
 
 		GetEntityWorld()->AddEntity(&mob);
 	}

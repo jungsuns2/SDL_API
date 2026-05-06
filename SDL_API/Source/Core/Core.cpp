@@ -56,7 +56,7 @@ bool Core::Update(const float deltaTime)
 
 		animatorRenderingSystem(entityWorld, cameraTransform, deltaTime);
 
-		colliderRenderingSystem(entityWorld, cameraTransform);
+		//colliderRenderingSystem(entityWorld, cameraTransform);
 
 		labelSystem(entityWorld);
 
@@ -143,6 +143,43 @@ void Core::textureSystem(const TextureSystemDesc& desc)
 	angleCenter->y = offset.y;
 }
 
+void Core::drawSystem(const DrawSystemDesc& desc)
+{
+	const Scale textureScale = desc.textureScale;
+	Transform* transform = desc.transform;
+	Transform* cameraTransform = desc.cameraTransform;
+	SDL_FRect* rect = desc.rect;
+
+	const Point center =
+	{
+		.x = (transform->center.x + 1.0f) * 0.5f,
+		.y = (transform->center.y + 1.0f) * 0.5f,
+	};
+
+	const Point offset =
+	{
+		.x = center.x * (textureScale.width * transform->scale.width),
+		.y = center.y * (textureScale.height * transform->scale.height)
+	};
+
+	const Point cameraCenter =
+	{
+		.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
+		.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
+	};
+
+	const Point cameraOffset =
+	{
+		.x = cameraCenter.x - cameraTransform->position.x,
+		.y = cameraCenter.y + cameraTransform->position.y,
+	};
+
+	rect->x = cameraOffset.x + transform->position.x - offset.x;
+	rect->y = cameraOffset.y - transform->position.y - offset.y;
+	rect->w = textureScale.width * transform->scale.width;
+	rect->h = textureScale.height * transform->scale.height;
+}
+
 void Core::imageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
 {
 	assert(entityWorld != nullptr);
@@ -152,13 +189,14 @@ void Core::imageRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 	{
 		if (not entity->HasComponent<Transform>()
 			or not entity->HasComponent<Image>()
+			or not entity->HasComponent<Active>()
 			or not entity->HasComponent<Color>())
 		{
 			continue;
 		}
 
-		const Image* image = entity->GetComponent<Image>();
-		if (not image->active)
+		const Active* active = entity->GetComponent<Active>();
+		if (not active->value)
 		{
 			continue;
 		}
@@ -168,6 +206,7 @@ void Core::imageRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 		SDL_FRect rect{};
 		SDL_FPoint angleCenter{};
 
+		const Image* image = entity->GetComponent<Image>();
 		textureSystem
 		(
 			{
@@ -194,17 +233,19 @@ void Core::animatorRenderingSystem(const EntityWorld* entityWorld, Transform* ca
 	{
 		if (not entity->HasComponent<Transform>()
 			or not entity->HasComponent<Animator>()
+			or not entity->HasComponent<Active>()
 			or not entity->HasComponent<Color>())
 		{
 			continue;
 		}
 
-		Animator* animator = entity->GetComponent<Animator>();
-		if (not animator->active)
+		Active* active = entity->GetComponent<Active>();
+		if (not active->value)
 		{
 			continue;
 		}
 
+		Animator* animator = entity->GetComponent<Animator>();
 		const Clip* clip = animator->clipState;
 		const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
 		const Clip::Frame& frame = frames[animator->frameIndex];
@@ -251,37 +292,42 @@ void Core::animatorRenderingSystem(const EntityWorld* entityWorld, Transform* ca
 
 void Core::colliderRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
 {
-	//assert(entityWorld != nullptr);
-	//assert(cameraTransform != nullptr);
+	assert(entityWorld != nullptr);
+	assert(cameraTransform != nullptr);
 
-	/*for (const Entity* entity : entityWorld->GetAllEntites())
+	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
 		if (not entity->HasComponent<Transform>()
-			or not entity->HasComponent<Image>()
-			or not entity->HasComponent<Collider>())
+			/*or not entity->HasComponent<Collider>()*/
+			or not entity->HasComponent<Active>()
+			or not entity->HasComponent<Color>())
 		{
 			continue;
 		}
 
-		const Image* image = entity->GetComponent<Image>();
+		const Active* active = entity->GetComponent<Active>();
+		if (not active->value)
+		{
+			continue;
+		}
+
 		Transform* transform = entity->GetComponent<Transform>();
-
+		Color* color = entity->GetComponent<Color>();
 		SDL_FRect rect{};
-		SDL_FPoint angleCenter{};
 
-		textureSystem
+		const Image* image = entity->GetComponent<Image>();
+		drawSystem
 		(
 			{
 				.textureScale = {.width = float(image->texture->GetWidth()), .height = float(image->texture->GetHeight()) },
-				.textureTransform = transform,
+				.transform = transform,
 				.cameraTransform = cameraTransform,
 				.rect = &rect,
-				.angleCenter = &angleCenter
 			}
 		);
 
-		SDL_RenderCopyExF(mRenderer, image->texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
-	}*/
+		SDL_RenderFillRectF(mRenderer, &rect);
+	}
 }
 
 void Core::labelSystem(const EntityWorld* entityWorld)

@@ -46,12 +46,13 @@ bool MainScene::Update(const float deltaTime)
 
 		Sword* sword = mSwordEntity.GetComponent<Sword>();
 		Animator* anim = mSwordEntity.GetComponent<Animator>();
+		Active* active = mSwordEntity.GetComponent<Active>();
 		Direction* direction = mSwordEntity.GetComponent<Direction>();
 		WeaponState* swordState = mSwordEntity.GetComponent<WeaponState>();
 
 		if (not swordState->isFire)
 		{
-			anim->active = true;
+			active->value = true;
 
 			setWeaponPosition
 			(
@@ -87,7 +88,7 @@ bool MainScene::Update(const float deltaTime)
 		if (distSq >= rangeSq)
 		{
 			swordState->isFire = false;
-			anim->active = false;
+			active->value = false;
 			swordTransform->position = direction->point * PLAYER_RADIUS * 3.141592f;
 		}
 	}
@@ -119,6 +120,7 @@ bool MainScene::Update(const float deltaTime)
 		Transform* bulletTransform = mBulletEntity.GetComponent<Transform>();
 		Direction* bulletDirection = mBulletEntity.GetComponent<Direction>();
 		Animator* bulletAnim = mBulletEntity.GetComponent<Animator>();
+		Active* active = mBulletEntity.GetComponent<Active>();
 		WeaponState* bulletState = mBulletEntity.GetComponent<WeaponState>();
 
 		bulletState->fireCoolTimer += deltaTime;
@@ -127,7 +129,7 @@ bool MainScene::Update(const float deltaTime)
 			bulletAnim->frameIndex = 0;
 			bulletAnim->elapsedTime = 0.0f;
 
-			bulletAnim->active = true;
+			active->value = true;
 			bulletTransform->position = gunTransform->position;
 
 			const Point difference = getScreenMousePosition() - gunTransform->position;
@@ -151,7 +153,7 @@ bool MainScene::Update(const float deltaTime)
 		
 		if (distSq >= rangeSq)
 		{
-			bulletAnim->active = false;
+			active->value = false;
 		}
 	}
 
@@ -168,11 +170,11 @@ bool MainScene::Update(const float deltaTime)
 
 			Monster* monster = mMonsterEntity.GetComponent<Monster>();
 			Transform* monsterTransform = mMonsterEntity.GetComponent<Transform>();
-			Animator* anim = mMonsterEntity.GetComponent<Animator>();
+			Active* active = mMonsterEntity.GetComponent<Active>();
 			SpwanTimer* spwan = mMonsterEntity.GetComponent<SpwanTimer>();
 			
 
-			if (not anim->active
+			if (not active->value
 				and not spwan->isSpwan)
 			{
 				spwan->spwanPositionTimer += deltaTime;
@@ -181,7 +183,7 @@ bool MainScene::Update(const float deltaTime)
 					monster->state = Monster::eState::Spwan;
 					spwan->isSpwan = true;
 					monsterTransform->scale = { .width = SPWAN_SCALE, .height = SPWAN_SCALE };
-					anim->active = true;
+					active->value = true;
 
 					spwan->spwanWaitingTimer = 0.0f;
 					spwan->spwanPositionTimer = 0.0f;
@@ -199,7 +201,7 @@ bool MainScene::Update(const float deltaTime)
 					spwan->spwanBlinkTimer += deltaTime;
 					if (spwan->spwanBlinkTimer >= 0.06f)
 					{
-						anim->active = !anim->active;
+						active->value = !active->value;
 						spwan->spwanBlinkTimer = 0.0f;
 					}
 				}
@@ -208,13 +210,14 @@ bool MainScene::Update(const float deltaTime)
 					monsterTransform->scale = { .width = ORIGNAL_SCALE, .height = ORIGNAL_SCALE };
 
 					monster->state = Monster::eState::Run;
-					anim->active = true;
+					active->value = true;
 					spwan->spwanBlinkTimer = 0.0f;
 					spwan->spwanWaitingTimer = 0.0f;
 				}
 			}
 
 			constexpr float ATTACK_DISTANCE = 90.0f;
+			Animator* anim = mMonsterEntity.GetComponent<Animator>();
 			Clip& attackClip = mMonsterClips[uint32_t(Monster::eState::Attack)];
 			if (monster->state == Monster::eState::Attack)
 			{
@@ -293,15 +296,15 @@ bool MainScene::Update(const float deltaTime)
 				}
 
 				monster->state = Monster::eState::Dead;
-				Animator* anim = mMonsterEntity.GetComponent<Animator>();
-				anim->active = false;
+				Active* monsterActive = mMonsterEntity.GetComponent<Active>();
+				monsterActive->value = false;
 
 				for (Entity& entity : mDeadParticleEntities)
 				{
-					if (not anim->active)
+					if (not monsterActive->value)
 					{
-						Image* image = entity.GetComponent<Image>();
-						image->active = true;
+						Active* particleActive = entity.GetComponent<Active>();
+						particleActive->value = true;
 
 						Transform* transform = entity.GetComponent<Transform>();
 						Particle* particle = entity.GetComponent<Particle>();
@@ -315,8 +318,8 @@ bool MainScene::Update(const float deltaTime)
 				{
 					for (Entity& entity : mDeadParticleEntities)
 					{
-						Image* image = entity.GetComponent<Image>();
-						image->active = false;
+						Active* active = entity.GetComponent<Active>();
+						active->value = false;
 					}
 
 					hp->value = hp->max;
@@ -599,7 +602,6 @@ void MainScene::Initialize_Entity()
 	{
 		constexpr uint32_t TILE_SIZE = 16;
 		constexpr float TILE_SCALE = 4.0f;
-		constexpr Uint8 RGB = 255;
 
 		FILE* file = nullptr;
 		fopen_s(&file, "Resource/Tile/Tile.txt", "r");
@@ -638,14 +640,13 @@ void MainScene::Initialize_Entity()
 
 				Image image{};
 				image.texture = &tileTexture;
-				image.active = true;
 				tile.AddComponent(image);
 
+				Active active{};
+				active.value = true;
+				tile.AddComponent(active);
+
 				Color color{};
-				color.r = RGB;
-				color.g = RGB;
-				color.b = RGB;
-				color.a = RGB;
 				tile.AddComponent(color);
 
 				GetEntityWorld()->AddEntity(&tile);
@@ -657,8 +658,6 @@ void MainScene::Initialize_Entity()
 
 	// Label
 	{
-		constexpr Uint8 RGB = 255;
-
 		Transform transform;
 		transform.position = {};
 		mLabelEntity.AddComponent(transform);
@@ -670,10 +669,6 @@ void MainScene::Initialize_Entity()
 		mLabelEntity.AddComponent(label);
 
 		Color color{};
-		color.r = RGB;
-		color.g = RGB;
-		color.b = RGB;
-		color.a = RGB;
 		mLabelEntity.AddComponent(color);
 
 		GetEntityWorld()->AddEntity(&mLabelEntity);
@@ -682,7 +677,6 @@ void MainScene::Initialize_Entity()
 	// Player
 	{
 		const float SIZE = 4.0f;
-		constexpr Uint8 RGB = 255;
 
 		Player player{};
 		player.state = Player::eState::Idle;
@@ -700,14 +694,13 @@ void MainScene::Initialize_Entity()
 
 		Animator animator{};
 		animator.clipState = &mPlayerClips[uint32_t(Player::eState::Idle)];
-		animator.active = true;
 		mPlayerEntity.AddComponent(animator);
 
+		Active active{};
+		active.value = true;
+		mPlayerEntity.AddComponent(active);
+
 		Color color{};
-		color.r = RGB;
-		color.g = RGB;
-		color.b = RGB;
-		color.a = RGB;
 		mPlayerEntity.AddComponent(color);
 
 		GetEntityWorld()->AddEntity(&mPlayerEntity);
@@ -717,7 +710,6 @@ void MainScene::Initialize_Entity()
 	{
 		const float SIZE = 3.0f;
 		constexpr Point CENTER = { .x = 0.0f,.y = 1.0f };
-		constexpr Uint8 RGB = 255;
 
 		Sword sword{};
 		mSwordEntity.AddComponent(sword);
@@ -737,14 +729,13 @@ void MainScene::Initialize_Entity()
 
 		Animator animator{};
 		animator.clipState = &mSwordClip;
-		animator.active = true;
 		mSwordEntity.AddComponent(animator);
 
+		Active active{};
+		active.value = true;
+		mSwordEntity.AddComponent(active);
+
 		Color color{};
-		color.r = RGB;
-		color.g = RGB;
-		color.b = RGB;
-		color.a = RGB;
 		mSwordEntity.AddComponent(color);
 
 		GetEntityWorld()->AddEntity(&mSwordEntity);
@@ -754,7 +745,6 @@ void MainScene::Initialize_Entity()
 	{
 		constexpr float SIZE = 3.0f;
 		constexpr Point CENTER = { .x = 0.0f,.y = 0.5f };
-		constexpr Uint8 RGB = 255;
 
 		Gun gun{};
 		mGunEntity.AddComponent(gun);
@@ -769,14 +759,13 @@ void MainScene::Initialize_Entity()
 
 		Image image;
 		image.texture = &mGunTexture;
-		image.active = true;
 		mGunEntity.AddComponent(image);
 
+		Active active{};
+		active.value = true;
+		mGunEntity.AddComponent(active);
+
 		Color color{};
-		color.r = RGB;
-		color.g = RGB;
-		color.b = RGB;
-		color.a = RGB;
 		mGunEntity.AddComponent(color);
 
 		GetEntityWorld()->AddEntity(&mGunEntity);
@@ -785,7 +774,6 @@ void MainScene::Initialize_Entity()
 	// Bullet
 	{
 		const float SIZE = 2.0f;
-		constexpr Uint8 RGB = 255;
 
 		Bullet bullet{};
 		mBulletEntity.AddComponent(bullet);
@@ -806,11 +794,10 @@ void MainScene::Initialize_Entity()
 		animator.clipState = &mBulletClip;
 		mBulletEntity.AddComponent(animator);
 
+		Active active{};
+		mBulletEntity.AddComponent(active);
+
 		Color color{};
-		color.r = RGB;
-		color.g = RGB;
-		color.b = RGB;
-		color.a = RGB;
 		mBulletEntity.AddComponent(color);
 
 		GetEntityWorld()->AddEntity(&mBulletEntity);
@@ -820,7 +807,6 @@ void MainScene::Initialize_Entity()
 	{
 		constexpr uint32_t HP_MAX = 10;
 		constexpr Point POSITION = { .x = 0.0f, .y = 300.0f };
-		constexpr Uint8 RGB = 255;
 
 		Monster monster{};
 		monster.state = Monster::eState::Dead;
@@ -852,11 +838,10 @@ void MainScene::Initialize_Entity()
 		animator.clipState = &mMonsterClips[uint32_t(Monster::eState::Dead)];
 		mMonsterEntity.AddComponent(animator);
 
+		Active active{};
+		mMonsterEntity.AddComponent(active);
+
 		Color color{};
-		color.r = RGB;
-		color.g = RGB;
-		color.b = RGB;
-		color.a = RGB;
 		mMonsterEntity.AddComponent(color);
 
 		GetEntityWorld()->AddEntity(&mMonsterEntity);
@@ -865,7 +850,6 @@ void MainScene::Initialize_Entity()
 	// Dead Particle
 	{
 		constexpr float SIZE = 0.3f;
-		constexpr Uint8 RGB = 255;
 
 		for (Entity& entity : mDeadParticleEntities)
 		{
@@ -883,11 +867,10 @@ void MainScene::Initialize_Entity()
 			image.texture = &mDeadParticleTexture;
 			entity.AddComponent(image);
 
+			Active active{};
+			entity.AddComponent(active);
+
 			Color color{};
-			color.r = RGB;
-			color.g = RGB;
-			color.b = RGB;
-			color.a = RGB;
 			entity.AddComponent(color);
 
 			GetEntityWorld()->AddEntity(&entity);
