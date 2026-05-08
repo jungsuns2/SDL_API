@@ -13,10 +13,31 @@
 struct SetWeaponDesc
 {
 	Entity* weaponEntity;
-	float playerRadius;
-	float dgreeOffset;
-	SDL_RendererFlip flipX;
-	SDL_RendererFlip flipY;
+	const float playerRadius;
+	const float dgreeOffset;
+	const SDL_RendererFlip flipX;
+	const SDL_RendererFlip flipY;
+};
+
+struct MonsterSpwanDesc
+{
+	std::vector<Entity>* entities;
+	const float spwanPositionTime;
+	const RangeX rangeX;
+	const RangeY rangeY;
+	const float spwanScale;
+	const float deltaTime;
+};
+
+struct MonsterStateDesc
+{
+	std::vector<Entity>* entities;
+	const float spwanPositionTime;
+	const float spwanScale;
+	const float originScale;
+	const float spwanWaitingTime;
+	const float attackDistance;
+	const float deltaTime;
 };
 
 class EntityWorld;
@@ -35,13 +56,19 @@ public:
 	void Finalize()  override;
 
 public:
-	void Initialize_Resource();
-	void Initialize_Entity();
+	void initialize_Resource();
+	void initialize_Entity();
 
-	void Input();
-	void State();
-	void Move(const float deltaTime);
-	void SetClip();
+	void input();
+	void playerState();
+	void playerMove(const float deltaTime);
+	void playerSetClip();
+
+	void monsterSpwan(const MonsterSpwanDesc& desc);
+	void monsterState(const MonsterStateDesc& desc);
+	void monsterDeadParticle(std::vector<Entity>* entities, const float deadTime, const float speed, const float deltaTime);
+	void monsterMove(std::vector<Entity>* entities, const float maxSpeed, const float deltaTime);
+	void monsterSetClip(std::vector<Entity>* entities, std::array<Clip, uint32_t(Monster::eState::Count)>& clips);
 
 	Point getScreenMousePosition() const;
 	void setWeaponPosition(const SetWeaponDesc& desc);
@@ -57,13 +84,13 @@ private:
 
 	Entity mMainCamera{};
 	Entity mLabelEntity{};
-	Entity mPlayerEntity{};
-	Entity mMonsterEntity{};
-	Entity mSwordEntity{};
-	Entity mGunEntity{};
-	Entity mBulletEntity{};
-	Entity** mTileEntities = nullptr;
-	std::array<Entity, 6> mDeadParticleEntities{};
+	Entity mPlayer{};
+	std::vector<Entity> mMonsters{};
+	Entity mSword{};
+	Entity mGun{};
+	Entity mBullet{};
+	Entity** mTiles = nullptr;
+	std::array<Entity, 6> mDeadParticle{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mMonsterClips{};
