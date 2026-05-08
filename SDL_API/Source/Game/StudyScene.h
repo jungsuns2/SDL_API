@@ -29,6 +29,7 @@ private:
 
 	Entity mMainCamera{};
 	Entity mMobs[2]{};
-	std::vector<std::pair<const Entity*, const Entity*>> mCollidedEntityPairs;
-	std::vector<std::pair<const Entity*, const Entity*>> mPreviousCollidedEntityPairs;
+
+	std::vector<std::pair<const Entity*, const Entity*>> mCollidedEntityPairs{};
+	std::vector<std::pair<const Entity*, const Entity*>> mPreviousCollidedEntityPairs{};
 };
