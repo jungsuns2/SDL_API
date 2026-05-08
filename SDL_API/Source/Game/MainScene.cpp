@@ -9,28 +9,28 @@
 
 void MainScene::Initialize()
 {
-	Initialize_Resource();
+	initialize_Resource();
 
-	Initialize_Entity();
+	initialize_Entity();
 }
 
 bool MainScene::Update(const float deltaTime)
 {
 	// 플레이어를 업데이트한다.
 	{
-		Input();
+		input();
 
-		State();
+		playerState();
 
-		Move(deltaTime);
+		playerMove(deltaTime);
 
-		SetClip();
+		playerSetClip();
 	}
 
 	// 카메라를 업데이트한다.
 	{
 		Transform* transform = mMainCamera.GetComponent<Transform>();
-		Transform* target = mPlayerEntity.GetComponent<Transform>();
+		Transform* target = mPlayer.GetComponent<Transform>();
 		transform->position = target->position;
 	}
 
@@ -41,14 +41,14 @@ bool MainScene::Update(const float deltaTime)
 		constexpr float LENGTH = 200.0f;
 		constexpr float SPEED = 1300.0f;
 
-		const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
-		Transform* swordTransform = mSwordEntity.GetComponent<Transform>();
+		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+		Transform* swordTransform = mSword.GetComponent<Transform>();
 
-		Sword* sword = mSwordEntity.GetComponent<Sword>();
-		Animator* anim = mSwordEntity.GetComponent<Animator>();
-		Active* active = mSwordEntity.GetComponent<Active>();
-		Direction* direction = mSwordEntity.GetComponent<Direction>();
-		WeaponState* swordState = mSwordEntity.GetComponent<WeaponState>();
+		Sword* sword = mSword.GetComponent<Sword>();
+		Animator* anim = mSword.GetComponent<Animator>();
+		Active* active = mSword.GetComponent<Active>();
+		Direction* direction = mSword.GetComponent<Direction>();
+		WeaponState* swordState = mSword.GetComponent<WeaponState>();
 
 		if (not swordState->isFire)
 		{
@@ -57,7 +57,7 @@ bool MainScene::Update(const float deltaTime)
 			setWeaponPosition
 			(
 				{
-					.weaponEntity = &mSwordEntity,
+					.weaponEntity = &mSword,
 					.playerRadius = PLAYER_RADIUS,
 					.dgreeOffset = -90.0f,
 					.flipX = SDL_FLIP_NONE,
@@ -99,7 +99,7 @@ bool MainScene::Update(const float deltaTime)
 		setWeaponPosition
 		(
 			{
-				.weaponEntity = &mGunEntity,
+				.weaponEntity = &mGun,
 				.playerRadius = PLAYER_RADIUS,
 				.dgreeOffset = 0.0f,
 				.flipX = SDL_FLIP_NONE, 
@@ -114,14 +114,14 @@ bool MainScene::Update(const float deltaTime)
 		constexpr float LENGTH = 300.0f;
 		constexpr float SPEED = 1300.0f;
 
-		const Transform* gunTransform = mGunEntity.GetComponent<Transform>();
+		const Transform* gunTransform = mGun.GetComponent<Transform>();
 
-		Bullet* bullet = mBulletEntity.GetComponent<Bullet>();
-		Transform* bulletTransform = mBulletEntity.GetComponent<Transform>();
-		Direction* bulletDirection = mBulletEntity.GetComponent<Direction>();
-		Animator* bulletAnim = mBulletEntity.GetComponent<Animator>();
-		Active* active = mBulletEntity.GetComponent<Active>();
-		WeaponState* bulletState = mBulletEntity.GetComponent<WeaponState>();
+		Bullet* bullet = mBullet.GetComponent<Bullet>();
+		Transform* bulletTransform = mBullet.GetComponent<Transform>();
+		Direction* bulletDirection = mBullet.GetComponent<Direction>();
+		Animator* bulletAnim = mBullet.GetComponent<Animator>();
+		Active* active = mBullet.GetComponent<Active>();
+		WeaponState* bulletState = mBullet.GetComponent<WeaponState>();
 
 		bulletState->fireCoolTimer += deltaTime;
 		if (bulletState->fireCoolTimer >= FIRE_COOLTIME)
@@ -161,241 +161,100 @@ bool MainScene::Update(const float deltaTime)
 	{
 		// State
 		{
-			constexpr float SPWAN_SCALE = 2.0f;
+			constexpr float SPWAN_POSITION_TIME = 0.5f;
+			constexpr float SPWAN_SCALE = 0.7f;
+			monsterSpwan
+			(
+				{
+					.entities = &mMonsters,
+					.spwanPositionTime = SPWAN_POSITION_TIME,
+					.rangeX = {.x = -150.0f, .xx = 150.0f },
+					.rangeY = {.y = -150.0f, .yy = 150.0f },
+					.spwanScale = SPWAN_SCALE,
+					.maxHp = 1, 
+					.deltaTime = deltaTime
+				}
+			);
+
 			constexpr float ORIGNAL_SCALE = 4.0f;
-			constexpr float SPWAN_POSITION_TIME = 2.0f;
 			constexpr float SPWAN_WAITING_TIME = 1.0f;
-			constexpr float DAMAGE_TIME = 0.3f;
-			constexpr float DEAD_TIME = 0.5f;
-
-			Monster* monster = mMonsterEntity.GetComponent<Monster>();
-			Transform* monsterTransform = mMonsterEntity.GetComponent<Transform>();
-			Active* active = mMonsterEntity.GetComponent<Active>();
-			SpwanTimer* spwan = mMonsterEntity.GetComponent<SpwanTimer>();
-			
-
-			if (not active->value
-				and not spwan->isSpwan)
-			{
-				spwan->spwanPositionTimer += deltaTime;
-				if (spwan->spwanPositionTimer >= SPWAN_POSITION_TIME)
-				{
-					monster->state = Monster::eState::Spwan;
-					spwan->isSpwan = true;
-					monsterTransform->scale = { .width = SPWAN_SCALE, .height = SPWAN_SCALE };
-					active->value = true;
-
-					spwan->spwanWaitingTimer = 0.0f;
-					spwan->spwanPositionTimer = 0.0f;
-				}
-			}
-
-			if (monster->state == Monster::eState::Spwan)
-			{
-				spwan->spwanWaitingTimer += deltaTime;
-
-				float waitingTime = SPWAN_WAITING_TIME / 2.0f;
-				if (spwan->spwanWaitingTimer >= waitingTime)
-				{
-
-					spwan->spwanBlinkTimer += deltaTime;
-					if (spwan->spwanBlinkTimer >= 0.06f)
-					{
-						active->value = !active->value;
-						spwan->spwanBlinkTimer = 0.0f;
-					}
-				}
-				if (spwan->spwanWaitingTimer >= SPWAN_WAITING_TIME)
-				{
-					monsterTransform->scale = { .width = ORIGNAL_SCALE, .height = ORIGNAL_SCALE };
-
-					monster->state = Monster::eState::Run;
-					active->value = true;
-					spwan->spwanBlinkTimer = 0.0f;
-					spwan->spwanWaitingTimer = 0.0f;
-				}
-			}
-
 			constexpr float ATTACK_DISTANCE = 90.0f;
-			Animator* anim = mMonsterEntity.GetComponent<Animator>();
-			Clip& attackClip = mMonsterClips[uint32_t(Monster::eState::Attack)];
-			if (monster->state == Monster::eState::Attack)
-			{
-				if (anim->clipState == &attackClip
-					and anim->frameIndex >= attackClip.GetLastFrameIndex() - 1)
+			monsterState
+			(
 				{
-					if (monster->length > ATTACK_DISTANCE)
-					{
-						monster->state = Monster::eState::Run;
-					}
+					.entities = &mMonsters,
+					.spwanPositionTime = SPWAN_POSITION_TIME,
+					.spwanScale = SPWAN_SCALE,
+					.originScale = ORIGNAL_SCALE,
+					.spwanWaitingTime = SPWAN_WAITING_TIME,
+					.attackDistance = ATTACK_DISTANCE,
+					.deltaTime = deltaTime
 				}
-			}
-			else if (monster->state == Monster::eState::Run)
-			{
-				if (monster->length <= ATTACK_DISTANCE)
-				{
-					monster->state = Monster::eState::Attack;
-				}
-			}
+			);
 
 			// 충돌했을 때 애니메이션 처리
-			Hp* hp = mMonsterEntity.GetComponent<Hp>();
-
-			if (monster->state != Monster::eState::Spwan
-				and monster->state != Monster::eState::Dead)
 			{
-				if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
+				for (Entity& entity : mMonsters)
 				{
-					hp->value -= 1;
+					Monster* monster = entity.GetComponent<Monster>();
+					Hp* hp = entity.GetComponent<Hp>();
+
+					if (monster->state != Monster::eState::Spwan
+						and monster->state != Monster::eState::Dead)
+					{
+						if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
+						{
+							if (monster->length < 90.0f)
+							{
+								hp->value -= 1;
+							}
+						}
+					}
 				}
-			}
 
-			DamageTimer* damage = mMonsterEntity.GetComponent<DamageTimer>();
-			static int32_t prevHp = hp->value;
-			if (prevHp != hp->value)
-			{
-				Color* color = mMonsterEntity.GetComponent<Color>();
-				color->r = 200;
-				color->g = 0;
-				color->b = 0;
+				constexpr float DAMAGE_TIME = 0.3f;
+				static int32_t prevHp[10]{};
+				//for (uint32_t i = 0; i < mMonsters.size(); ++i)
+				//{
+				//	Entity entity = mMonsters[i];
+				//	Monster* monster = entity.GetComponent<Monster>();
+				//	DamageTimer* damage = entity.GetComponent<DamageTimer>();
+				//	Hp* hp = entity.GetComponent<Hp>();
+				//	prevHp[i] = hp->value;
 
-				damage->damageTimer += deltaTime;
-				if (damage->damageTimer >= DAMAGE_TIME)
-				{
-					monster->state = Monster::eState::Run;
-					Color* color = mMonsterEntity.GetComponent<Color>();
-					color->r = 255;
-					color->g = 255;
-					color->b = 255;
+				//	if (prevHp[i] != hp->value)
+				//	{
+				//		Color* color = entity.GetComponent<Color>();
+				//		color->r = 200;
+				//		color->g = 0;
+				//		color->b = 0;
 
-					prevHp = hp->value;
-					damage->damageTimer = 0.0f;
-				}
+				//		damage->damageTimer += deltaTime;
+				//		if (damage->damageTimer >= DAMAGE_TIME)
+				//		{
+				//			monster->state = Monster::eState::Run;
+				//			Color* color = entity.GetComponent<Color>();
+				//			color->r = 255;
+				//			color->g = 255;
+				//			color->b = 255;
+
+				//			prevHp[i] = hp->value;
+				//			damage->damageTimer = 0.0f;
+				//		}
+				//	}
+				//}
 			}
 
 			// 파티클이 생성된다.
 			constexpr float SPEED = 300.0f;
-			if (hp->value <= 0)
-			{
-				if (monster->state != Monster::eState::Dead
-					and monster->state != Monster::eState::Spwan)
-				{
-					for (Entity& entity : mDeadParticleEntities)
-					{
-						Particle* particle = entity.GetComponent<Particle>();
-						Direction* direction = entity.GetComponent<Direction>();
-						Point& dir = direction->point;
-
-						dir = getScreenMousePosition() - monsterTransform->position;
-						dir = Math::NormalizeVector(dir);
-						dir = Math::RotatePoint(dir, getRandom(-60.0f, 60.0f));
-
-						Transform* transform = entity.GetComponent<Transform>();
-						transform->position = monsterTransform->position;
-					}
-				}
-
-				monster->state = Monster::eState::Dead;
-				Active* monsterActive = mMonsterEntity.GetComponent<Active>();
-				monsterActive->value = false;
-
-				for (Entity& entity : mDeadParticleEntities)
-				{
-					if (not monsterActive->value)
-					{
-						Active* particleActive = entity.GetComponent<Active>();
-						particleActive->value = true;
-
-						Transform* transform = entity.GetComponent<Transform>();
-						Particle* particle = entity.GetComponent<Particle>();
-						Direction* direction = entity.GetComponent<Direction>();
-						transform->position = transform->position + direction->point * SPEED * deltaTime;
-					}
-				}
-
-				damage->deadTimer += deltaTime;
-				if (damage->deadTimer >= DEAD_TIME)
-				{
-					for (Entity& entity : mDeadParticleEntities)
-					{
-						Active* active = entity.GetComponent<Active>();
-						active->value = false;
-					}
-
-					hp->value = hp->max;
-					spwan->isSpwan = false;
-					damage->deadTimer = 0.0f;
-				}
-			}
+			constexpr float DEAD_TIME = 0.5f;
+			monsterDeadParticle(&mMonsters, DEAD_TIME, SPEED, deltaTime);
 		}
 
-		// Move
-		{
-			constexpr float MAX_SPEED = 300.0f;
-			Point velocity = {};
-			
-			Monster* monster = mMonsterEntity.GetComponent<Monster>();
-			Transform* monsterTransform = mMonsterEntity.GetComponent<Transform>();
-			const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
+		float speed = getRandom(100.0f, 500.0f);
+		monsterMove(&mMonsters, speed, deltaTime);
 
-			const Point monsterPosition = monsterTransform->position;
-			const Point playerPosition = playerTransform->position;
-
-			const Point difference = playerPosition - monsterPosition;
-			monster->length = Math::GetVectorLength(difference);
-
-			Direction* direction = mMonsterEntity.GetComponent<Direction>();
-
-			if (monster->state == Monster::eState::Run)
-			{
-				if (monster->length > 0.0f)
-				{
-					direction->point =
-					{
-						.x = difference.x / monster->length,
-						.y = difference.y / monster->length
-					};
-
-					velocity = direction->point * MAX_SPEED;
-				}
-			}
-
-			monsterTransform->position = monsterTransform->position + velocity * deltaTime;
-			monsterTransform->flip = (direction->point.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
-		}
-
-		// Set Clip
-		{
-			Animator* animator = mMonsterEntity.GetComponent<Animator>();
-			Monster* monster = mMonsterEntity.GetComponent<Monster>();
-
-			switch (monster->state)
-			{
-			case Monster::eState::Spwan:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Spwan)]);
-				break;
-
-			case Monster::eState::Idle:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Idle)]);
-				break;
-
-			case Monster::eState::Run:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Run)]);
-				break;
-
-			case Monster::eState::Attack:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Attack)]);
-				break;
-
-			case Monster::eState::Dead:
-				animator->SetClip(&mMonsterClips[uint32_t(Monster::eState::Idle)]);
-				break;
-
-			default:
-				assert(false and "지원하지 않는 애니메이션입니다.");
-				break;
-			}
-		}
+		monsterSetClip(&mMonsters, mMonsterClips);
 	}
 
 	return mIsUpdate;
@@ -455,16 +314,16 @@ void MainScene::Finalize()
 	{
 		for (uint32_t y = 0; y < mTileHeight; ++y)
 		{
-			delete[] mTileEntities[y];
+			delete[] mTiles[y];
 		}
 
-		delete[] mTileEntities;
+		delete[] mTiles;
 	}
 
 	mDeadParticleTexture.Finalize();
 }
 
-void MainScene::Initialize_Resource()
+void MainScene::initialize_Resource()
 {
 	mFont.Initilize("Resource/DroidSans.TTF", 50);
 
@@ -585,7 +444,7 @@ void MainScene::Initialize_Resource()
 	}
 }
 
-void MainScene::Initialize_Entity()
+void MainScene::initialize_Entity()
 {
 	// Camera
 	{
@@ -614,13 +473,13 @@ void MainScene::Initialize_Entity()
 
 		mTileWidth = width;
 		mTileHeight = height;
-		mTileEntities = new Entity * [height];
+		mTiles = new Entity * [height];
 
 		for (uint32_t y = 0; y < height; ++y)
 		{
 			const float offsetY = float(height) * float(TILE_SIZE - 1);
 
-			mTileEntities[y] = new Entity[width];
+			mTiles[y] = new Entity[width];
 
 			for (uint32_t x = 0; x < width; ++x)
 			{
@@ -631,7 +490,7 @@ void MainScene::Initialize_Entity()
 				Texture& tileTexture = mTileTextures[tileIndex];
 				assert(tileTexture.GetWidth() == TILE_SIZE and tileTexture.GetHeight() == TILE_SIZE and "지원하지 않는 타일 사이즈입니다.");
 
-				Entity& tile = mTileEntities[y][x];
+				Entity& tile = mTiles[y][x];
 
 				Transform transform{};
 				transform.scale = { .width = TILE_SCALE, .height = TILE_SCALE };
@@ -680,30 +539,30 @@ void MainScene::Initialize_Entity()
 
 		Player player{};
 		player.state = Player::eState::Idle;
-		mPlayerEntity.AddComponent(player);
+		mPlayer.AddComponent(player);
 
 		Direction direction{};
-		mPlayerEntity.AddComponent(direction);
+		mPlayer.AddComponent(direction);
 
 		Transform transform{};
 		transform.scale = { .width = SIZE, .height = SIZE };
-		mPlayerEntity.AddComponent(transform);
+		mPlayer.AddComponent(transform);
 
 		mPlayerClips[uint32_t(Player::eState::Idle)].SetLoop(true);
 		mPlayerClips[uint32_t(Player::eState::Run)].SetLoop(true);
 
 		Animator animator{};
 		animator.clipState = &mPlayerClips[uint32_t(Player::eState::Idle)];
-		mPlayerEntity.AddComponent(animator);
+		mPlayer.AddComponent(animator);
 
 		Active active{};
 		active.value = true;
-		mPlayerEntity.AddComponent(active);
+		mPlayer.AddComponent(active);
 
 		Color color{};
-		mPlayerEntity.AddComponent(color);
+		mPlayer.AddComponent(color);
 
-		GetEntityWorld()->AddEntity(&mPlayerEntity);
+		GetEntityWorld()->AddEntity(&mPlayer);
 	}
 
 	// Sword
@@ -712,33 +571,33 @@ void MainScene::Initialize_Entity()
 		constexpr Point CENTER = { .x = 0.0f,.y = 1.0f };
 
 		Sword sword{};
-		mSwordEntity.AddComponent(sword);
+		mSword.AddComponent(sword);
 
 		WeaponState state{};
-		mSwordEntity.AddComponent(state);
+		mSword.AddComponent(state);
 
 		Direction direction{};
-		mSwordEntity.AddComponent(direction);
+		mSword.AddComponent(direction);
 
 		Transform transform{};
 		transform.scale = { .width = SIZE, .height = SIZE };
 		transform.center = CENTER;
-		mSwordEntity.AddComponent(transform);
+		mSword.AddComponent(transform);
 
 		mSwordClip.SetLoop(true);
 
 		Animator animator{};
 		animator.clipState = &mSwordClip;
-		mSwordEntity.AddComponent(animator);
+		mSword.AddComponent(animator);
 
 		Active active{};
 		active.value = true;
-		mSwordEntity.AddComponent(active);
+		mSword.AddComponent(active);
 
 		Color color{};
-		mSwordEntity.AddComponent(color);
+		mSword.AddComponent(color);
 
-		GetEntityWorld()->AddEntity(&mSwordEntity);
+		GetEntityWorld()->AddEntity(&mSword);
 	}
 
 	// Gun
@@ -747,28 +606,28 @@ void MainScene::Initialize_Entity()
 		constexpr Point CENTER = { .x = 0.0f,.y = 0.5f };
 
 		Gun gun{};
-		mGunEntity.AddComponent(gun);
+		mGun.AddComponent(gun);
 
 		Direction direction{};
-		mGunEntity.AddComponent(direction);
+		mGun.AddComponent(direction);
 
 		Transform transform{};
 		transform.scale = { .width = 3.0f, .height = 3.0f };
 		transform.center = CENTER;
-		mGunEntity.AddComponent(transform);
+		mGun.AddComponent(transform);
 
 		Image image;
 		image.texture = &mGunTexture;
-		mGunEntity.AddComponent(image);
+		mGun.AddComponent(image);
 
 		Active active{};
 		active.value = true;
-		mGunEntity.AddComponent(active);
+		mGun.AddComponent(active);
 
 		Color color{};
-		mGunEntity.AddComponent(color);
+		mGun.AddComponent(color);
 
-		GetEntityWorld()->AddEntity(&mGunEntity);
+		GetEntityWorld()->AddEntity(&mGun);
 	}
 
 	// Bullet
@@ -776,82 +635,84 @@ void MainScene::Initialize_Entity()
 		const float SIZE = 2.0f;
 
 		Bullet bullet{};
-		mBulletEntity.AddComponent(bullet);
+		mBullet.AddComponent(bullet);
 
 		WeaponState state{};
-		mBulletEntity.AddComponent(state);
+		mBullet.AddComponent(state);
 
 		Direction direction{};
-		mBulletEntity.AddComponent(direction);
+		mBullet.AddComponent(direction);
 
 		Transform transform{};
 		transform.scale = { .width = SIZE, .height = SIZE };
-		mBulletEntity.AddComponent(transform);
+		mBullet.AddComponent(transform);
 
 		mBulletClip.SetLoop(true);
 
 		Animator animator{};
 		animator.clipState = &mBulletClip;
-		mBulletEntity.AddComponent(animator);
+		mBullet.AddComponent(animator);
 
 		Active active{};
-		mBulletEntity.AddComponent(active);
+		mBullet.AddComponent(active);
 
 		Color color{};
-		mBulletEntity.AddComponent(color);
+		mBullet.AddComponent(color);
 
-		GetEntityWorld()->AddEntity(&mBulletEntity);
+		GetEntityWorld()->AddEntity(&mBullet);
 	}
 
 	// Monster
 	{
-		constexpr uint32_t HP_MAX = 10;
-		constexpr Point POSITION = { .x = 0.0f, .y = 300.0f };
-
-		Monster monster{};
-		monster.state = Monster::eState::Dead;
-		mMonsterEntity.AddComponent(monster);
-
-		Direction direction{};
-		mMonsterEntity.AddComponent(direction);
-
-		SpwanTimer spwanTimer{};
-		mMonsterEntity.AddComponent(spwanTimer);
-
-		DamageTimer damageTimer{};
-		mMonsterEntity.AddComponent(damageTimer);
-
-		Hp hp{};
-		hp.max = HP_MAX;
-		hp.value = hp.max;
-		mMonsterEntity.AddComponent(hp);
-
-		Transform transform{};
-		transform.position = POSITION;
-		mMonsterEntity.AddComponent(transform);
+		constexpr uint32_t MONSTER_COUNT = 3;
 
 		mMonsterClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
 		mMonsterClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mMonsterClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
-		Animator animator{};
-		animator.clipState = &mMonsterClips[uint32_t(Monster::eState::Dead)];
-		mMonsterEntity.AddComponent(animator);
+		mMonsters.reserve(MONSTER_COUNT);
+		for (uint32_t i = 0; i < MONSTER_COUNT; ++i)
+		{
+			Entity& entity = mMonsters.emplace_back();
 
-		Active active{};
-		mMonsterEntity.AddComponent(active);
+			Monster monster{};
+			monster.state = Monster::eState::Dead;
+			entity.AddComponent(monster);
 
-		Color color{};
-		mMonsterEntity.AddComponent(color);
+			Direction direction{};
+			entity.AddComponent(direction);
 
-		GetEntityWorld()->AddEntity(&mMonsterEntity);
+			SpwanTimer spwanTimer{};
+			entity.AddComponent(spwanTimer);
+
+			DamageTimer damageTimer{};
+			entity.AddComponent(damageTimer);
+
+			Hp hp{};
+			entity.AddComponent(hp);
+
+			Transform transform{};
+			entity.AddComponent(transform);
+
+			Animator animator{};
+			animator.clipState = &mMonsterClips[uint32_t(Monster::eState::Dead)];
+			entity.AddComponent(animator);
+
+			Active active{};
+			entity.AddComponent(active);
+
+			Color color{};
+			entity.AddComponent(color);
+
+			GetEntityWorld()->AddEntity(&entity);
+		}
 	}
 
 	// Dead Particle
 	{
 		constexpr float SIZE = 0.3f;
 
-		for (Entity& entity : mDeadParticleEntities)
+		for (Entity& entity : mDeadParticle)
 		{
 			Particle particle{};
 			entity.AddComponent(particle);
@@ -878,7 +739,7 @@ void MainScene::Initialize_Entity()
 	}
 }
 
-void MainScene::Input()
+void MainScene::input()
 {
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_ESCAPE))
 	{
@@ -886,13 +747,13 @@ void MainScene::Input()
 	}
 }
 
-void MainScene::State()
+void MainScene::playerState()
 {
-	Player* player = mPlayerEntity.GetComponent<Player>();
+	Player* player = mPlayer.GetComponent<Player>();
 	player->state = (player->length != 0.0f) ? Player::eState::Run : Player::eState::Idle;
 }
 
-void MainScene::Move(const float deltaTime)
+void MainScene::playerMove(const float deltaTime)
 {
 	const int32_t moveX = Input::Get().GetKey(SDL_SCANCODE_D) - Input::Get().GetKey(SDL_SCANCODE_A);
 	const int32_t moveY = Input::Get().GetKey(SDL_SCANCODE_W) - Input::Get().GetKey(SDL_SCANCODE_S);
@@ -938,9 +799,9 @@ void MainScene::Move(const float deltaTime)
 		}
 	}
 
-	Player* player = mPlayerEntity.GetComponent<Player>();
+	Player* player = mPlayer.GetComponent<Player>();
 	player->length = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-	Direction* direction = mPlayerEntity.GetComponent<Direction>();
+	Direction* direction = mPlayer.GetComponent<Direction>();
 
 	if (player->length > 0.0f)
 	{
@@ -949,15 +810,15 @@ void MainScene::Move(const float deltaTime)
 		velocity = direction->point * MAX_SPEED;
 	}
 
-	Transform* transform = mPlayerEntity.GetComponent<Transform>();
+	Transform* transform = mPlayer.GetComponent<Transform>();
 	transform->position = transform->position + velocity * deltaTime;
 	transform->flip = (direction->point.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 }
 
-void MainScene::SetClip()
+void MainScene::playerSetClip()
 {
-	Player* player = mPlayerEntity.GetComponent<Player>();
-	Animator* animator = mPlayerEntity.GetComponent<Animator>();
+	Player* player = mPlayer.GetComponent<Player>();
+	Animator* animator = mPlayer.GetComponent<Animator>();
 
 	switch (player->state)
 	{
@@ -972,6 +833,262 @@ void MainScene::SetClip()
 	default:
 		assert(false);
 		break;
+	}
+}
+
+void MainScene::monsterSpwan(const MonsterSpwanDesc& desc)
+{
+	std::vector<Entity>* entities = desc.entities;
+	const float spwanPositionTime = desc.spwanPositionTime;
+	const RangeX rangeX = desc.rangeX;
+	const RangeY rangeY = desc.rangeY;
+	const float spwanScale = desc.spwanScale;
+	const float deltaTime = desc.deltaTime;
+	const float maxHp = desc.maxHp;
+	static uint32_t spwanIndex{};
+
+	for (uint32_t i = 0; i < entities->size(); ++i) 
+	{
+		Entity& entity = (*entities)[i];
+
+		Monster* monster = entity.GetComponent<Monster>();
+		Transform* monsterTransform = entity.GetComponent<Transform>();
+		Active* active = entity.GetComponent<Active>();
+		SpwanTimer* spwan = entity.GetComponent<SpwanTimer>();
+		Hp* hp = entity.GetComponent<Hp>();
+
+		if (spwanIndex == i
+			and not active->value
+			and not spwan->isSpwan)
+		{
+			hp->max = maxHp;
+
+			spwan->spwanPositionTimer += deltaTime;
+			if (spwan->spwanPositionTimer >= spwanPositionTime)
+			{
+				monster->state = Monster::eState::Spwan;
+				spwan->isSpwan = true;
+				monsterTransform->position = 
+				{ 
+					.x = getRandom(rangeX.x, rangeX.xx), 
+					.y = getRandom(rangeY.y, rangeY.yy) 
+				};
+				monsterTransform->scale = { .width = spwanScale, .height = spwanScale };
+				active->value = true;
+
+				spwanIndex++;
+
+				spwan->spwanWaitingTimer = 0.0f;
+				spwan->spwanPositionTimer = 0.0f;
+			}
+		}
+
+		if (spwanIndex == entities->size())
+		{
+			spwanIndex = 0;
+		}
+	}
+}
+
+void MainScene::monsterState(const MonsterStateDesc& desc)
+{
+	std::vector<Entity>* entities = desc.entities;
+	const float originScale = desc.originScale;
+	const float spwanWaitingTime = desc.spwanWaitingTime;
+	const float attackDistance = desc.attackDistance;
+	const float deltaTime = desc.deltaTime;
+
+	for (Entity& entity : *entities)
+	{
+		Monster* monster = entity.GetComponent<Monster>();
+		Transform* monsterTransform = entity.GetComponent<Transform>();
+		Active* active = entity.GetComponent<Active>();
+		SpwanTimer* spwan = entity.GetComponent<SpwanTimer>();
+
+		Animator* anim = entity.GetComponent<Animator>();
+		const Clip& attackClip = mMonsterClips[uint32_t(Monster::eState::Attack)];
+
+		if (monster->state == Monster::eState::Spwan)
+		{
+			spwan->spwanWaitingTimer += deltaTime;
+
+			float waitingTime = spwanWaitingTime / 2.0f;
+			if (spwan->spwanWaitingTimer >= waitingTime)
+			{
+				spwan->spwanBlinkTimer += deltaTime;
+				if (spwan->spwanBlinkTimer >= 0.06f)
+				{
+					active->value = !active->value;
+					spwan->spwanBlinkTimer = 0.0f;
+				}
+			}
+			if (spwan->spwanWaitingTimer >= spwanWaitingTime)
+			{
+				monsterTransform->scale = { .width = originScale, .height = originScale };
+
+				monster->state = Monster::eState::Run;
+				active->value = true;
+				spwan->spwanBlinkTimer = 0.0f;
+				spwan->spwanWaitingTimer = 0.0f;
+			}
+		}
+		else if (monster->state == Monster::eState::Attack)
+		{
+			if (anim->clipState == &attackClip
+				and anim->frameIndex >= attackClip.GetLastFrameIndex() - 1)
+			{
+				if (monster->length > attackDistance)
+				{
+					monster->state = Monster::eState::Run;
+				}
+			}
+		}
+		else if (monster->state == Monster::eState::Run)
+		{
+			if (monster->length <= attackDistance)
+			{
+				monster->state = Monster::eState::Attack;
+			}
+		}
+		else
+		{
+
+		}
+	}
+}
+
+void MainScene::monsterDeadParticle(std::vector<Entity>* entities, const float deadTime, const float speed, const float deltaTime)
+{
+	for (Entity& entity : *entities)
+	{
+		Hp* hp = entity.GetComponent<Hp>();
+		Monster* monster = entity.GetComponent<Monster>();
+		Transform* monsterTransform = entity.GetComponent<Transform>();
+		SpwanTimer* spwan = entity.GetComponent<SpwanTimer>();
+
+		if (hp->value <= 0)
+		{
+			if (monster->state != Monster::eState::Dead
+				and monster->state != Monster::eState::Spwan)
+			{
+				for (Entity& entity : mDeadParticle)
+				{
+					Particle* particle = entity.GetComponent<Particle>();
+					Direction* direction = entity.GetComponent<Direction>();
+					Point& dir = direction->point;
+
+					dir = getScreenMousePosition() - monsterTransform->position;
+					dir = Math::NormalizeVector(dir);
+					dir = Math::RotatePoint(dir, getRandom(-60.0f, 60.0f));
+
+					Transform* transform = entity.GetComponent<Transform>();
+					transform->position = monsterTransform->position;
+				}
+			}
+
+			monster->state = Monster::eState::Dead;
+			Active* monsterActive = entity.GetComponent<Active>();
+			monsterActive->value = false;
+
+			for (Entity& entity : mDeadParticle)
+			{
+				if (not monsterActive->value
+					and spwan->isSpwan)
+				{
+					Active* particleActive = entity.GetComponent<Active>();
+					particleActive->value = true;
+
+					Transform* transform = entity.GetComponent<Transform>();
+					Particle* particle = entity.GetComponent<Particle>();
+					Direction* direction = entity.GetComponent<Direction>();
+					transform->position = transform->position + direction->point * speed * deltaTime;
+				}
+			}
+
+			DamageTimer* damage = entity.GetComponent<DamageTimer>();
+			SpwanTimer* spwan = entity.GetComponent<SpwanTimer>();
+
+			damage->deadTimer += deltaTime;
+			if (damage->deadTimer >= deadTime)
+			{
+				for (Entity& entity : mDeadParticle)
+				{
+					Active* active = entity.GetComponent<Active>();
+					active->value = false;
+				}
+
+				hp->value = hp->max;
+				spwan->isSpwan = false;
+				damage->deadTimer = 0.0f;
+			}
+		}
+	}
+}
+
+void MainScene::monsterMove(std::vector<Entity>* entities, const float maxSpeed,  const float deltaTime)
+{
+	Point velocity = {};
+
+	for (Entity& entity : *entities)
+	{
+		Monster* monster = entity.GetComponent<Monster>();
+		Transform* monsterTransform = entity.GetComponent<Transform>();
+		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+
+		const Point monsterPosition = monsterTransform->position;
+		const Point playerPosition = playerTransform->position;
+
+		const Point difference = playerPosition - monsterPosition;
+		monster->length = Math::GetVectorLength(difference);
+
+		Direction* direction = entity.GetComponent<Direction>();
+		if (monster->state == Monster::eState::Run)
+		{
+			if (monster->length > 0.0f)
+			{
+				direction->point = difference / monster->length;
+				velocity = direction->point * maxSpeed;
+			}
+
+			monsterTransform->position = monsterTransform->position + velocity * deltaTime;
+			monsterTransform->flip = (direction->point.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+		}
+	}
+}
+
+void MainScene::monsterSetClip(std::vector<Entity>* entities, std::array<Clip, uint32_t(Monster::eState::Count)>& clips)
+{
+	for (Entity& entity : *entities)
+	{
+		Animator* animator = entity.GetComponent<Animator>();
+		Monster* monster = entity.GetComponent<Monster>();
+
+		switch (monster->state)
+		{
+		case Monster::eState::Spwan:
+			animator->SetClip(&clips[uint32_t(Monster::eState::Spwan)]);
+			break;
+
+		case Monster::eState::Idle:
+			animator->SetClip(&clips[uint32_t(Monster::eState::Idle)]);
+			break;
+
+		case Monster::eState::Run:
+			animator->SetClip(&clips[uint32_t(Monster::eState::Run)]);
+			break;
+
+		case Monster::eState::Attack:
+			animator->SetClip(&clips[uint32_t(Monster::eState::Attack)]);
+			break;
+
+		case Monster::eState::Dead:
+			animator->SetClip(&clips[uint32_t(Monster::eState::Idle)]);
+			break;
+
+		default:
+			assert(false and "지원하지 않는 애니메이션입니다.");
+			break;
+		}
 	}
 }
 
@@ -998,15 +1115,15 @@ Point MainScene::getScreenMousePosition() const
 void MainScene::setWeaponPosition(const SetWeaponDesc& desc)
 {
 	Entity* weaponEntity = desc.weaponEntity;
-	float playerRadius = desc.playerRadius;
-	float dgreeOffset = desc.dgreeOffset;
-	SDL_RendererFlip flipX = desc.flipX;
-	SDL_RendererFlip flipY = desc.flipY;
+	const float playerRadius = desc.playerRadius;
+	const float dgreeOffset = desc.dgreeOffset;
+	const SDL_RendererFlip flipX = desc.flipX;
+	const SDL_RendererFlip flipY = desc.flipY;
 
 	Transform* transform = weaponEntity->GetComponent<Transform>();
 	Direction* direction = weaponEntity->GetComponent<Direction>();
 
-	const Transform* playerTransform = mPlayerEntity.GetComponent<Transform>();
+	const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 	const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
 	float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
 	degree = degree + dgreeOffset;

@@ -55,6 +55,18 @@ struct Scale
 	float height;
 };
 
+struct RangeX
+{
+	float x;
+	float xx;
+};
+
+struct RangeY
+{
+	float y;
+	float yy;
+};
+
 struct Rect
 {
 	float left;

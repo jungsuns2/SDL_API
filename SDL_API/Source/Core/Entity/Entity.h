@@ -5,8 +5,8 @@ class Entity final
 {
 public:
 	Entity() = default;
-	Entity(const Entity&) = delete;
-	Entity& operator=(Entity&) = delete;
+	//Entity(const Entity&) = delete;
+	//Entity& operator=(Entity&) = delete;
 	~Entity();
 
 public:

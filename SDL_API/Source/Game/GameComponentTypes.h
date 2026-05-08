@@ -19,6 +19,13 @@ struct Player : public Component
 
 struct Monster : public Component
 {
+	enum class eType
+	{
+		Knight,
+		Dog,
+		Count
+	};
+
 	enum class eState
 	{
 		Spwan,
