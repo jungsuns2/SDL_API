@@ -171,6 +171,7 @@ bool MainScene::Update(const float deltaTime)
 					.rangeX = {.x = -150.0f, .xx = 150.0f },
 					.rangeY = {.y = -150.0f, .yy = 150.0f },
 					.spwanScale = SPWAN_SCALE,
+					.maxHp = 1, 
 					.deltaTime = deltaTime
 				}
 			);
@@ -663,7 +664,6 @@ void MainScene::initialize_Entity()
 
 	// Monster
 	{
-		constexpr uint32_t HP_MAX = 1;
 		constexpr uint32_t MONSTER_COUNT = 3;
 
 		mMonsterClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
@@ -689,13 +689,9 @@ void MainScene::initialize_Entity()
 			entity.AddComponent(damageTimer);
 
 			Hp hp{};
-			hp.max = HP_MAX;
-			hp.value = hp.max;
 			entity.AddComponent(hp);
 
 			Transform transform{};
-			transform.position = { .x = getRandom(-100.0f, 100.0f), .y = getRandom(-100.0f, 100.0f) };
-			transform.scale = { .width = 1.0f, .height = 1.0f };
 			entity.AddComponent(transform);
 
 			Animator animator{};
@@ -848,6 +844,7 @@ void MainScene::monsterSpwan(const MonsterSpwanDesc& desc)
 	const RangeY rangeY = desc.rangeY;
 	const float spwanScale = desc.spwanScale;
 	const float deltaTime = desc.deltaTime;
+	const float maxHp = desc.maxHp;
 	static uint32_t spwanIndex{};
 
 	for (uint32_t i = 0; i < entities->size(); ++i) 
@@ -858,11 +855,14 @@ void MainScene::monsterSpwan(const MonsterSpwanDesc& desc)
 		Transform* monsterTransform = entity.GetComponent<Transform>();
 		Active* active = entity.GetComponent<Active>();
 		SpwanTimer* spwan = entity.GetComponent<SpwanTimer>();
+		Hp* hp = entity.GetComponent<Hp>();
 
 		if (spwanIndex == i
 			and not active->value
 			and not spwan->isSpwan)
 		{
+			hp->max = maxHp;
+
 			spwan->spwanPositionTimer += deltaTime;
 			if (spwan->spwanPositionTimer >= spwanPositionTime)
 			{
@@ -875,6 +875,7 @@ void MainScene::monsterSpwan(const MonsterSpwanDesc& desc)
 				};
 				monsterTransform->scale = { .width = spwanScale, .height = spwanScale };
 				active->value = true;
+
 				spwanIndex++;
 
 				spwan->spwanWaitingTimer = 0.0f;
@@ -963,6 +964,7 @@ void MainScene::monsterDeadParticle(std::vector<Entity>* entities, const float d
 		Hp* hp = entity.GetComponent<Hp>();
 		Monster* monster = entity.GetComponent<Monster>();
 		Transform* monsterTransform = entity.GetComponent<Transform>();
+		SpwanTimer* spwan = entity.GetComponent<SpwanTimer>();
 
 		if (hp->value <= 0)
 		{
@@ -990,7 +992,8 @@ void MainScene::monsterDeadParticle(std::vector<Entity>* entities, const float d
 
 			for (Entity& entity : mDeadParticle)
 			{
-				if (not monsterActive->value)
+				if (not monsterActive->value
+					and spwan->isSpwan)
 				{
 					Active* particleActive = entity.GetComponent<Active>();
 					particleActive->value = true;

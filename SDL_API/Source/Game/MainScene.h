@@ -26,6 +26,7 @@ struct MonsterSpwanDesc
 	const RangeX rangeX;
 	const RangeY rangeY;
 	const float spwanScale;
+	const uint32_t maxHp;
 	const float deltaTime;
 };
 
