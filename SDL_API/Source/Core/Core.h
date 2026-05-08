@@ -40,10 +40,10 @@ public:
 	void drawSystem(const DrawSystemDesc& desc);
 	void imageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
 	void animatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime);
-	void colliderRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
-	void labelSystem(const EntityWorld* entityWorld);
+	void colliderAnimatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
+	void colliderImageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
+	void labelRenderingSystem(const EntityWorld* entityWorld);
 
-public:
 	[[nodiscard]] SDL_Window* GetWindow() const;
 
 private:

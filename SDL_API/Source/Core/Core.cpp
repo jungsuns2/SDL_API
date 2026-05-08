@@ -5,6 +5,7 @@
 #include "Entity/EntityWorld.h"
 
 #include "Clip.h"
+#include "CollisionType.h"
 #include "Constant.h"
 #include "Texture.h"
 
@@ -53,12 +54,12 @@ bool Core::Update(const float deltaTime)
 		Transform* cameraTransform = cameraSystem(entityWorld);
 
 		imageRenderingSystem(entityWorld, cameraTransform);
-
 		animatorRenderingSystem(entityWorld, cameraTransform, deltaTime);
 
-		//colliderRenderingSystem(entityWorld, cameraTransform);
+		colliderAnimatorRenderingSystem(entityWorld, cameraTransform);
+		colliderImageRenderingSystem(entityWorld, cameraTransform);
 
-		labelSystem(entityWorld);
+		labelRenderingSystem(entityWorld);
 
 		SDL_RenderPresent(mRenderer); // 화면에 출력한다.
 	}
@@ -290,7 +291,7 @@ void Core::animatorRenderingSystem(const EntityWorld* entityWorld, Transform* ca
 	}
 }
 
-void Core::colliderRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+void Core::colliderAnimatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
 {
 	assert(entityWorld != nullptr);
 	assert(cameraTransform != nullptr);
@@ -298,24 +299,74 @@ void Core::colliderRenderingSystem(const EntityWorld* entityWorld, Transform* ca
 	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
 		if (not entity->HasComponent<Transform>()
-			/*or not entity->HasComponent<Collider>()*/
-			or not entity->HasComponent<Active>()
+			or not entity->HasComponent<Animator>()
+			or not entity->HasComponent<Collider>()
+			or not entity->HasComponent<DebugActive>()
+			or not entity->HasComponent<DebugColor>()
 			or not entity->HasComponent<Color>())
 		{
 			continue;
 		}
 
-		const Active* active = entity->GetComponent<Active>();
+		DebugActive* active = entity->GetComponent<DebugActive>();
 		if (not active->value)
 		{
 			continue;
 		}
 
+		Animator* animator = entity->GetComponent<Animator>();
+		const Clip* clip = animator->clipState;
+		const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
+		const Clip::Frame& frame = frames[0];
+
 		Transform* transform = entity->GetComponent<Transform>();
-		Color* color = entity->GetComponent<Color>();
 		SDL_FRect rect{};
 
-		const Image* image = entity->GetComponent<Image>();
+		drawSystem
+		(
+			{
+				.textureScale = {.width = float(frame.texture->GetWidth()), .height = float(frame.texture->GetHeight()) },
+				.transform = transform,
+				.cameraTransform = cameraTransform,
+				.rect = &rect,
+			}
+		);
+
+		SDL_SetRenderDrawBlendMode(mRenderer, SDL_BLENDMODE_BLEND);
+		DebugColor* color = entity->GetComponent<DebugColor>();
+		SDL_SetRenderDrawColor(mRenderer, color->r, color->g, color->b, color->a);
+		SDL_RenderFillRectF(mRenderer, &rect);
+	}
+}
+
+void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+{
+	assert(entityWorld != nullptr);
+	assert(cameraTransform != nullptr);
+
+	for (const Entity* entity : entityWorld->GetAllEntites())
+	{
+		if (not entity->HasComponent<Transform>()
+			or not entity->HasComponent<Image>()
+			or not entity->HasComponent<Collider>()
+			or not entity->HasComponent<DebugActive>()
+			or not entity->HasComponent<DebugColor>()
+			or not entity->HasComponent<Color>())
+		{
+			continue;
+		}
+
+		DebugActive* active = entity->GetComponent<DebugActive>();
+		if (not active->value)
+		{
+			continue;
+		}
+
+		Image* image = entity->GetComponent<Image>();
+
+		Transform* transform = entity->GetComponent<Transform>();
+		SDL_FRect rect{};
+
 		drawSystem
 		(
 			{
@@ -324,13 +375,16 @@ void Core::colliderRenderingSystem(const EntityWorld* entityWorld, Transform* ca
 				.cameraTransform = cameraTransform,
 				.rect = &rect,
 			}
-		);
+			);
 
+		SDL_SetRenderDrawBlendMode(mRenderer, SDL_BLENDMODE_BLEND);
+		DebugColor* color = entity->GetComponent<DebugColor>();
+		SDL_SetRenderDrawColor(mRenderer, color->r, color->g, color->b, color->a);
 		SDL_RenderFillRectF(mRenderer, &rect);
 	}
 }
 
-void Core::labelSystem(const EntityWorld* entityWorld)
+void Core::labelRenderingSystem(const EntityWorld* entityWorld)
 {
 	assert(entityWorld != nullptr);
 
