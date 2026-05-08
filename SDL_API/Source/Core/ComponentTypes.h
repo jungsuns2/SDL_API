@@ -124,6 +124,17 @@ struct Color final : public Component
 	Uint8 a = 255;
 };
 
+struct DebugColor final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	DebugColor() : Component(&_ID) {}
+
+	Uint8 r = 0;
+	Uint8 g = 200;
+	Uint8 b = 0;
+	Uint8 a = 100;
+};
+
 struct Direction final : public Component
 {
 	static constexpr uint32_t _ID = 0;
@@ -132,27 +143,27 @@ struct Direction final : public Component
 	Point point{};
 };
 
-//struct Collider final : public Component
-//{
-//	enum class CollisionLayer
-//	{
-//		Player,
-//		Monster,
-//		Wall,
-//		Count
-//	};
-//
-//	static constexpr uint32_t _ID = 0;
-//	Collider(const uint32_t layer) : Component(&_ID), Layer(layer) {}
-//
-//	const uint32_t Layer = 0;
-//	std::bitset<64> CollisionLayerMask{};
-//};
+struct Collider final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Collider(const uint32_t layer) : Component(&_ID), Layer(layer) {}
+
+	const uint32_t Layer = 0;
+	std::bitset<64> CollisionLayerMask{};
+};
 
 struct Active final : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	Active() : Component(&_ID) {}
+
+	bool value = false;
+};
+
+struct DebugActive final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	DebugActive() : Component(&_ID) {}
 
 	bool value = false;
 };
