@@ -5,7 +5,7 @@
 #include "Entity/EntityWorld.h"
 
 #include "Clip.h"
-#include "CollisionType.h"
+#include "Collision.h"
 #include "Constant.h"
 #include "Texture.h"
 
