@@ -288,22 +288,6 @@ bool StudyScene::isCollisionExit(const Entity& entity0, const Entity& entity1) c
 	return false;
 }
 
-Rect StudyScene::convertBoxColliderToWorldRect(const Transform& transform, const BoxCollider& boxCollider) const
-{
-	const Point position = transform.position + boxCollider.offset;
-	const Scale boxHalfSize = boxCollider.size * 0.5f;
-
-	const Rect result
-	{
-		.left = position.x - boxHalfSize.width,
-		.top = position.y + boxHalfSize.height,
-		.right = position.x + boxHalfSize.width,
-		.bottom = position.y - boxHalfSize.height,
-	};
-
-	return result;
-}
-
 std::pair<const Entity*, const Entity*> StudyScene::getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const
 {
 	std::pair<const Entity*, const Entity*> collidedEntityPair{};
@@ -328,6 +312,33 @@ void StudyScene::registerCollidedEntityPairs(const Entity& entity0, const Entity
 	{
 		mCollidedEntityPairs.push_back(colliderEntityPair);
 	}
+}
+
+Rect StudyScene::convertBoxColliderToWorldRect(const Transform& transform, const BoxCollider& boxCollider) const
+{
+	const Point position = transform.position + boxCollider.offset;
+	const Scale boxHalfSize = boxCollider.size * 0.5f;
+
+	const Rect result
+	{
+		.left = position.x - boxHalfSize.width,
+		.top = position.y + boxHalfSize.height,
+		.right = position.x + boxHalfSize.width,
+		.bottom = position.y - boxHalfSize.height,
+	};
+
+	return result;
+}
+
+Circle StudyScene::convertCircleColliderToWorldCircle(const Transform& transform, const CircleCollider& circleCollider) const
+{
+	const Circle result =
+	{
+		.center = transform.position + circleCollider.offset,
+		.radius = circleCollider.radius
+	};
+	
+	return result;
 }
 
 bool StudyScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entity1)
@@ -369,12 +380,7 @@ bool StudyScene::checkCollisionBoxCircle(const Entity& boxEntity, const Entity& 
 
 	const Transform* circleTransform = circleEntity.GetComponent<Transform>();
 	const CircleCollider* circleCollider = circleEntity.GetComponent<CircleCollider>();
-	const Circle circle =
-	{
-		.center = circleTransform->position + circleCollider->offset,
-		.radius = circleCollider->radius
-	};
-
+	const Circle circle = convertCircleColliderToWorldCircle(*circleTransform, *circleCollider);
 
 	if (Collision::IsCollidedSqureWithCircle(rect, circle))
 	{

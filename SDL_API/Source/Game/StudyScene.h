@@ -26,10 +26,12 @@ private:
 	bool isCollisionStay(const Entity& entity0, const Entity& entity1) const;
 	bool isCollisionExit(const Entity& entity0, const Entity& entity1) const;
 
-	Rect convertBoxColliderToWorldRect(const Transform& transform, const BoxCollider& boxCollider) const;
 	std::pair<const Entity*, const Entity*> getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const;
 	void registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1);
 	
+	Rect convertBoxColliderToWorldRect(const Transform& transform, const BoxCollider& boxCollider) const;
+	Circle convertCircleColliderToWorldCircle(const Transform& transform, const CircleCollider& circleCollider) const;
+
 	bool checkCollisionBoxBox(const Entity& entity0, const Entity& entity1);
 	bool checkCollisionBoxCircle(const Entity& boxEntity, const Entity& circleEntity);
 
