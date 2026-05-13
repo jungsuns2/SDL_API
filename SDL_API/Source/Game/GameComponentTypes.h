@@ -111,6 +111,7 @@ struct Hp : public Component
 
 	uint32_t max{};
 	int32_t value{};
+	int32_t previousValue = value;
 };
 
 struct WeaponState : public Component

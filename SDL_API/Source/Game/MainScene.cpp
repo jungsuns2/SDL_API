@@ -1,11 +1,49 @@
 #include "pch.h"
 #include "Core/Entity/EntityWorld.h"
 
+#include "Core/Collision.h"
 #include "Core/Constant.h"
 #include "Core/Helper.h"
 #include "Core/Input.h"
 
 #include "MainScene.h"
+
+// Core
+struct CollisionDetector final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	CollisionDetector(const uint32_t layer) : Component(&_ID), Layer(layer) {}
+
+	const uint32_t Layer = 0;
+	std::bitset<64> CollisionLayerMask{};
+};
+
+struct BoxCollider final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BoxCollider() : Component(&_ID) {}
+
+	Point offset{};
+	Scale size{};
+};
+
+struct CircleCollider final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	CircleCollider() : Component(&_ID) {}
+
+	Point offset{};
+	float radius{};
+};
+
+struct LineCollider final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	LineCollider() : Component(&_ID) {}
+
+	Point offset{};
+	Scale scale{};
+};
 
 void MainScene::Initialize()
 {
@@ -16,6 +54,55 @@ void MainScene::Initialize()
 
 bool MainScene::Update(const float deltaTime)
 {
+	// Core
+	{
+		for (const Entity* entity0 : GetEntityWorld()->GetAllEntites())
+		{
+			if (not entity0->HasComponent<Transform>()
+				or not entity0->HasComponent<CollisionDetector>())
+			{
+				continue;
+			}
+
+			CollisionDetector* collisionDetector0 = entity0->GetComponent<CollisionDetector>();
+			if (collisionDetector0->CollisionLayerMask.none())
+			{
+				continue;
+			}
+
+			for (const Entity* entity1 : GetEntityWorld()->GetAllEntites())
+			{
+				if (not entity1->HasComponent<Transform>()
+					or not entity1->HasComponent<CollisionDetector>())
+				{
+					continue;
+				}
+
+				if (entity0 == entity1)
+				{
+					continue;
+				}
+
+				CollisionDetector* collisionDetector1 = entity1->GetComponent<CollisionDetector>();
+				if (not collisionDetector0->CollisionLayerMask[collisionDetector1->Layer])
+				{
+					continue;
+				}
+
+				{
+					checkCollisionBoxBox(*entity0, *entity1)
+						/*or checkCollisionBoxCircle(*entity0, *entity1)
+						or checkCollisionBoxLine(*entity0, *entity1)
+						or checkCollisionCircleCircle(*entity0, *entity1)
+						or checkCollisionCircleLine(*entity0, *entity1)*/;
+
+					
+				}
+			}
+		}
+	}
+
+
 	// 플레이어를 업데이트한다.
 	{
 		input();
@@ -23,8 +110,6 @@ bool MainScene::Update(const float deltaTime)
 		playerState();
 
 		playerMove(deltaTime);
-
-		playerSetClip();
 	}
 
 	// 카메라를 업데이트한다.
@@ -194,55 +279,37 @@ bool MainScene::Update(const float deltaTime)
 
 			// 충돌했을 때 애니메이션 처리
 			{
-				for (Entity& entity : mMonsters)
-				{
-					Monster* monster = entity.GetComponent<Monster>();
-					Hp* hp = entity.GetComponent<Hp>();
+			//	constexpr float DAMAGE_TIME = 0.3f;
+			//	static int32_t prevHp[10]{};
+			//	for (uint32_t i = 0; i < mMonsters.size(); ++i)
+			//	{
+			//		Entity entity = mMonsters[i];
+			//		Monster* monster = entity.GetComponent<Monster>();
+			//		DamageTimer* damage = entity.GetComponent<DamageTimer>();
+			//		Hp* hp = entity.GetComponent<Hp>();
+			//		prevHp[i] = hp->value;
 
-					if (monster->state != Monster::eState::Spwan
-						and monster->state != Monster::eState::Dead)
-					{
-						if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
-						{
-							if (monster->length < 90.0f)
-							{
-								hp->value -= 1;
-							}
-						}
-					}
-				}
+			//		if (prevHp[i] != hp->value)
+			//		{
+			//			Color* color = entity.GetComponent<Color>();
+			//			color->r = 200;
+			//			color->g = 0;
+			//			color->b = 0;
 
-				constexpr float DAMAGE_TIME = 0.3f;
-				static int32_t prevHp[10]{};
-				//for (uint32_t i = 0; i < mMonsters.size(); ++i)
-				//{
-				//	Entity entity = mMonsters[i];
-				//	Monster* monster = entity.GetComponent<Monster>();
-				//	DamageTimer* damage = entity.GetComponent<DamageTimer>();
-				//	Hp* hp = entity.GetComponent<Hp>();
-				//	prevHp[i] = hp->value;
+			//			damage->damageTimer += deltaTime;
+			//			if (damage->damageTimer >= DAMAGE_TIME)
+			//			{
+			//				monster->state = Monster::eState::Run;
+			//				Color* color = entity.GetComponent<Color>();
+			//				color->r = 255;
+			//				color->g = 255;
+			//				color->b = 255;
 
-				//	if (prevHp[i] != hp->value)
-				//	{
-				//		Color* color = entity.GetComponent<Color>();
-				//		color->r = 200;
-				//		color->g = 0;
-				//		color->b = 0;
-
-				//		damage->damageTimer += deltaTime;
-				//		if (damage->damageTimer >= DAMAGE_TIME)
-				//		{
-				//			monster->state = Monster::eState::Run;
-				//			Color* color = entity.GetComponent<Color>();
-				//			color->r = 255;
-				//			color->g = 255;
-				//			color->b = 255;
-
-				//			prevHp[i] = hp->value;
-				//			damage->damageTimer = 0.0f;
-				//		}
-				//	}
-				//}
+			//				prevHp[i] = hp->value;
+			//				damage->damageTimer = 0.0f;
+			//			}
+			//		}
+			//	}
 			}
 
 			// 파티클이 생성된다.
@@ -253,9 +320,43 @@ bool MainScene::Update(const float deltaTime)
 
 		float speed = getRandom(100.0f, 500.0f);
 		monsterMove(&mMonsters, speed, deltaTime);
-
-		monsterSetClip(&mMonsters, mMonsterClips);
 	}
+
+	Hp* playerHp = mPlayer.GetComponent<Hp>();
+	Color* color = mPlayer.GetComponent<Color>();
+
+	for (const auto& monster : mMonsters)
+	{
+		if (monster.GetComponent<Monster>()->state >= Monster::eState::Run 
+			and monster.GetComponent<Monster>()->state < Monster::eState::Dead)
+		{
+			if (isCollisionEnter(mPlayer, monster))
+			{
+				playerHp->value -= 1;
+
+				color->r = 200;
+				color->g = 0;
+				color->b = 0;
+
+			}
+			else if (isCollisionExit(mPlayer, monster))
+			{
+				color->r = 255;
+				color->g = 255;
+				color->b = 255;
+			}
+		}
+	}
+
+	printf("플레이어 체력: %d\n", playerHp->value);
+
+	{
+		mPreviousCollidedEntityPairs = mCollidedEntityPairs;
+		mCollidedEntityPairs.clear();
+	}
+
+	playerSetClip();
+	monsterSetClip(&mMonsters, mMonsterClips);
 
 	return mIsUpdate;
 }
@@ -555,12 +656,24 @@ void MainScene::initialize_Entity()
 		animator.clipState = &mPlayerClips[uint32_t(Player::eState::Idle)];
 		mPlayer.AddComponent(animator);
 
+		Hp hp{};
+		hp.value = 10;
+		mPlayer.AddComponent(hp);
+
 		Active active{};
 		active.value = true;
 		mPlayer.AddComponent(active);
 
 		Color color{};
 		mPlayer.AddComponent(color);
+
+		CollisionDetector collider(static_cast<uint32_t>(CollisionLayer::Monster));
+		collider.CollisionLayerMask.set(uint32_t(CollisionLayer::Monster));
+		mPlayer.AddComponent(collider);
+
+		BoxCollider boxCollider{};
+		boxCollider.size = { .width = float(mPlayerRunTextures[3].GetWidth()), .height = float(mPlayerRunTextures[3].GetHeight())};
+		mPlayer.AddComponent(boxCollider);
 
 		GetEntityWorld()->AddEntity(&mPlayer);
 	}
@@ -664,7 +777,7 @@ void MainScene::initialize_Entity()
 
 	// Monster
 	{
-		constexpr uint32_t MONSTER_COUNT = 3;
+		constexpr uint32_t MONSTER_COUNT = 1;
 
 		mMonsterClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
 		mMonsterClips[uint32_t(Monster::eState::Run)].SetLoop(true);
@@ -703,6 +816,14 @@ void MainScene::initialize_Entity()
 
 			Color color{};
 			entity.AddComponent(color);
+
+			CollisionDetector collider(static_cast<uint32_t>(CollisionLayer::Monster));
+			collider.CollisionLayerMask.set(uint32_t(CollisionLayer::Monster));
+			entity.AddComponent(collider);
+
+			BoxCollider boxCollider{};
+			boxCollider.size = { .width = float(mMonsterAttackTextures[3].GetWidth()), .height = float(mMonsterAttackTextures[3].GetHeight()) };
+			entity.AddComponent(boxCollider);
 
 			GetEntityWorld()->AddEntity(&entity);
 		}
@@ -1140,4 +1261,242 @@ float MainScene::getRandom(const float min, const float max)
 {
 	const float result = float(rand()) / RAND_MAX * (max - min) + min;
 	return result;
+}
+
+bool MainScene::isCollisionEnter(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+
+	if (const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
+		foundCollidedEntityPair != mCollidedEntityPairs.end())
+	{
+		const auto& foundPreviousCollidedEntityPair = std::find(mPreviousCollidedEntityPairs.begin(), mPreviousCollidedEntityPairs.end(), collidedEntityPair);
+		return foundPreviousCollidedEntityPair == mPreviousCollidedEntityPairs.end();
+	}
+
+	return false;
+}
+
+bool MainScene::isCollisionStay(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+
+	const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
+	return foundCollidedEntityPair != mCollidedEntityPairs.end();
+}
+
+bool MainScene::isCollisionExit(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+
+	if (const auto& foundPreviousCollidedEntityPair = std::find(mPreviousCollidedEntityPairs.begin(), mPreviousCollidedEntityPairs.end(), collidedEntityPair);
+		foundPreviousCollidedEntityPair != mPreviousCollidedEntityPairs.end())
+	{
+		const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
+		return foundCollidedEntityPair == mCollidedEntityPairs.end();
+	}
+
+	return false;
+}
+
+std::pair<const Entity*, const Entity*> MainScene::getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair{};
+	if (&entity0 < &entity1)
+	{
+		collidedEntityPair = { &entity0, &entity1 };
+	}
+	else
+	{
+		collidedEntityPair = { &entity1, &entity0 };
+	}
+
+	return collidedEntityPair;
+}
+
+void MainScene::registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1)
+{
+	std::pair<const Entity*, const Entity*> colliderEntityPair = getCollidedEntityPair(entity0, entity1);
+
+	if (const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), colliderEntityPair);
+		foundCollidedEntityPair == mCollidedEntityPairs.end())
+	{
+		mCollidedEntityPairs.push_back(colliderEntityPair);
+	}
+}
+
+Rect MainScene::convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const
+{
+	const Point position = transform.position + boxCollider.offset;
+	const Scale boxHalfSize = transform.scale * boxCollider.size * 0.5f;
+
+	const Rect result
+	{
+		.left = position.x - boxHalfSize.width,
+		.top = position.y + boxHalfSize.height,
+		.right = position.x + boxHalfSize.width,
+		.bottom = position.y - boxHalfSize.height,
+	};
+
+	return result;
+}
+
+Circle MainScene::convertCircleColliderToWorldCircle(const Transform& transform, const CircleCollider& circleCollider) const
+{
+	const Circle result =
+	{
+		.center = transform.position + circleCollider.offset,
+		.radius = transform.scale.width * circleCollider.radius
+	};
+
+	return result;
+}
+
+Line MainScene::convertLineColliderToWorldLine(const Transform& transform, const LineCollider& lineCollider) const
+{
+	const Point position = transform.position + lineCollider.offset;
+	const Scale boxHalfSize = transform.scale * lineCollider.scale * 0.5f;
+
+	const Rect rect
+	{
+		.left = position.x - boxHalfSize.width,
+		.top = position.y + boxHalfSize.height,
+		.right = position.x + boxHalfSize.width,
+		.bottom = position.y - boxHalfSize.height,
+	};
+
+	float centerY = rect.top + (transform.scale.height * lineCollider.scale.height * 0.5f);
+
+	const Line result =
+	{
+		.point0 = {.x = rect.left, .y = rect.top },
+		.point1 = {.x = rect.right, .y = rect.bottom }
+	};
+
+	return result;
+}
+
+bool MainScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entity1)
+{
+	if (not entity0.HasComponent<BoxCollider>()
+		or not entity1.HasComponent<BoxCollider>())
+	{
+		return false;
+	}
+
+	const Transform* transform0 = entity0.GetComponent<Transform>();
+	const BoxCollider* boxCollider0 = entity0.GetComponent<BoxCollider>();
+	const Rect rect0 = convertBoxColliderToWorldBox(*transform0, *boxCollider0);
+
+	const Transform* transform1 = entity1.GetComponent<Transform>();
+	const BoxCollider* boxCollider1 = entity1.GetComponent<BoxCollider>();
+	const Rect rect1 = convertBoxColliderToWorldBox(*transform1, *boxCollider1);
+
+	if (Collision::IsCollidedSqureWithSqure(rect0, rect1))
+	{
+		registerCollidedEntityPairs(entity0, entity1);
+		return true;
+	}
+
+	return false;
+}
+
+bool MainScene::checkCollisionBoxCircle(const Entity& boxEntity, const Entity& circleEntity)
+{
+	if (not boxEntity.HasComponent<BoxCollider>()
+		or not circleEntity.HasComponent<CircleCollider>())
+	{
+		return false;
+	}
+
+	const Transform* boxTransform = boxEntity.GetComponent<Transform>();
+	const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
+	const Rect rect = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);
+
+	const Transform* circleTransform = circleEntity.GetComponent<Transform>();
+	const CircleCollider* circleCollider = circleEntity.GetComponent<CircleCollider>();
+	const Circle circle = convertCircleColliderToWorldCircle(*circleTransform, *circleCollider);
+
+	if (Collision::IsCollidedSqureWithCircle(rect, circle))
+	{
+		registerCollidedEntityPairs(boxEntity, circleEntity);
+		return true;
+	}
+
+	return false;
+}
+
+bool MainScene::checkCollisionBoxLine(const Entity& boxEntity, const Entity& lineEntity)
+{
+	if (not boxEntity.HasComponent<BoxCollider>()
+		or not lineEntity.HasComponent<LineCollider>())
+	{
+		return false;
+	}
+
+	const Transform* boxTransform = boxEntity.GetComponent<Transform>();
+	const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
+	const Rect rect = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);
+
+	const Transform* lineTransform = lineEntity.GetComponent<Transform>();
+	const LineCollider* lineCollider = lineEntity.GetComponent<LineCollider>();
+	const Line line = convertLineColliderToWorldLine(*lineTransform, *lineCollider);
+
+	if (Collision::IsCollidedSqureWithLine(rect, line))
+	{
+		registerCollidedEntityPairs(boxEntity, lineEntity);
+		return true;
+	}
+
+	return false;
+}
+
+bool MainScene::checkCollisionCircleCircle(const Entity& entity0, const Entity& entity1)
+{
+	if (not entity0.HasComponent<CircleCollider>()
+		or not entity1.HasComponent<CircleCollider>())
+	{
+		return false;
+	}
+
+	const Transform* Transform0 = entity0.GetComponent<Transform>();
+	const CircleCollider* Collider0 = entity0.GetComponent<CircleCollider>();
+	const Circle circle0 = convertCircleColliderToWorldCircle(*Transform0, *Collider0);
+
+	const Transform* Transform1 = entity1.GetComponent<Transform>();
+	const CircleCollider* Collider1 = entity1.GetComponent<CircleCollider>();
+	const Circle circle1 = convertCircleColliderToWorldCircle(*Transform1, *Collider1);
+
+	if (Collision::IsCollidedCircleWithCircle(circle0, circle1))
+	{
+		registerCollidedEntityPairs(entity0, entity1);
+		return true;
+	}
+
+	return false;
+}
+
+bool MainScene::checkCollisionCircleLine(const Entity& circleEntity, const Entity& lineEntity)
+{
+	if (not circleEntity.HasComponent<CircleCollider>()
+		or not lineEntity.HasComponent<LineCollider>())
+	{
+		return false;
+	}
+
+	const Transform* circleTransform = circleEntity.GetComponent<Transform>();
+	const CircleCollider* circleCollider = circleEntity.GetComponent<CircleCollider>();
+	const Circle circle = convertCircleColliderToWorldCircle(*circleTransform, *circleCollider);
+
+	const Transform* lineTransform = lineEntity.GetComponent<Transform>();
+	const LineCollider* lineCollider = lineEntity.GetComponent<LineCollider>();
+	const Line line = convertLineColliderToWorldLine(*lineTransform, *lineCollider);
+
+	if (Collision::IsCollidedCircleWithLine(circle, line))
+	{
+		registerCollidedEntityPairs(circleEntity, lineEntity);
+		return true;
+	}
+
+	return false;
 }
