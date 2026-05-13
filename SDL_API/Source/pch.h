@@ -53,6 +53,11 @@ struct Scale
 {
 	float width;
 	float height;
+
+	[[nodiscard]] Scale operator*(const float other) const
+	{
+		return { .width = width * other, .height = height * other };
+	}
 };
 
 struct RangeX
@@ -81,11 +86,10 @@ struct Line
 	Point point1;
 };
 
-struct Ellipse
+struct Circle
 {
-	Point point;
-	float radiusX;
-	float radiusY;
+	Point center;
+	float radius;
 };
 
 namespace Math

@@ -5,10 +5,10 @@ namespace Collision
 	inline bool IsCollidedSqureWithPoint(const Rect rect, const Point point);
 	inline bool IsCollidedSqureWithSqure(const Rect lhs, const Rect rhs);
 	inline bool IsCollidedSqureWithLine(const Rect rect, const Line line);
-	inline bool IsCollidedSqureWithCircle(const Rect rect, const Point center, const float radius);
+	inline bool IsCollidedSqureWithCircle(const Rect rect, const Circle& circle);
 	inline bool IsCollidedCircleWithPoint(const Point center, const float radius, const Point point);
 	inline bool IsCollidedCircleWithLine(const Point center, const float radius, const Line line);
-	inline bool IsCollidedCircleWithCircle(const Ellipse lhs, const Ellipse rhs);
+	inline bool IsCollidedCircleWithCircle(const Circle lhs, const Circle rhs);
 	inline bool DoLinesIntersect(Line line0, Line line1);
 
 	bool IsCollidedSqureWithPoint(const Rect rect, const Point point)
@@ -63,7 +63,7 @@ namespace Collision
 		return result;
 	}
 
-	bool IsCollidedSqureWithCircle(const Rect rect, const Point center, const float radius)
+	bool IsCollidedSqureWithCircle(const Rect rect, const Circle& circle)
 	{
 		Line leftLine =
 		{
@@ -89,10 +89,10 @@ namespace Collision
 			.point1 = {.x = rect.right, .y = rect.bottom },
 		};
 
-		const bool result = IsCollidedCircleWithLine(center, radius, leftLine)
-			and IsCollidedCircleWithLine(center, radius, topLine)
-			and IsCollidedCircleWithLine(center, radius, rightLine)
-			and IsCollidedCircleWithLine(center, radius, bottomLine);
+		const bool result = IsCollidedCircleWithLine(circle.center, circle.radius, leftLine)
+			or IsCollidedCircleWithLine(circle.center, circle.radius, topLine)
+			or IsCollidedCircleWithLine(circle.center, circle.radius, rightLine)
+			or IsCollidedCircleWithLine(circle.center, circle.radius, bottomLine);
 
 		return result;
 	}
@@ -130,11 +130,11 @@ namespace Collision
 		return result;
 	}
 
-	bool IsCollidedCircleWithCircle(const Ellipse lhs, const Ellipse rhs)
+	bool IsCollidedCircleWithCircle(const Circle lhs, const Circle rhs)
 	{
-		const float radius = lhs.radiusX + rhs.radiusX;
+		const float radius = lhs.radius + rhs.radius;
 
-		const Point toTarget = lhs.point - rhs.point;
+		const Point toTarget = lhs.center - rhs.center;
 		const float distance = Math::GetVectorLength(toTarget);
 
 		const bool result = radius >= distance;

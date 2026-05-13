@@ -96,6 +96,35 @@ void StudyScene::Initialize()
 		GetEntityWorld()->AddEntity(&mRectMonster);
 	}
 
+	// Circle Monster
+	{
+		Transform transform{};
+		transform.position.x = 120.0f;
+		transform.position.y = 120.0f;
+		mCircleMonster.AddComponent(transform);
+
+		Image image{};
+		image.texture = &mCircleTexture;
+		mCircleMonster.AddComponent(image);
+
+		Active active{};
+		active.value = true;
+		mCircleMonster.AddComponent(active);
+
+		Color color{};
+		mCircleMonster.AddComponent(color);
+
+		CollisionDetector collider(static_cast<uint32_t>(CollisionLayer::Monster));
+		collider.CollisionLayerMask.set(uint32_t(CollisionLayer::Monster));
+		mCircleMonster.AddComponent(collider);
+
+		CircleCollider circleCollider{};
+		circleCollider.radius = mCircleTexture.GetWidth() * 0.5f;
+		mCircleMonster.AddComponent(circleCollider);
+
+		GetEntityWorld()->AddEntity(&mCircleMonster);
+	}
+
 	// Player
 	{
 		Transform transform{};
@@ -167,7 +196,8 @@ bool StudyScene::Update(const float deltaTime)
 				}
 
 				{
-					checkCollisionBoxBox(*entity0, *entity1);
+					checkCollisionBoxBox(*entity0, *entity1) 
+						or checkCollisionBoxCircle(*entity0, *entity1);
 				}
 			}
 		}
@@ -194,6 +224,15 @@ bool StudyScene::Update(const float deltaTime)
 			printf("面倒 enter\n");
 		}
 		else if (isCollisionExit(mPlayer, mRectMonster))
+		{
+			printf("面倒 exit\n");
+		}
+
+		if (isCollisionEnter(mPlayer, mCircleMonster))
+		{
+			printf("面倒 enter\n");
+		}
+		else if (isCollisionExit(mPlayer, mCircleMonster))
 		{
 			printf("面倒 exit\n");
 		}
@@ -310,6 +349,36 @@ bool StudyScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entit
 	if (Collision::IsCollidedSqureWithSqure(rect0, rect1))
 	{
 		registerCollidedEntityPairs(entity0, entity1);
+		return true;
+	}
+
+	return false;
+}
+
+bool StudyScene::checkCollisionBoxCircle(const Entity& boxEntity, const Entity& circleEntity)
+{
+	if (not boxEntity.HasComponent<BoxCollider>()
+		or not circleEntity.HasComponent<CircleCollider>())
+	{
+		return false;
+	}
+
+	const Transform* boxTransform = boxEntity.GetComponent<Transform>();
+	const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
+	const Rect rect = convertBoxColliderToWorldRect(*boxTransform, *boxCollider);
+
+	const Transform* circleTransform = circleEntity.GetComponent<Transform>();
+	const CircleCollider* circleCollider = circleEntity.GetComponent<CircleCollider>();
+	const Circle circle =
+	{
+		.center = circleTransform->position + circleCollider->offset,
+		.radius = circleCollider->radius
+	};
+
+
+	if (Collision::IsCollidedSqureWithCircle(rect, circle))
+	{
+		registerCollidedEntityPairs(boxEntity, circleEntity);
 		return true;
 	}
 

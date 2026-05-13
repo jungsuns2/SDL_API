@@ -31,6 +31,7 @@ private:
 	void registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1);
 	
 	bool checkCollisionBoxBox(const Entity& entity0, const Entity& entity1);
+	bool checkCollisionBoxCircle(const Entity& boxEntity, const Entity& circleEntity);
 
 private:
 	Texture mBoxTexture{};
@@ -39,6 +40,7 @@ private:
 	Entity mMainCamera{};
 	Entity mPlayer{};
 	Entity mRectMonster{};
+	Entity mCircleMonster{};
 
 	std::vector<std::pair<const Entity*, const Entity*>> mCollidedEntityPairs{};
 	std::vector<std::pair<const Entity*, const Entity*>> mPreviousCollidedEntityPairs{};
