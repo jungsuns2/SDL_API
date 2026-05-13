@@ -95,8 +95,6 @@ bool MainScene::Update(const float deltaTime)
 						or checkCollisionBoxLine(*entity0, *entity1)
 						or checkCollisionCircleCircle(*entity0, *entity1)
 						or checkCollisionCircleLine(*entity0, *entity1)*/;
-
-					
 				}
 			}
 		}
@@ -324,6 +322,7 @@ bool MainScene::Update(const float deltaTime)
 
 	Hp* playerHp = mPlayer.GetComponent<Hp>();
 	Color* color = mPlayer.GetComponent<Color>();
+	Knockback* knockback = mPlayer.GetComponent<Knockback>();
 
 	for (const auto& monster : mMonsters)
 	{
@@ -338,6 +337,10 @@ bool MainScene::Update(const float deltaTime)
 				color->g = 0;
 				color->b = 0;
 
+				knockback->isValue = true;
+			}
+			else if (isCollisionStay(mPlayer, monster))
+			{
 			}
 			else if (isCollisionExit(mPlayer, monster))
 			{
@@ -347,8 +350,6 @@ bool MainScene::Update(const float deltaTime)
 			}
 		}
 	}
-
-	printf("플레이어 체력: %d\n", playerHp->value);
 
 	{
 		mPreviousCollidedEntityPairs = mCollidedEntityPairs;
@@ -643,6 +644,7 @@ void MainScene::initialize_Entity()
 		mPlayer.AddComponent(player);
 
 		Direction direction{};
+		direction.value = { .x = 1.0f, .y = 1.0f };
 		mPlayer.AddComponent(direction);
 
 		Transform transform{};
@@ -659,6 +661,9 @@ void MainScene::initialize_Entity()
 		Hp hp{};
 		hp.value = 10;
 		mPlayer.AddComponent(hp);
+
+		Knockback knockback{};
+		mPlayer.AddComponent(knockback);
 
 		Active active{};
 		active.value = true;
@@ -882,57 +887,74 @@ void MainScene::playerMove(const float deltaTime)
 	static int32_t prevMoveX;
 	static int32_t prevMoveY;
 
-	Point velocity = {};
+	Point moveVelocity = {};
 	constexpr float MAX_SPEED = 500.0f;
 	constexpr float ACC = 40.0f;
 
 	if (moveX != 0)
 	{
-		velocity.x = std::clamp(velocity.x + ACC * moveX, -MAX_SPEED, MAX_SPEED);
+		moveVelocity.x = std::clamp(moveVelocity.x + ACC * moveX, -MAX_SPEED, MAX_SPEED);
 		prevMoveX = moveX;
 	}
 	else
 	{
 		if (prevMoveX > 0)
 		{
-			velocity.x = std::max(velocity.x - ACC, 0.0f);
+			moveVelocity.x = std::max(moveVelocity.x - ACC, 0.0f);
 		}
 		else
 		{
-			velocity.x = std::min(velocity.x + ACC, 0.0f);
+			moveVelocity.x = std::min(moveVelocity.x + ACC, 0.0f);
 		}
 	}
 
 	if (moveY != 0)
 	{
-		velocity.y = std::clamp(velocity.y + ACC * moveY, -MAX_SPEED, MAX_SPEED);
+		moveVelocity.y = std::clamp(moveVelocity.y + ACC * moveY, -MAX_SPEED, MAX_SPEED);
 		prevMoveY = moveY;
 	}
 	else
 	{
 		if (prevMoveY > 0)
 		{
-			velocity.y = std::max(velocity.y - ACC, 0.0f);
+			moveVelocity.y = std::max(moveVelocity.y - ACC, 0.0f);
 		}
 		else
 		{
-			velocity.y = std::min(velocity.y + ACC, 0.0f);
+			moveVelocity.y = std::min(moveVelocity.y + ACC, 0.0f);
 		}
 	}
 
 	Player* player = mPlayer.GetComponent<Player>();
-	player->length = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+	player->length = Math::GetVectorLength(moveVelocity);
+
 	Direction* direction = mPlayer.GetComponent<Direction>();
+	direction->value = Math::NormalizeVector(moveVelocity);
+	moveVelocity = direction->value * MAX_SPEED;
 
-	if (player->length > 0.0f)
+	Knockback* knockback = mPlayer.GetComponent<Knockback>();
+	constexpr float KNOCKBACK_FORCE = 300.0f;
+	constexpr float KNOCKBACK_COOLTIMER = 0.5f;
+	Point knockbackVelocity{};
+
+	if (knockback->isValue)
 	{
-		direction->value = { .x = velocity.x / player->length, .y = velocity.y / player->length };
+		knockbackVelocity = knockback->direction * KNOCKBACK_FORCE;
 
-		velocity = direction->value * MAX_SPEED;
+		knockback->coolTimer += deltaTime;
+		if (knockback->coolTimer >= KNOCKBACK_COOLTIMER)
+		{
+			knockback->isValue = false;
+			knockback->coolTimer = 0.0f;
+		}
 	}
 
+	Point totalVelocity = moveVelocity + knockbackVelocity;
+
+	printf("%f \n", knockbackVelocity.x);
+
 	Transform* transform = mPlayer.GetComponent<Transform>();
-	transform->position = transform->position + velocity * deltaTime;
+	transform->position = transform->position + totalVelocity * deltaTime;
 	transform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 }
 
@@ -1155,21 +1177,19 @@ void MainScene::monsterMove(std::vector<Entity>* entities, const float maxSpeed,
 		Monster* monster = entity.GetComponent<Monster>();
 		Transform* monsterTransform = entity.GetComponent<Transform>();
 		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+		Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
 
 		const Point monsterPosition = monsterTransform->position;
 		const Point playerPosition = playerTransform->position;
-
 		const Point difference = playerPosition - monsterPosition;
 		monster->length = Math::GetVectorLength(difference);
 
 		Direction* direction = entity.GetComponent<Direction>();
 		if (monster->state == Monster::eState::Run)
 		{
-			if (monster->length > 0.0f)
-			{
-				direction->value = difference / monster->length;
-				velocity = direction->value * maxSpeed;
-			}
+			direction->value = Math::NormalizeVector(difference);
+			velocity = direction->value * maxSpeed;
+			playerKnockback->direction = direction->value;
 
 			monsterTransform->position = monsterTransform->position + velocity * deltaTime;
 			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;

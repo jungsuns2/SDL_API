@@ -111,7 +111,6 @@ struct Hp : public Component
 
 	uint32_t max{};
 	int32_t value{};
-	int32_t previousValue = value;
 };
 
 struct WeaponState : public Component
@@ -121,4 +120,14 @@ struct WeaponState : public Component
 
 	bool isFire = false;  
 	float fireCoolTimer{};
+};
+
+struct Knockback : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Knockback() : Component(&_ID) {}
+
+	bool isValue = false;
+	Point direction{};
+	float coolTimer{};
 };
