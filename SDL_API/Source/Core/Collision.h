@@ -6,8 +6,8 @@ namespace Collision
 	inline bool IsCollidedSqureWithSqure(const Rect lhs, const Rect rhs);
 	inline bool IsCollidedSqureWithLine(const Rect rect, const Line line);
 	inline bool IsCollidedSqureWithCircle(const Rect rect, const Circle& circle);
-	inline bool IsCollidedCircleWithPoint(const Point center, const float radius, const Point point);
-	inline bool IsCollidedCircleWithLine(const Point center, const float radius, const Line line);
+	inline bool IsCollidedCircleWithPoint(const Circle& circle, const Point point);
+	inline bool IsCollidedCircleWithLine(const Circle& circle, const Line line);
 	inline bool IsCollidedCircleWithCircle(const Circle lhs, const Circle rhs);
 	inline bool DoLinesIntersect(Line line0, Line line1);
 
@@ -89,26 +89,26 @@ namespace Collision
 			.point1 = {.x = rect.right, .y = rect.bottom },
 		};
 
-		const bool result = IsCollidedCircleWithLine(circle.center, circle.radius, leftLine)
-			or IsCollidedCircleWithLine(circle.center, circle.radius, topLine)
-			or IsCollidedCircleWithLine(circle.center, circle.radius, rightLine)
-			or IsCollidedCircleWithLine(circle.center, circle.radius, bottomLine);
+		const bool result = IsCollidedCircleWithLine(circle, leftLine)
+			or IsCollidedCircleWithLine(circle, topLine)
+			or IsCollidedCircleWithLine(circle, rightLine)
+			or IsCollidedCircleWithLine(circle, bottomLine);
 
 		return result;
 	}
 
-	bool IsCollidedCircleWithPoint(const Point center, const float radius, const Point point)
+	bool IsCollidedCircleWithPoint(const Circle& circle, const Point point)
 	{
-		const Point centerToPoint = center - point;
+		const Point centerToPoint = circle.center - point;
 		const float centerToPointLength = Math::GetVectorLength(centerToPoint);
-		const bool result = centerToPointLength <= radius;
+		const bool result = centerToPointLength <= circle.radius;
 
 		return result;
 	}
 
-	bool IsCollidedCircleWithLine(const Point center, const float radius, const Line line)
+	bool IsCollidedCircleWithLine(const Circle& circle, const Line line)
 	{
-		const Point ac = center - line.point0;
+		const Point ac = circle.center - line.point0;
 		const Point ab = line.point1 - line.point0;
 
 		const Point abDirection = Math::NormalizeVector(ab);
@@ -123,9 +123,9 @@ namespace Collision
 			line.point0.y + abDirection.y * t
 		};
 
-		const Point diff = center - dPoint;
+		const Point diff = circle.center - dPoint;
 
-		bool result = radius >= Math::GetVectorLength(diff);
+		bool result = circle.radius >= Math::GetVectorLength(diff);
 
 		return result;
 	}
