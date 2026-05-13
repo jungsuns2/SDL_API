@@ -190,6 +190,33 @@ void StudyScene::Initialize()
 
 		GetEntityWorld()->AddEntity(&mRectPlayer);
 	}
+
+	// Circle Player
+	{
+		Transform transform{};
+		mCirclePlayer.AddComponent(transform);
+
+		Image image{};
+		image.texture = &mCircleTexture;
+		mCirclePlayer.AddComponent(image);
+
+		Active active{};
+		active.value = true;
+		mCirclePlayer.AddComponent(active);
+
+		Color color{};
+		mCirclePlayer.AddComponent(color);
+
+		CollisionDetector collider(static_cast<uint32_t>(CollisionLayer::Monster));
+		collider.CollisionLayerMask.set(uint32_t(CollisionLayer::Monster));
+		mCirclePlayer.AddComponent(collider);
+
+		CircleCollider circleCollider{};
+		circleCollider.radius = mCircleTexture.GetWidth() * 0.5f;
+		mCirclePlayer.AddComponent(circleCollider);
+
+		GetEntityWorld()->AddEntity(&mCirclePlayer);
+	}
 }
 
 bool StudyScene::Update(const float deltaTime)
@@ -237,7 +264,9 @@ bool StudyScene::Update(const float deltaTime)
 				{
 					checkCollisionBoxBox(*entity0, *entity1) 
 						or checkCollisionBoxCircle(*entity0, *entity1)
-						or checkCollisionBoxLine(*entity0, *entity1);
+						or checkCollisionBoxLine(*entity0, *entity1)
+						or checkCollisionCircleCircle(*entity0, *entity1)
+						or checkCollisionCircleLine(*entity0, *entity1);
 				}
 			}
 		}
@@ -249,7 +278,7 @@ bool StudyScene::Update(const float deltaTime)
 			const float moveX = float(Input::Get().GetKey(SDL_SCANCODE_D) - Input::Get().GetKey(SDL_SCANCODE_A));
 			const float moveY = float(Input::Get().GetKey(SDL_SCANCODE_W) - Input::Get().GetKey(SDL_SCANCODE_S));
 
-			Transform* transform = mRectPlayer.GetComponent<Transform>();
+			Transform* transform = mCirclePlayer.GetComponent<Transform>();
 			transform->position.x += moveX * 120.0f * deltaTime;
 			transform->position.y += moveY * 120.0f * deltaTime;
 		}
@@ -282,6 +311,24 @@ bool StudyScene::Update(const float deltaTime)
 			printf("面倒 enter\n");
 		}
 		else if (isCollisionExit(mRectPlayer, mLineMonster))
+		{
+			printf("面倒 exit\n");
+		}
+
+		if (isCollisionEnter(mCirclePlayer, mCircleMonster))
+		{
+			printf("面倒 enter\n");
+		}
+		else if (isCollisionExit(mCirclePlayer, mCircleMonster))
+		{
+			printf("面倒 exit\n");
+		}
+
+		if (isCollisionEnter(mCirclePlayer, mLineMonster))
+		{
+			printf("面倒 enter\n");
+		}
+		else if (isCollisionExit(mCirclePlayer, mLineMonster))
 		{
 			printf("面倒 exit\n");
 		}
@@ -483,6 +530,56 @@ bool StudyScene::checkCollisionBoxLine(const Entity& boxEntity, const Entity& li
 	if (Collision::IsCollidedSqureWithLine(rect, line))
 	{
 		registerCollidedEntityPairs(boxEntity, lineEntity);
+		return true;
+	}
+
+	return false;
+}
+
+bool StudyScene::checkCollisionCircleCircle(const Entity& entity0, const Entity& entity1)
+{
+	if (not entity0.HasComponent<CircleCollider>()
+		or not entity1.HasComponent<CircleCollider>())
+	{
+		return false;
+	}
+
+	const Transform* Transform0 = entity0.GetComponent<Transform>();
+	const CircleCollider* Collider0 = entity0.GetComponent<CircleCollider>();
+	const Circle circle0 = convertCircleColliderToWorldCircle(*Transform0, *Collider0);
+
+	const Transform* Transform1 = entity1.GetComponent<Transform>();
+	const CircleCollider* Collider1 = entity1.GetComponent<CircleCollider>();
+	const Circle circle1 = convertCircleColliderToWorldCircle(*Transform1, *Collider1);
+
+	if (Collision::IsCollidedCircleWithCircle(circle0, circle1))
+	{
+		registerCollidedEntityPairs(entity0, entity1);
+		return true;
+	}
+
+	return false;
+}
+
+bool StudyScene::checkCollisionCircleLine(const Entity& circleEntity, const Entity& lineEntity)
+{
+	if (not circleEntity.HasComponent<CircleCollider>()
+		or not lineEntity.HasComponent<LineCollider>())
+	{
+		return false;
+	}
+
+	const Transform* circleTransform = circleEntity.GetComponent<Transform>();
+	const CircleCollider* circleCollider = circleEntity.GetComponent<CircleCollider>();
+	const Circle circle = convertCircleColliderToWorldCircle(*circleTransform, *circleCollider);
+
+	const Transform* lineTransform = lineEntity.GetComponent<Transform>();
+	const LineCollider* lineCollider = lineEntity.GetComponent<LineCollider>();
+	const Line line = convertLineColliderToWorldLine(*lineTransform, *lineCollider);
+
+	if (Collision::IsCollidedCircleWithLine(circle, line))
+	{
+		registerCollidedEntityPairs(circleEntity, lineEntity);
 		return true;
 	}
 

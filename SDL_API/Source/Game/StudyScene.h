@@ -37,6 +37,8 @@ private:
 	bool checkCollisionBoxBox(const Entity& entity0, const Entity& entity1);
 	bool checkCollisionBoxCircle(const Entity& boxEntity, const Entity& circleEntity);
 	bool checkCollisionBoxLine(const Entity& boxEntity, const Entity& lineEntity);
+	bool checkCollisionCircleCircle(const Entity& entity0, const Entity& entity1);
+	bool checkCollisionCircleLine(const Entity& circleEntity, const Entity& lineEntity);
 
 private:
 	Texture mBoxTexture{};
@@ -44,6 +46,7 @@ private:
 
 	Entity mMainCamera{};
 	Entity mRectPlayer{};
+	Entity mCirclePlayer{};
 	Entity mRectMonster{};
 	Entity mCircleMonster{};
 	Entity mLineMonster{};
