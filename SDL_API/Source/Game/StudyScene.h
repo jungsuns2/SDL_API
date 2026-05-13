@@ -8,6 +8,7 @@
 
 struct BoxCollider;
 struct CircleCollider;
+struct LineCollider;
 
 class StudyScene final : public Scene
 {
@@ -29,20 +30,23 @@ private:
 	std::pair<const Entity*, const Entity*> getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const;
 	void registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1);
 	
-	Rect convertBoxColliderToWorldRect(const Transform& transform, const BoxCollider& boxCollider) const;
+	Rect convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const;
 	Circle convertCircleColliderToWorldCircle(const Transform& transform, const CircleCollider& circleCollider) const;
+	Line convertLineColliderToWorldLine(const Transform& transform, const LineCollider& lineCollider) const;
 
 	bool checkCollisionBoxBox(const Entity& entity0, const Entity& entity1);
 	bool checkCollisionBoxCircle(const Entity& boxEntity, const Entity& circleEntity);
+	bool checkCollisionBoxLine(const Entity& boxEntity, const Entity& lineEntity);
 
 private:
 	Texture mBoxTexture{};
 	Texture mCircleTexture{};
 
 	Entity mMainCamera{};
-	Entity mPlayer{};
+	Entity mRectPlayer{};
 	Entity mRectMonster{};
 	Entity mCircleMonster{};
+	Entity mLineMonster{};
 
 	std::vector<std::pair<const Entity*, const Entity*>> mCollidedEntityPairs{};
 	std::vector<std::pair<const Entity*, const Entity*>> mPreviousCollidedEntityPairs{};

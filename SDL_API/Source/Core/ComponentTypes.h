@@ -140,7 +140,7 @@ struct Direction final : public Component
 	static constexpr uint32_t _ID = 0;
 	Direction() : Component(&_ID) {}
 
-	Point point{};
+	Point value{};
 };
 
 //struct Collider final : public Component

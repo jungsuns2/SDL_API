@@ -54,6 +54,11 @@ struct Scale
 	float width;
 	float height;
 
+	[[nodiscard]] Scale operator*(const Scale other) const
+	{
+		return { .width = width * other.width, .height = height * other.height };
+	}
+
 	[[nodiscard]] Scale operator*(const float other) const
 	{
 		return { .width = width * other, .height = height * other };

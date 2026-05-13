@@ -73,7 +73,7 @@ bool MainScene::Update(const float deltaTime)
 			}
 		}
 
-		Point velocity = direction->point * SPEED;
+		Point velocity = direction->value * SPEED;
 		swordTransform->position = swordTransform->position + velocity * deltaTime;
 
 		const Point toSword =
@@ -89,7 +89,7 @@ bool MainScene::Update(const float deltaTime)
 		{
 			swordState->isFire = false;
 			active->value = false;
-			swordTransform->position = direction->point * PLAYER_RADIUS * 3.141592f;
+			swordTransform->position = direction->value * PLAYER_RADIUS * 3.141592f;
 		}
 	}
 
@@ -135,11 +135,11 @@ bool MainScene::Update(const float deltaTime)
 			const Point difference = getScreenMousePosition() - gunTransform->position;
 			const float length = Math::GetVectorLength(difference);
 
-			bulletDirection->point = difference / length;
+			bulletDirection->value = difference / length;
 			bulletState->fireCoolTimer = 0.0f;
 		}
 
-		Point velocity = bulletDirection->point * SPEED;
+		Point velocity = bulletDirection->value * SPEED;
 		bulletTransform->position = bulletTransform->position + velocity * deltaTime;
 
 		const Point toBullet =
@@ -805,14 +805,14 @@ void MainScene::playerMove(const float deltaTime)
 
 	if (player->length > 0.0f)
 	{
-		direction->point = { .x = velocity.x / player->length, .y = velocity.y / player->length };
+		direction->value = { .x = velocity.x / player->length, .y = velocity.y / player->length };
 
-		velocity = direction->point * MAX_SPEED;
+		velocity = direction->value * MAX_SPEED;
 	}
 
 	Transform* transform = mPlayer.GetComponent<Transform>();
 	transform->position = transform->position + velocity * deltaTime;
-	transform->flip = (direction->point.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+	transform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 }
 
 void MainScene::playerSetClip()
@@ -975,7 +975,7 @@ void MainScene::monsterDeadParticle(std::vector<Entity>* entities, const float d
 				{
 					Particle* particle = entity.GetComponent<Particle>();
 					Direction* direction = entity.GetComponent<Direction>();
-					Point& dir = direction->point;
+					Point& dir = direction->value;
 
 					dir = getScreenMousePosition() - monsterTransform->position;
 					dir = Math::NormalizeVector(dir);
@@ -1001,7 +1001,7 @@ void MainScene::monsterDeadParticle(std::vector<Entity>* entities, const float d
 					Transform* transform = entity.GetComponent<Transform>();
 					Particle* particle = entity.GetComponent<Particle>();
 					Direction* direction = entity.GetComponent<Direction>();
-					transform->position = transform->position + direction->point * speed * deltaTime;
+					transform->position = transform->position + direction->value * speed * deltaTime;
 				}
 			}
 
@@ -1046,12 +1046,12 @@ void MainScene::monsterMove(std::vector<Entity>* entities, const float maxSpeed,
 		{
 			if (monster->length > 0.0f)
 			{
-				direction->point = difference / monster->length;
-				velocity = direction->point * maxSpeed;
+				direction->value = difference / monster->length;
+				velocity = direction->value * maxSpeed;
 			}
 
 			monsterTransform->position = monsterTransform->position + velocity * deltaTime;
-			monsterTransform->flip = (direction->point.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 		}
 	}
 }
@@ -1130,10 +1130,10 @@ void MainScene::setWeaponPosition(const SetWeaponDesc& desc)
 	transform->angle = -degree;
 
 	const float length = Math::GetVectorLength(mouseToPlayer);
-	direction->point = mouseToPlayer / length;
+	direction->value = mouseToPlayer / length;
 
-	transform->position = playerTransform->position + direction->point * playerRadius * 3.141592f;
-	transform->flip = (direction->point.x > 0.0f) ? flipX : flipY;
+	transform->position = playerTransform->position + direction->value * playerRadius * 3.141592f;
+	transform->flip = (direction->value.x > 0.0f) ? flipX : flipY;
 }
 
 float MainScene::getRandom(const float min, const float max)
