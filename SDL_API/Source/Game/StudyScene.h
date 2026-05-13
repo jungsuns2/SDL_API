@@ -6,6 +6,9 @@
 
 #include "Core/Entity/Entity.h"
 
+struct BoxCollider;
+struct CircleCollider;
+
 class StudyScene final : public Scene
 {
 public:
@@ -19,16 +22,23 @@ public:
 	void Finalize()  override;
 
 private:
-	std::pair<const Entity*, const Entity*> getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const;
 	bool isCollisionEnter(const Entity& entity0, const Entity& entity1) const;
 	bool isCollisionStay(const Entity& entity0, const Entity& entity1) const;
 	bool isCollisionExit(const Entity& entity0, const Entity& entity1) const;
 
+	Rect convertBoxColliderToWorldRect(const Transform& transform, const BoxCollider& boxCollider) const;
+	std::pair<const Entity*, const Entity*> getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const;
+	void registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1);
+	
+	bool checkCollisionBoxBox(const Entity& entity0, const Entity& entity1);
+
 private:
 	Texture mBoxTexture{};
+	Texture mCircleTexture{};
 
 	Entity mMainCamera{};
-	Entity mMobs[2]{};
+	Entity mPlayer{};
+	Entity mRectMonster{};
 
 	std::vector<std::pair<const Entity*, const Entity*>> mCollidedEntityPairs{};
 	std::vector<std::pair<const Entity*, const Entity*>> mPreviousCollidedEntityPairs{};

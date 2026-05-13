@@ -143,14 +143,14 @@ struct Direction final : public Component
 	Point point{};
 };
 
-struct Collider final : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	Collider(const uint32_t layer) : Component(&_ID), Layer(layer) {}
-
-	const uint32_t Layer = 0;
-	std::bitset<64> CollisionLayerMask{};
-};
+//struct Collider final : public Component
+//{
+//	static constexpr uint32_t _ID = 0;
+//	Collider(const uint32_t layer) : Component(&_ID), Layer(layer) {}
+//
+//	const uint32_t Layer = 0;
+//	std::bitset<64> CollisionLayerMask{};
+//};
 
 struct Active final : public Component
 {

@@ -293,50 +293,50 @@ void Core::animatorRenderingSystem(const EntityWorld* entityWorld, Transform* ca
 
 void Core::colliderAnimatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
 {
-	assert(entityWorld != nullptr);
-	assert(cameraTransform != nullptr);
+	//assert(entityWorld != nullptr);
+	//assert(cameraTransform != nullptr);
 
-	for (const Entity* entity : entityWorld->GetAllEntites())
-	{
-		if (not entity->HasComponent<Transform>()
-			or not entity->HasComponent<Animator>()
-			or not entity->HasComponent<Collider>()
-			or not entity->HasComponent<DebugActive>()
-			or not entity->HasComponent<DebugColor>()
-			or not entity->HasComponent<Color>())
-		{
-			continue;
-		}
+	//for (const Entity* entity : entityWorld->GetAllEntites())
+	//{
+	//	if (not entity->HasComponent<Transform>()
+	//		or not entity->HasComponent<Animator>()
+	//		or not entity->HasComponent<Collider>()
+	//		or not entity->HasComponent<DebugActive>()
+	//		or not entity->HasComponent<DebugColor>()
+	//		or not entity->HasComponent<Color>())
+	//	{
+	//		continue;
+	//	}
 
-		DebugActive* active = entity->GetComponent<DebugActive>();
-		if (not active->value)
-		{
-			continue;
-		}
+	//	DebugActive* active = entity->GetComponent<DebugActive>();
+	//	if (not active->value)
+	//	{
+	//		continue;
+	//	}
 
-		Animator* animator = entity->GetComponent<Animator>();
-		const Clip* clip = animator->clipState;
-		const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
-		const Clip::Frame& frame = frames[0];
+	//	Animator* animator = entity->GetComponent<Animator>();
+	//	const Clip* clip = animator->clipState;
+	//	const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
+	//	const Clip::Frame& frame = frames[0];
 
-		Transform* transform = entity->GetComponent<Transform>();
-		SDL_FRect rect{};
+	//	Transform* transform = entity->GetComponent<Transform>();
+	//	SDL_FRect rect{};
 
-		drawSystem
-		(
-			{
-				.textureScale = {.width = float(frame.texture->GetWidth()), .height = float(frame.texture->GetHeight()) },
-				.transform = transform,
-				.cameraTransform = cameraTransform,
-				.rect = &rect,
-			}
-		);
+	//	drawSystem
+	//	(
+	//		{
+	//			.textureScale = {.width = float(frame.texture->GetWidth()), .height = float(frame.texture->GetHeight()) },
+	//			.transform = transform,
+	//			.cameraTransform = cameraTransform,
+	//			.rect = &rect,
+	//		}
+	//	);
 
-		SDL_SetRenderDrawBlendMode(mRenderer, SDL_BLENDMODE_BLEND);
-		DebugColor* color = entity->GetComponent<DebugColor>();
-		SDL_SetRenderDrawColor(mRenderer, color->r, color->g, color->b, color->a);
-		SDL_RenderFillRectF(mRenderer, &rect);
-	}
+	//	SDL_SetRenderDrawBlendMode(mRenderer, SDL_BLENDMODE_BLEND);
+	//	DebugColor* color = entity->GetComponent<DebugColor>();
+	//	SDL_SetRenderDrawColor(mRenderer, color->r, color->g, color->b, color->a);
+	//	SDL_RenderFillRectF(mRenderer, &rect);
+	//}
 }
 
 void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
@@ -348,7 +348,7 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld, Transfor
 	{
 		if (not entity->HasComponent<Transform>()
 			or not entity->HasComponent<Image>()
-			or not entity->HasComponent<Collider>()
+			/*or not entity->HasComponent<Collider>()*/
 			or not entity->HasComponent<DebugActive>()
 			or not entity->HasComponent<DebugColor>()
 			or not entity->HasComponent<Color>())

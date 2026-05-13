@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
 {
 
 	// 초기화를 한다.
-	gCore.Initialize(new MainScene);
+	gCore.Initialize(new StudyScene);
 
 	float deltaTime = 0.0f;
 
