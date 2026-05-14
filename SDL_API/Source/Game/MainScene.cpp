@@ -105,7 +105,7 @@ bool MainScene::Update(const float deltaTime)
 	{
 		input();
 
-		playerState();
+		playerState(deltaTime);
 
 		playerMove(deltaTime);
 	}
@@ -238,6 +238,7 @@ bool MainScene::Update(const float deltaTime)
 			constexpr float SPWAN_SCALE = 0.7f;
 			monsterSpwan
 			(
+				MonsterSpwanDesc
 				{
 					.entities = &mMonsters,
 					.spwanPositionTime = SPWAN_POSITION_TIME,
@@ -311,34 +312,27 @@ bool MainScene::Update(const float deltaTime)
 	}
 
 	Hp* playerHp = mPlayer.GetComponent<Hp>();
-	Color* color = mPlayer.GetComponent<Color>();
+	Label* playerLabel = mPlayer.GetComponent<Label>();
 	Knockback* knockback = mPlayer.GetComponent<Knockback>();
 
 	for (const auto& monster : mMonsters)
-	{
-		if (monster.GetComponent<Monster>()->state >= Monster::eState::Run 
-			and monster.GetComponent<Monster>()->state < Monster::eState::Dead)
+	{	
+		if (isCollisionEnter(mPlayer, monster))
 		{
-			if (isCollisionEnter(mPlayer, monster))
+			if (monster.GetComponent<Monster>()->state == Monster::eState::Run)
 			{
 				playerHp->value -= 1;
-
-				color->r = 200;
-				color->g = 0;
-				color->b = 0;
-
-				knockback->isValue = true;
-			}
-			else if (isCollisionStay(mPlayer, monster))
-			{
-			}
-			else if (isCollisionExit(mPlayer, monster))
-			{
-				color->r = 255;
-				color->g = 255;
-				color->b = 255;
+				std::string name = "Hp: " + std::to_string(playerHp->value);
+				playerLabel->SetText(GetHelper(), name);
 			}
 		}
+		else if (isCollisionStay(mPlayer, monster))
+		{
+			if (monster.GetComponent<Monster>()->state == Monster::eState::Attack)
+			{
+				knockback->isValue = true;
+			}
+		}		
 	}
 
 	{
@@ -354,7 +348,7 @@ bool MainScene::Update(const float deltaTime)
 
 void MainScene::Finalize()
 {
-	mFont.Finalize();
+	mUIFont.Finalize();
 
 	// Player
 	{
@@ -367,6 +361,8 @@ void MainScene::Finalize()
 		{
 			texture.Finalize();
 		}
+
+		mPlayerDeadTexture.Finalize();
 	}
 
 	// Monster
@@ -422,7 +418,8 @@ void MainScene::Finalize()
 
 void MainScene::initialize_Resource()
 {
-	mFont.Initilize("Resource/DroidSans.TTF", 50);
+	mUIFont.Initilize("Resource/DroidSans.TTF", 50);
+	mHpFont.Initilize("Resource/DroidSans.TTF", 20);
 
 	// Tile
 	mTileTextures[0].Initialize(GetHelper(), "Resource/Tile/0.png");
@@ -481,6 +478,13 @@ void MainScene::initialize_Resource()
 
 			mPlayerClips[uint32_t(Player::eState::Run)].AddClip(frame);
 		}
+
+		mPlayerDeadTexture.Initialize(GetHelper(), "Resource/Char/Alice/Dead/0.png");
+		Clip::Frame frame =
+		{
+			.texture = &mPlayerDeadTexture,
+		};
+		mPlayerClips[uint32_t(Player::eState::Dead)].AddClip(frame);
 	}
 
 	// Sword
@@ -675,7 +679,7 @@ void MainScene::initialize_Entity()
 		mLabelEntity.AddComponent(ui);
 
 		Label label;
-		label.font = &mFont;
+		label.font = &mUIFont;
 		label.active = true;
 		label.SetText(GetHelper(), "UI Label");
 		mLabelEntity.AddComponent(label);
@@ -713,8 +717,16 @@ void MainScene::initialize_Entity()
 		mPlayer.AddComponent(animator);
 
 		Hp hp{};
-		hp.value = 10;
+		hp.max = 1;
+		hp.value = hp.max;
 		mPlayer.AddComponent(hp);
+
+		Label label;
+		label.font = &mHpFont;
+		label.active = true;
+		std::string name = "Hp: " + std::to_string(hp.value);
+		label.SetText(GetHelper(), name);
+		mPlayer.AddComponent(label);
 
 		Knockback knockback{};
 		mPlayer.AddComponent(knockback);
@@ -867,14 +879,13 @@ void MainScene::initialize_Entity()
 
 	// Monster
 	{
-		constexpr uint32_t MONSTER_COUNT = 1;
-
 		mMonsterClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
 		mMonsterClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mMonsterClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
-		mMonsters.reserve(MONSTER_COUNT);
-		for (uint32_t i = 0; i < MONSTER_COUNT; ++i)
+		constexpr uint32_t KNIGHT_MONSTER_COUNT = 1;
+		mMonsters.reserve(KNIGHT_MONSTER_COUNT);
+		for (uint32_t i = 0; i < KNIGHT_MONSTER_COUNT; ++i)
 		{
 			Entity& entity = mMonsters.emplace_back();
 
@@ -958,10 +969,23 @@ void MainScene::input()
 	}
 }
 
-void MainScene::playerState()
+void MainScene::playerState(const float deltaTime)
 {
 	Player* player = mPlayer.GetComponent<Player>();
 	player->state = (player->length != 0.0f) ? Player::eState::Run : Player::eState::Idle;
+
+	static float deadTimer;
+	Hp* playerHp = mPlayer.GetComponent<Hp>();
+	if (playerHp->value <= 0)
+	{
+		deadTimer += deltaTime;
+		if (deadTimer >= 0.5f)
+		{
+			player->state = Player::eState::Dead;
+			Label* label = mPlayer.GetComponent<Label>();
+			label->active = false;
+		}
+	}
 }
 
 void MainScene::playerMove(const float deltaTime)
@@ -1017,27 +1041,33 @@ void MainScene::playerMove(const float deltaTime)
 	direction->value = Math::NormalizeVector(moveVelocity);
 	moveVelocity = direction->value * MAX_SPEED;
 
+	constexpr float KNOCKBACK_FORCE = 500.0f;
+	constexpr float KNOCKBACK_COOLTIMER = 0.7f;
 	Knockback* knockback = mPlayer.GetComponent<Knockback>();
-	constexpr float KNOCKBACK_FORCE = 300.0f;
-	constexpr float KNOCKBACK_COOLTIMER = 1.0f;
-	Point knockbackVelocity{};
+	Color* color = mPlayer.GetComponent<Color>();
 
 	if (knockback->isValue)
 	{
-		knockbackVelocity = knockback->direction * KNOCKBACK_FORCE;
+		color->r = 200;
+		color->g = 0;
+		color->b = 0;
+
+		moveVelocity = moveVelocity + knockback->direction * KNOCKBACK_FORCE;
 
 		knockback->coolTimer += deltaTime;
 		if (knockback->coolTimer >= KNOCKBACK_COOLTIMER)
 		{
+			color->r = 255;
+			color->g = 255;
+			color->b = 255;
+
 			knockback->isValue = false;
 			knockback->coolTimer = 0.0f;
 		}
 	}
 
-	Point totalVelocity = moveVelocity + knockbackVelocity;
-
 	Transform* transform = mPlayer.GetComponent<Transform>();
-	transform->position = transform->position + totalVelocity * deltaTime;
+	transform->position = transform->position + moveVelocity * deltaTime;
 	transform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 }
 
@@ -1054,6 +1084,10 @@ void MainScene::playerSetClip()
 
 	case Player::eState::Run:
 		animator->SetClip(&mPlayerClips[uint32_t(Player::eState::Run)]);
+		break;
+
+	case Player::eState::Dead:
+		animator->SetClip(&mPlayerClips[uint32_t(Player::eState::Dead)]);
 		break;
 
 	default:

@@ -413,26 +413,31 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 			continue;
 		}
 
-		Transform* transform = entity->GetComponent<Transform>();
-		SDL_FRect rect{};
-		SDL_FPoint angleCenter{};
+		const Point cameraCenter =
+		{
+			.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
+			.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
+		};
 
-		textureSystem
-		(
-			TextureSystemDesc
-			{
-				.textureScale = {.width = label->scale.width, .height = label->scale.height },
-				.textureTransform = transform,
-				.cameraTransform = cameraTransform,
-				.rect = &rect,
-				.angleCenter = &angleCenter
-			}
-		);
+		const Point cameraOffset =
+		{
+			.x = cameraCenter.x - cameraTransform->position.x,
+			.y = cameraCenter.y + cameraTransform->position.y,
+		};
+
+		Transform* transform = entity->GetComponent<Transform>();
+		const SDL_Rect rect =
+		{
+			.x = int(cameraOffset.x + transform->position.x),
+			.y = int(cameraOffset.y - transform->position.y),
+			.w = int(label->scale.width),
+			.h = int(label->scale.height),
+		};
 
 		Color* color = entity->GetComponent<Color>();
 		SDL_SetTextureColorMod(label->texture, color->r, color->g, color->b);
 		SDL_SetTextureAlphaMod(label->texture, color->a);
-		SDL_RenderCopyF(mRenderer, label->texture, nullptr, &rect);
+		SDL_RenderCopy(mRenderer, label->texture, nullptr, &rect);
 	}
 }
 
@@ -456,18 +461,18 @@ void Core::labelUIRenderingSystem(const EntityWorld* entityWorld, Transform* cam
 		}
 
 		const Transform* transform = entity->GetComponent<Transform>();
-		const SDL_FRect rect =
+		const SDL_Rect rect =
 		{
-			.x = transform->position.x,
-			.y = transform->position.y,
-			.w = label->scale.width,
-			.h = label->scale.height,
+			.x = int(transform->position.x),
+			.y = int(transform->position.y),
+			.w = int(label->scale.width),
+			.h = int(label->scale.height),
 		};
 
 		Color* color = entity->GetComponent<Color>();
 		SDL_SetTextureColorMod(label->texture, color->r, color->g, color->b);
 		SDL_SetTextureAlphaMod(label->texture, color->a);
-		SDL_RenderCopyF(mRenderer, label->texture, nullptr, &rect);
+		SDL_RenderCopy(mRenderer, label->texture, nullptr, &rect);
 	}
 }
 

@@ -72,7 +72,7 @@ public:
 	void initialize_Entity();
 
 	void input();
-	void playerState();
+	void playerState(const float deltaTime);
 	void playerMove(const float deltaTime);
 	void playerSetClip();
 
@@ -92,7 +92,8 @@ private:
 	uint32_t mTileWidth{};
 	uint32_t mTileHeight{};
 
-	Font mFont{};
+	Font mUIFont{};
+	Font mHpFont{};
 
 	Entity mMainCamera{};
 	Entity mLabelEntity{};
@@ -113,6 +114,7 @@ private:
 
 	std::array<Texture, 5> mPlayerIdleTextures{};
 	std::array<Texture, 6> mPlayerRunTextures{};
+	Texture mPlayerDeadTexture{};
 
 	Texture mMonsterSpwanTexture{};
 	Texture mMonsterIdleTexture{};

@@ -7,6 +7,7 @@ struct Player : public Component
 	{
 		Idle,
 		Run,
+		Dead,
 		Count
 	};
 
