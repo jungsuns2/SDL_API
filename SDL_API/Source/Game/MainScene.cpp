@@ -437,26 +437,52 @@ void MainScene::initialize_Resource()
 
 	// Player
 	{
-		uint32_t cnt{};
+		constexpr Point IDLE_OFFSETS[]
+		{
+			{ 0.0f, -0.50f },
+			{ 0.0f, -0.50f },
+			{ 0.0f, -0.50f },
+			{ 0.0f, -0.50f },
+			{ 0.0f, -0.50f },
+		};
+		assert(std::size(IDLE_OFFSETS) == mPlayerIdleTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
+
+		uint32_t index{};
 		for (Texture& texture : mPlayerIdleTextures)
 		{
-			texture.Initialize(GetHelper(), "Resource/Char/Alice/Idle/" + std::to_string(cnt++) + ".png");
+			texture.Initialize(GetHelper(), "Resource/Char/Alice/Idle/" + std::to_string(index) + ".png");
 
-			Clip::Frame frame;
-			frame.texture = &texture;
-			frame.durationTime = 0.12f;
-
+			Clip::Frame frame =
+			{
+				.texture = &texture, 
+				.durationTime = 0.12f, 
+				.center = IDLE_OFFSETS[index++]
+			};
 			mPlayerClips[uint32_t(Player::eState::Idle)].AddClip(frame);
 		}
 
-		cnt = 0;
+		constexpr Point RUN_OFFSETS[]
+		{
+			{ -0.09f, -0.50f },
+			{ -0.06f, -0.50f },
+			{ -0.06f, -0.50f },
+			{ -0.09f, -0.50f },
+			{ -0.06f, -0.50f },
+			{ -0.06f, -0.50f }
+		};
+		assert(std::size(RUN_OFFSETS) == mPlayerRunTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
+
+		index = 0;
 		for (Texture& texture : mPlayerRunTextures)
 		{
-			texture.Initialize(GetHelper(), "Resource/Char/Alice/Run/" + std::to_string(cnt++) + ".png");
+			texture.Initialize(GetHelper(), "Resource/Char/Alice/Run/" + std::to_string(index) + ".png");
 
-			Clip::Frame frame;
-			frame.texture = &texture;
-			frame.durationTime = 0.12f;
+			Clip::Frame frame = 
+			{
+				.texture = &texture, 
+				.durationTime = 0.12f, 
+				.center = RUN_OFFSETS[index++]
+			};
 
 			mPlayerClips[uint32_t(Player::eState::Run)].AddClip(frame);
 		}
@@ -950,8 +976,6 @@ void MainScene::playerMove(const float deltaTime)
 	}
 
 	Point totalVelocity = moveVelocity + knockbackVelocity;
-
-	printf("%f \n", knockbackVelocity.x);
 
 	Transform* transform = mPlayer.GetComponent<Transform>();
 	transform->position = transform->position + totalVelocity * deltaTime;
