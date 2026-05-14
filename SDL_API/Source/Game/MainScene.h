@@ -67,7 +67,7 @@ public:
 	bool Update(const float deltaTime) override;
 	void Finalize()  override;
 
-public:
+private:
 	void initialize_Resource();
 	void initialize_Entity();
 
@@ -82,6 +82,8 @@ public:
 	void monsterMove(std::vector<Entity>* entities, const float maxSpeed, const float deltaTime);
 	void monsterSetClip(std::vector<Entity>* entities, std::array<Clip, uint32_t(Monster::eState::Count)>& clips);
 
+	void clampToTile(Transform* transform,const RangeX offsetX, const RangeY offsetY);
+
 	Point getScreenMousePosition() const;
 	void setWeaponPosition(const SetWeaponDesc& desc);
 
@@ -89,8 +91,8 @@ public:
 
 private:
 	bool mIsUpdate = true;
-	uint32_t mTileWidth{};
-	uint32_t mTileHeight{};
+	uint32_t mTileMaxCount{};
+	float mTilePositionOffset{};
 
 	Font mUIFont{};
 	Font mHpFont{};

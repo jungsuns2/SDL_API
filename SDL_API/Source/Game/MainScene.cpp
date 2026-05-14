@@ -115,6 +115,15 @@ bool MainScene::Update(const float deltaTime)
 		Transform* transform = mMainCamera.GetComponent<Transform>();
 		Transform* target = mPlayer.GetComponent<Transform>();
 		transform->position = target->position;
+
+		constexpr float OFFSET = 31.0f;
+		const Scale halfScreen =
+		{
+			.width = float(Constant::Get().GetWidth()) * 0.5f - OFFSET,
+			.height = float(Constant::Get().GetHeight()) * 0.5f - OFFSET,
+		};
+
+		clampToTile(transform, { .x = halfScreen.width, .xx = halfScreen.width }, { .y = halfScreen.height, .yy = halfScreen.height });
 	}
 
 	// 칼을 업데이트한다.
@@ -405,7 +414,7 @@ void MainScene::Finalize()
 
 	// Tile
 	{
-		for (uint32_t y = 0; y < mTileHeight; ++y)
+		for (uint32_t y = 0; y < mTileMaxCount; ++y)
 		{
 			delete[] mTiles[y];
 		}
@@ -617,6 +626,7 @@ void MainScene::initialize_Entity()
 	{
 		constexpr uint32_t TILE_SIZE = 16;
 		constexpr float TILE_SCALE = 4.0f;
+		mTilePositionOffset = TILE_SIZE * TILE_SCALE;
 
 		FILE* file = nullptr;
 		fopen_s(&file, "Resource/Tile/Tile.txt", "r");
@@ -624,15 +634,13 @@ void MainScene::initialize_Entity()
 
 		uint32_t width{};
 		uint32_t height{};
-
 		fscanf_s(file, "%d %d", &width, &height);
+		mTileMaxCount = height;
 
-		mTileWidth = width;
-		mTileHeight = height;
+
+		Point centerOffset = { .x = -float(width * 0.5f), .y = -float(height * 0.5f), };
+
 		mTiles = new Entity * [height];
-
-		Point centerOffset = { .x = -float(mTileWidth * 0.5f), .y = -float(mTileHeight * 0.5f), };
-
 		for (uint32_t y = 0; y < height; ++y)
 		{
 			const float offsetY = float(height + centerOffset.y) * float(TILE_SIZE - 1);
@@ -648,25 +656,25 @@ void MainScene::initialize_Entity()
 				Texture& tileTexture = mTileTextures[tileIndex];
 				assert(tileTexture.GetWidth() == TILE_SIZE and tileTexture.GetHeight() == TILE_SIZE and "지원하지 않는 타일 사이즈입니다.");
 
-				Entity& tile = mTiles[y][x];
+				Entity& entity = mTiles[y][x];
 
 				Transform transform{};
 				transform.position = { .x = (x + centerOffset.x) * TILE_SIZE * TILE_SCALE, .y = (offsetY - y * TILE_SIZE) * TILE_SCALE };
 				transform.scale = { .width = TILE_SCALE, .height = TILE_SCALE };
-				tile.AddComponent(transform);
+				entity.AddComponent(transform);
 
 				Image image{};
 				image.texture = &tileTexture;
-				tile.AddComponent(image);
+				entity.AddComponent(image);
 
 				Active active{};
 				active.isValue = true;
-				tile.AddComponent(active);
+				entity.AddComponent(active);
 
 				Color color{};
-				tile.AddComponent(color);
+				entity.AddComponent(color);
 
-				GetEntityWorld()->AddEntity(&tile);
+				GetEntityWorld()->AddEntity(&entity);
 			}
 		}
 
@@ -1067,6 +1075,7 @@ void MainScene::playerMove(const float deltaTime)
 	}
 
 	Transform* transform = mPlayer.GetComponent<Transform>();
+	clampToTile(transform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
 	transform->position = transform->position + moveVelocity * deltaTime;
 	transform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 }
@@ -1308,6 +1317,7 @@ void MainScene::monsterMove(std::vector<Entity>* entities, const float maxSpeed,
 			velocity = direction->value * maxSpeed;
 			playerKnockback->direction = direction->value;
 
+			clampToTile(monsterTransform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
 			monsterTransform->position = monsterTransform->position + velocity * deltaTime;
 			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 		}
@@ -1348,6 +1358,17 @@ void MainScene::monsterSetClip(std::vector<Entity>* entities, std::array<Clip, u
 			break;
 		}
 	}
+}
+
+void MainScene::clampToTile(Transform* transform, const RangeX offsetX, const RangeY offsetY)
+{
+	assert(transform != nullptr);
+
+	const Point firstTilePosition = mTiles[0][0].GetComponent<Transform>()->position;
+	const Point lastTilePosition = mTiles[mTileMaxCount - 1][mTileMaxCount - 1].GetComponent<Transform>()->position;
+
+	transform->position.x = std::clamp(transform->position.x, firstTilePosition.x + offsetX.x, lastTilePosition.x - offsetX.xx);
+	transform->position.y = std::clamp(transform->position.y, lastTilePosition.y + offsetY.y, firstTilePosition.y - offsetY.yy);
 }
 
 Point MainScene::getScreenMousePosition() const

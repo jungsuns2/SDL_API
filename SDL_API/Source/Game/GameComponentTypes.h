@@ -75,6 +75,7 @@ struct Tile : public Component
 	Tile() : Component(&_ID) {}
 
 	eType type{};
+	uint32_t maxCount{};
 };
 
 struct Particle : public Component
