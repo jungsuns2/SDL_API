@@ -17,7 +17,6 @@ struct LineCollider;
 struct SetWeaponDesc
 {
 	Entity* weaponEntity;
-	const float playerRadius;
 	const float dgreeOffset;
 	const SDL_RendererFlip flipX;
 	const SDL_RendererFlip flipY;
@@ -100,6 +99,7 @@ private:
 	Entity mPlayer{};
 	std::vector<Entity> mMonsters{};
 	Entity mSword{};
+	Entity mSwordSkill{};
 	Entity mGun{};
 	Entity mBullet{};
 	Entity** mTiles = nullptr;
@@ -120,6 +120,7 @@ private:
 	std::array<Texture, 7> mMonsterAttackTextures{};
 
 	std::array<Texture, 12> mSwordTextures{};
+	std::array<Texture, 5> mSwordSkillTextures{};
 
 	Texture mGunTexture{};
 	std::array<Texture, 8> mBulletTextures{};

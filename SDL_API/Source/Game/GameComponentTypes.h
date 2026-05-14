@@ -128,6 +128,14 @@ struct Knockback : public Component
 	Knockback() : Component(&_ID) {}
 
 	bool isValue = false;
+	float coolTimer{};
 	Point direction{};
+};
+
+struct Effect : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Effect() : Component(&_ID) {}
+
 	float coolTimer{};
 };

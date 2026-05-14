@@ -201,7 +201,7 @@ void Core::imageRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 		}
 
 		const Active* active = entity->GetComponent<Active>();
-		if (not active->value)
+		if (not active->isValue)
 		{
 			continue;
 		}
@@ -246,7 +246,7 @@ void Core::animatorRenderingSystem(const EntityWorld* entityWorld, Transform* ca
 		}
 
 		Active* active = entity->GetComponent<Active>();
-		if (not active->value)
+		if (not active->isValue)
 		{
 			continue;
 		}

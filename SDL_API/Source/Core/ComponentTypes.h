@@ -157,7 +157,7 @@ struct Active final : public Component
 	static constexpr uint32_t _ID = 0;
 	Active() : Component(&_ID) {}
 
-	bool value = false;
+	bool isValue = false;
 };
 
 struct DebugActive final : public Component

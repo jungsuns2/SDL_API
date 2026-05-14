@@ -99,9 +99,7 @@ struct Circle
 
 namespace Math
 {
-	[[nodiscard]] inline float GetVectorLength(const Point vector);
-
-	float GetVectorLength(const Point vector)
+	inline float GetVectorLength(const Point vector)
 	{
 		float length = sqrt(vector.x * vector.x + vector.y * vector.y);
 		return length;
@@ -142,6 +140,14 @@ namespace Math
 			.x = cosTheta * point.x - sinTheta * point.y,
 			.y = sinTheta * point.x + cosTheta * point.y,
 		};
+
+		return result;
+	}
+
+	[[nodiscard]] inline Point LerpVector(const Point a, const Point b, const float t)
+	{
+		Point ab = b - a;
+		Point result = a + (ab * t);
 
 		return result;
 	}

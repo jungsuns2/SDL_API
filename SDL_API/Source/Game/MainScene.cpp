@@ -119,71 +119,66 @@ bool MainScene::Update(const float deltaTime)
 
 	// 칼을 업데이트한다.
 	{
-		constexpr float PLAYER_RADIUS = 13.0f;
-		constexpr float COOLTIME = 1.0f;
-		constexpr float LENGTH = 200.0f;
-		constexpr float SPEED = 1300.0f;
+		Transform* swordTransform = mSword.GetComponent<Transform>();
+		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+
+		const Point offset =
+		{
+			.x = (playerTransform->flip == SDL_FLIP_NONE) ? -60.0f : 60.0f,
+			.y = 80.0f
+		};
+		const Point targetPosition = offset + playerTransform->position;
+		swordTransform->position = Math::LerpVector(swordTransform->position, targetPosition, 0.16f);
+	}
+
+	// 칼의 이펙트를 업데이트한다.
+	{
+		Transform* effectTransform = mSwordSkill.GetComponent<Transform>();
 
 		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
-		Transform* swordTransform = mSword.GetComponent<Transform>();
+		Direction* effectDirection = mSwordSkill.GetComponent<Direction>();
 
-		Sword* sword = mSword.GetComponent<Sword>();
-		Animator* anim = mSword.GetComponent<Animator>();
-		Active* active = mSword.GetComponent<Active>();
-		Direction* direction = mSword.GetComponent<Direction>();
-		WeaponState* swordState = mSword.GetComponent<WeaponState>();
-
-		if (not swordState->isFire)
+		Active* active = mSwordSkill.GetComponent<Active>();
+		if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
 		{
-			active->value = true;
+			active->isValue = true;
 
-			setWeaponPosition
-			(
-				{
-					.weaponEntity = &mSword,
-					.playerRadius = PLAYER_RADIUS,
-					.dgreeOffset = -90.0f,
-					.flipX = SDL_FLIP_NONE,
-					.flipY = SDL_FLIP_HORIZONTAL
-				}
-			);
+			effectTransform->position = playerTransform->position;
 
-			swordState->fireCoolTimer += deltaTime;
-			if (swordState->fireCoolTimer >= COOLTIME)
-			{
-				swordState->isFire = true;
-				swordState->fireCoolTimer = 0.0f;
-			}
+			const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
+			effectDirection->value = Math::NormalizeVector(mouseToPlayer);
+
+			float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
+			degree -= 90.0f;
+			effectTransform->angle = -degree;
+
+			effectTransform->flip = (effectDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 		}
 
-		Point velocity = direction->value * SPEED;
-		swordTransform->position = swordTransform->position + velocity * deltaTime;
+		constexpr float SPEED = 900.0f;
+		Point velocity = effectDirection->value * SPEED;
+		effectTransform->position = effectTransform->position + velocity * deltaTime;
 
-		const Point toSword =
+		constexpr float LENGTH = 15.0f;
+		constexpr float RANGE = LENGTH * LENGTH;
+		if (active->isValue)
 		{
-			.x = swordTransform->position.x - playerTransform->position.x,
-			.y = swordTransform->position.y - playerTransform->position.y,
-		};
+			const Point toEffect = effectTransform->position - playerTransform->position;
+			float length = Math::GetVectorLength(toEffect);
 
-		const float distSq = (toSword.x * toSword.x) + (toSword.y * toSword.y);
-		const float rangeSq = LENGTH * LENGTH;
-
-		if (distSq >= rangeSq)
-		{
-			swordState->isFire = false;
-			active->value = false;
-			swordTransform->position = direction->value * PLAYER_RADIUS * 3.141592f;
+			if (length >= RANGE)
+			{
+				active->isValue = false;
+			}
 		}
 	}
 
 	// 총을 업데이트한다.
 	{
-		constexpr float PLAYER_RADIUS = 20.0f;
 		setWeaponPosition
 		(
 			{
 				.weaponEntity = &mGun,
-				.playerRadius = PLAYER_RADIUS,
 				.dgreeOffset = 0.0f,
 				.flipX = SDL_FLIP_NONE, 
 				.flipY = SDL_FLIP_VERTICAL
@@ -212,7 +207,7 @@ bool MainScene::Update(const float deltaTime)
 			bulletAnim->frameIndex = 0;
 			bulletAnim->elapsedTime = 0.0f;
 
-			active->value = true;
+			active->isValue = true;
 			bulletTransform->position = gunTransform->position;
 
 			const Point difference = getScreenMousePosition() - gunTransform->position;
@@ -225,18 +220,13 @@ bool MainScene::Update(const float deltaTime)
 		Point velocity = bulletDirection->value * SPEED;
 		bulletTransform->position = bulletTransform->position + velocity * deltaTime;
 
-		const Point toBullet =
-		{
-			.x = bulletTransform->position.x - gunTransform->position.x,
-			.y = bulletTransform->position.y - gunTransform->position.y,
-		};
-
-		const float distSq = (toBullet.x * toBullet.x) + (toBullet.y * toBullet.y);
+		const Point toBullet = bulletTransform->position - gunTransform->position;
+		const float distSq = Math::GetVectorLength(toBullet);
 		const float rangeSq = LENGTH * LENGTH;
 		
 		if (distSq >= rangeSq)
 		{
-			active->value = false;
+			active->isValue = false;
 		}
 	}
 
@@ -400,6 +390,11 @@ void MainScene::Finalize()
 		texture.Finalize();
 	}
 
+	for (Texture& texture : mSwordSkillTextures)
+	{
+		texture.Finalize();
+	}
+
 	for (Texture& texture : mTileTextures)
 	{
 		texture.Finalize();
@@ -502,6 +497,23 @@ void MainScene::initialize_Resource()
 			};
 
 			mSwordClip.AddClip(frame);
+		}
+	}
+
+	// Sword Skill
+	{
+		uint32_t index{};
+		for (Texture& texture : mSwordSkillTextures)
+		{
+			texture.Initialize(GetHelper(), "Resource/Sword/Skill/" + std::to_string(index++) + ".png");
+
+			Clip::Frame frame = 
+			{
+				.texture = &texture, 
+				.durationTime = 0.12f
+			};
+
+			mSwordSkillClip.AddClip(frame);
 		}
 	}
 
@@ -644,7 +656,7 @@ void MainScene::initialize_Entity()
 				tile.AddComponent(image);
 
 				Active active{};
-				active.value = true;
+				active.isValue = true;
 				tile.AddComponent(active);
 
 				Color color{};
@@ -706,7 +718,7 @@ void MainScene::initialize_Entity()
 		mPlayer.AddComponent(knockback);
 
 		Active active{};
-		active.value = true;
+		active.isValue = true;
 		mPlayer.AddComponent(active);
 
 		Color color{};
@@ -726,7 +738,6 @@ void MainScene::initialize_Entity()
 	// Sword
 	{
 		const float SIZE = 3.0f;
-		constexpr Point CENTER = { .x = 0.0f,.y = 1.0f };
 
 		Sword sword{};
 		mSword.AddComponent(sword);
@@ -739,7 +750,7 @@ void MainScene::initialize_Entity()
 
 		Transform transform{};
 		transform.scale = { .width = SIZE, .height = SIZE };
-		transform.center = CENTER;
+		transform.center = { .x = 0.0f,.y = -0.33f };
 		mSword.AddComponent(transform);
 
 		mSwordClip.SetLoop(true);
@@ -749,13 +760,45 @@ void MainScene::initialize_Entity()
 		mSword.AddComponent(animator);
 
 		Active active{};
-		active.value = true;
+		active.isValue = true;
 		mSword.AddComponent(active);
 
 		Color color{};
 		mSword.AddComponent(color);
 
 		GetEntityWorld()->AddEntity(&mSword);
+	}
+
+	// Sword Skill
+	{
+		const float SIZE = 2.5f;
+
+		Effect effect{};
+		mSwordSkill.AddComponent(effect);
+
+		WeaponState state{};
+		mSwordSkill.AddComponent(state);
+
+		Direction direction{};
+		mSwordSkill.AddComponent(direction);
+
+		Transform transform{};
+		transform.scale = { .width = SIZE, .height = SIZE };
+		mSwordSkill.AddComponent(transform);
+
+		mSwordSkillClip.SetLoop(true);
+
+		Animator animator{};
+		animator.clipState = &mSwordSkillClip;
+		mSwordSkill.AddComponent(animator);
+
+		Active active{};
+		mSwordSkill.AddComponent(active);
+
+		Color color{};
+		mSwordSkill.AddComponent(color);
+
+		GetEntityWorld()->AddEntity(&mSwordSkill);
 	}
 
 	// Gun
@@ -779,7 +822,7 @@ void MainScene::initialize_Entity()
 		mGun.AddComponent(image);
 
 		Active active{};
-		active.value = true;
+		active.isValue = true;
 		mGun.AddComponent(active);
 
 		Color color{};
@@ -1039,7 +1082,7 @@ void MainScene::monsterSpwan(const MonsterSpwanDesc& desc)
 		Hp* hp = entity.GetComponent<Hp>();
 
 		if (spwanIndex == i
-			and not active->value
+			and not active->isValue
 			and not spwan->isSpwan)
 		{
 			hp->max = maxHp;
@@ -1055,7 +1098,7 @@ void MainScene::monsterSpwan(const MonsterSpwanDesc& desc)
 					.y = getRandom(rangeY.y, rangeY.yy) 
 				};
 				monsterTransform->scale = { .width = spwanScale, .height = spwanScale };
-				active->value = true;
+				active->isValue = true;
 
 				spwanIndex++;
 
@@ -1099,7 +1142,7 @@ void MainScene::monsterState(const MonsterStateDesc& desc)
 				spwan->spwanBlinkTimer += deltaTime;
 				if (spwan->spwanBlinkTimer >= 0.06f)
 				{
-					active->value = !active->value;
+					active->isValue = !active->isValue;
 					spwan->spwanBlinkTimer = 0.0f;
 				}
 			}
@@ -1108,7 +1151,7 @@ void MainScene::monsterState(const MonsterStateDesc& desc)
 				monsterTransform->scale = { .width = originScale, .height = originScale };
 
 				monster->state = Monster::eState::Run;
-				active->value = true;
+				active->isValue = true;
 				spwan->spwanBlinkTimer = 0.0f;
 				spwan->spwanWaitingTimer = 0.0f;
 			}
@@ -1169,15 +1212,15 @@ void MainScene::monsterDeadParticle(std::vector<Entity>* entities, const float d
 
 			monster->state = Monster::eState::Dead;
 			Active* monsterActive = entity.GetComponent<Active>();
-			monsterActive->value = false;
+			monsterActive->isValue = false;
 
 			for (Entity& entity : mDeadParticle)
 			{
-				if (not monsterActive->value
+				if (not monsterActive->isValue
 					and spwan->isSpwan)
 				{
 					Active* particleActive = entity.GetComponent<Active>();
-					particleActive->value = true;
+					particleActive->isValue = true;
 
 					Transform* transform = entity.GetComponent<Transform>();
 					Particle* particle = entity.GetComponent<Particle>();
@@ -1195,7 +1238,7 @@ void MainScene::monsterDeadParticle(std::vector<Entity>* entities, const float d
 				for (Entity& entity : mDeadParticle)
 				{
 					Active* active = entity.GetComponent<Active>();
-					active->value = false;
+					active->isValue = false;
 				}
 
 				hp->value = hp->max;
@@ -1294,7 +1337,6 @@ Point MainScene::getScreenMousePosition() const
 void MainScene::setWeaponPosition(const SetWeaponDesc& desc)
 {
 	Entity* weaponEntity = desc.weaponEntity;
-	const float playerRadius = desc.playerRadius;
 	const float dgreeOffset = desc.dgreeOffset;
 	const SDL_RendererFlip flipX = desc.flipX;
 	const SDL_RendererFlip flipY = desc.flipY;
@@ -1310,9 +1352,6 @@ void MainScene::setWeaponPosition(const SetWeaponDesc& desc)
 
 	const float length = Math::GetVectorLength(mouseToPlayer);
 	direction->value = mouseToPlayer / length;
-
-	transform->position = playerTransform->position + direction->value * playerRadius * 3.141592f;
-	transform->flip = (direction->value.x > 0.0f) ? flipX : flipY;
 }
 
 float MainScene::getRandom(const float min, const float max)
