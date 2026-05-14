@@ -495,9 +495,11 @@ void MainScene::initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Sword/" + std::to_string(cnt++) + ".png");
 
-			Clip::Frame frame;
-			frame.texture = &texture;
-			frame.durationTime = 0.12f;
+			Clip::Frame frame = 
+			{
+				.texture = &texture, 
+				.durationTime = 0.12f
+			};
 
 			mSwordClip.AddClip(frame);
 		}
@@ -513,9 +515,11 @@ void MainScene::initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Gun/Bullet/" + std::to_string(cnt++) + ".png");
 
-			Clip::Frame frame;
-			frame.texture = &texture;
-			frame.durationTime = 0.02f;
+			Clip::Frame frame = 
+			{
+				.texture = &texture, 
+				.durationTime = 0.02f
+			};
 
 			mBulletClip.AddClip(frame);
 		}
@@ -527,9 +531,11 @@ void MainScene::initialize_Resource()
 		{
 			mMonsterSpwanTexture.Initialize(GetHelper(), "Resource/Monster/Effect/Die/Die01.png");
 
-			Clip::Frame frame;
-			frame.texture = &mMonsterSpwanTexture;
-			frame.durationTime = 0.12f;
+			Clip::Frame frame = 
+			{
+				.texture = &mMonsterSpwanTexture, 
+				.durationTime = 0.12f
+			};
 
 			mMonsterClips[uint32_t(Monster::eState::Spwan)].AddClip(frame);
 		}
@@ -538,9 +544,11 @@ void MainScene::initialize_Resource()
 		{
 			mMonsterIdleTexture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Idle/0.png");
 
-			Clip::Frame frame;
-			frame.texture = &mMonsterIdleTexture;
-			frame.durationTime = 0.12f;
+			Clip::Frame frame = 
+			{
+				.texture = &mMonsterIdleTexture, 
+				.durationTime = 0.12f
+			};
 
 			mMonsterClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
 		}
@@ -551,9 +559,11 @@ void MainScene::initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Run/" + std::to_string(cnt++) + ".png");
 
-			Clip::Frame frame;
-			frame.texture = &texture;
-			frame.durationTime = 0.12f;
+			Clip::Frame frame = 
+			{
+				.texture = &texture, 
+				.durationTime = 0.12f
+			};
 
 			mMonsterClips[uint32_t(Monster::eState::Run)].AddClip(frame);
 		}
@@ -563,9 +573,11 @@ void MainScene::initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Attack/" + std::to_string(cnt++) + ".png");
 
-			Clip::Frame frame{};
-			frame.texture = &texture;
-			frame.durationTime = 0.12f;
+			Clip::Frame frame = 
+			{
+				.texture = &texture, 
+				.durationTime = 0.12f
+			};
 
 			mMonsterClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
 		}
