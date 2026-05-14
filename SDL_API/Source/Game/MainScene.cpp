@@ -934,7 +934,7 @@ void MainScene::playerMove(const float deltaTime)
 
 	Knockback* knockback = mPlayer.GetComponent<Knockback>();
 	constexpr float KNOCKBACK_FORCE = 300.0f;
-	constexpr float KNOCKBACK_COOLTIMER = 0.5f;
+	constexpr float KNOCKBACK_COOLTIMER = 1.0f;
 	Point knockbackVelocity{};
 
 	if (knockback->isValue)

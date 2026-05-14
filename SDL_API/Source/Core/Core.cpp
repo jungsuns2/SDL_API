@@ -110,11 +110,16 @@ void Core::textureSystem(const TextureSystemDesc& desc)
 	SDL_FRect* rect = desc.rect;
 	SDL_FPoint* angleCenter = desc.angleCenter;
 
-	const Point center =
+	Point center =
 	{
-		.x = (textureTransform->center.x + 1.0f) * 0.5f,
-		.y = (textureTransform->center.y + 1.0f) * 0.5f,
+		.x = textureTransform->center.x + 0.5f,
+		.y = 1.0f - (textureTransform->center.y + 0.5f),
 	};
+
+	if (textureTransform->flip == SDL_FLIP_HORIZONTAL)
+	{
+		center.x = 1.0f - center.x;
+	}
 
 	const Point offset =
 	{
@@ -138,7 +143,6 @@ void Core::textureSystem(const TextureSystemDesc& desc)
 	rect->y = cameraOffset.y - textureTransform->position.y - offset.y;
 	rect->w = textureScale.width * textureTransform->scale.width;
 	rect->h = textureScale.height * textureTransform->scale.height;
-
 
 	angleCenter->x = offset.x;
 	angleCenter->y = offset.y;
@@ -210,6 +214,7 @@ void Core::imageRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 		const Image* image = entity->GetComponent<Image>();
 		textureSystem
 		(
+			TextureSystemDesc
 			{
 				.textureScale = {.width = float(image->texture->GetWidth()), .height = float(image->texture->GetHeight()) },
 				.textureTransform = transform,
@@ -270,12 +275,15 @@ void Core::animatorRenderingSystem(const EntityWorld* entityWorld, Transform* ca
 		}
 
 		Transform* transform = entity->GetComponent<Transform>();
+		transform->center = frame.center;
+
 		Color* color = entity->GetComponent<Color>();
 		SDL_FRect rect{};
 		SDL_FPoint angleCenter{};
 
 		textureSystem
 		(
+			TextureSystemDesc
 			{
 				.textureScale = {.width = float(frame.texture->GetWidth()), .height = float(frame.texture->GetHeight()) },
 				.textureTransform = transform,
@@ -369,6 +377,7 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld, Transfor
 
 		drawSystem
 		(
+			DrawSystemDesc
 			{
 				.textureScale = {.width = float(image->texture->GetWidth()), .height = float(image->texture->GetHeight()) },
 				.transform = transform,

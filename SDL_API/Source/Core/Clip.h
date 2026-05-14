@@ -14,6 +14,7 @@ public:
 
 		Texture* texture;
 		float durationTime;
+		Point center;
 	};
 
 public:
