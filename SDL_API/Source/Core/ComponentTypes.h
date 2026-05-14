@@ -65,8 +65,8 @@ struct Label final : public Component
 		surface = TTF_RenderText_Blended(font->GetFont(), text.c_str(), color);
 		assert(surface != nullptr);
 
-		width = float(surface->w);
-		height = float(surface->h);
+		scale.width = float(surface->w);
+		scale.height = float(surface->h);
 		
 		texture = SDL_CreateTextureFromSurface(helper->GetRenderer(), surface);
 		assert(texture != nullptr);
@@ -77,9 +77,7 @@ struct Label final : public Component
 	SDL_Surface* surface = nullptr;
 	SDL_Texture* texture = nullptr;
 
-	float width = 0.0f;
-	float height = 0.0f;
-
+	Scale scale{};
 	bool active = false;
 };
 
@@ -166,4 +164,10 @@ struct DebugActive final : public Component
 	DebugActive() : Component(&_ID) {}
 
 	bool value = false;
+};
+
+struct UI : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	UI() : Component(&_ID) {}
 };

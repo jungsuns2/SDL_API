@@ -669,17 +669,19 @@ void MainScene::initialize_Entity()
 		fclose(file);
 	}
 
-	// Label
+	// UI Label
 	{
-		Transform transform;
-		transform.position = {};
-		mLabelEntity.AddComponent(transform);
+		UI ui{};
+		mLabelEntity.AddComponent(ui);
 
 		Label label;
 		label.font = &mFont;
 		label.active = true;
 		label.SetText(GetHelper(), "UI Label");
 		mLabelEntity.AddComponent(label);
+
+		Transform transform{};
+		mLabelEntity.AddComponent(transform);
 
 		Color color{};
 		mLabelEntity.AddComponent(color);

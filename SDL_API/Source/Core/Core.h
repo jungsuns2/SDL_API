@@ -35,6 +35,7 @@ public:
 	bool Update(const float deltaTime);
 	void Finalize();
 
+private:
 	Transform* cameraSystem(const EntityWorld* entityWorld);
 	void textureSystem(const TextureSystemDesc& desc);
 	void drawSystem(const DrawSystemDesc& desc);
@@ -42,7 +43,8 @@ public:
 	void animatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime);
 	void colliderAnimatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
 	void colliderImageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
-	void labelRenderingSystem(const EntityWorld* entityWorld);
+	void labelRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
+	void labelUIRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
 
 	[[nodiscard]] SDL_Window* GetWindow() const;
 

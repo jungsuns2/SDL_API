@@ -59,7 +59,8 @@ bool Core::Update(const float deltaTime)
 		colliderAnimatorRenderingSystem(entityWorld, cameraTransform);
 		colliderImageRenderingSystem(entityWorld, cameraTransform);
 
-		labelRenderingSystem(entityWorld);
+		labelUIRenderingSystem(entityWorld, cameraTransform);
+		labelRenderingSystem(entityWorld, cameraTransform);
 
 		SDL_RenderPresent(mRenderer); // 화면에 출력한다.
 	}
@@ -393,14 +394,57 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld, Transfor
 	}
 }
 
-void Core::labelRenderingSystem(const EntityWorld* entityWorld)
+void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
 {
 	assert(entityWorld != nullptr);
 
 	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
 		if (not entity->HasComponent<Transform>()
-			or not entity->HasComponent<Label>())
+			or not entity->HasComponent<Label>()
+			or entity->HasComponent<UI>())
+		{
+			continue;
+		}
+
+		const Label* label = entity->GetComponent<Label>();
+		if (not label->active)
+		{
+			continue;
+		}
+
+		Transform* transform = entity->GetComponent<Transform>();
+		SDL_FRect rect{};
+		SDL_FPoint angleCenter{};
+
+		textureSystem
+		(
+			TextureSystemDesc
+			{
+				.textureScale = {.width = label->scale.width, .height = label->scale.height },
+				.textureTransform = transform,
+				.cameraTransform = cameraTransform,
+				.rect = &rect,
+				.angleCenter = &angleCenter
+			}
+		);
+
+		Color* color = entity->GetComponent<Color>();
+		SDL_SetTextureColorMod(label->texture, color->r, color->g, color->b);
+		SDL_SetTextureAlphaMod(label->texture, color->a);
+		SDL_RenderCopyF(mRenderer, label->texture, nullptr, &rect);
+	}
+}
+
+void Core::labelUIRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+{
+	assert(entityWorld != nullptr);
+
+	for (const Entity* entity : entityWorld->GetAllEntites())
+	{
+		if (not entity->HasComponent<Transform>()
+			or not entity->HasComponent<Label>()
+			or not entity->HasComponent<UI>())
 		{
 			continue;
 		}
@@ -416,8 +460,8 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld)
 		{
 			.x = transform->position.x,
 			.y = transform->position.y,
-			.w = label->width,
-			.h = label->height,
+			.w = label->scale.width,
+			.h = label->scale.height,
 		};
 
 		Color* color = entity->GetComponent<Color>();
