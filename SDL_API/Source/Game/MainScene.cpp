@@ -615,9 +615,11 @@ void MainScene::initialize_Entity()
 		mTileHeight = height;
 		mTiles = new Entity * [height];
 
+		Point centerOffset = { .x = -float(mTileWidth * 0.5f), .y = -float(mTileHeight * 0.5f), };
+
 		for (uint32_t y = 0; y < height; ++y)
 		{
-			const float offsetY = float(height) * float(TILE_SIZE - 1);
+			const float offsetY = float(height + centerOffset.y) * float(TILE_SIZE - 1);
 
 			mTiles[y] = new Entity[width];
 
@@ -633,8 +635,8 @@ void MainScene::initialize_Entity()
 				Entity& tile = mTiles[y][x];
 
 				Transform transform{};
+				transform.position = { .x = (x + centerOffset.x) * TILE_SIZE * TILE_SCALE, .y = (offsetY - y * TILE_SIZE) * TILE_SCALE };
 				transform.scale = { .width = TILE_SCALE, .height = TILE_SCALE };
-				transform.position = { .x = x * TILE_SIZE * TILE_SCALE, .y = (offsetY - y * TILE_SIZE) * TILE_SCALE };
 				tile.AddComponent(transform);
 
 				Image image{};
