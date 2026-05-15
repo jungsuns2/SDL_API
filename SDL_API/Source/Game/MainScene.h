@@ -124,7 +124,7 @@ private:
 	std::array<Texture, 7> mMonsterAttackTextures{};
 
 	std::array<Texture, 12> mSwordTextures{};
-	std::array<Texture, 5> mSwordSkillTextures{};
+	std::array<Texture, 8> mSwordSkillTextures{};
 
 	Texture mGunTexture{};
 	std::array<Texture, 8> mBulletTextures{};

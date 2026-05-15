@@ -139,5 +139,6 @@ struct Effect : public Component
 	static constexpr uint32_t _ID = 0;
 	Effect() : Component(&_ID) {}
 
+	bool isDisabled = false;
 	float coolTimer{};
 };

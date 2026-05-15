@@ -128,7 +128,6 @@ bool MainScene::Update(const float deltaTime)
 
 	// 칼을 업데이트한다.
 	{
-		Transform* swordTransform = mSword.GetComponent<Transform>();
 		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 
 		const Point offset =
@@ -137,23 +136,27 @@ bool MainScene::Update(const float deltaTime)
 			.y = 80.0f
 		};
 		const Point targetPosition = offset + playerTransform->position;
+
+		Transform* swordTransform = mSword.GetComponent<Transform>();
 		swordTransform->position = Math::LerpVector(swordTransform->position, targetPosition, 0.16f);
 	}
 
 	// 칼의 이펙트를 업데이트한다.
 	{
 		Transform* effectTransform = mSwordSkill.GetComponent<Transform>();
-
-		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 		Direction* effectDirection = mSwordSkill.GetComponent<Direction>();
+		
+		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 
 		Active* active = mSwordSkill.GetComponent<Active>();
-		if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
+		Effect* effect = mSwordSkill.GetComponent<Effect>();
+		if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT)
+			and not active->isValue
+			and not effect->isDisabled)
 		{
 			active->isValue = true;
 
 			effectTransform->position = playerTransform->position;
-
 			const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
 			effectDirection->value = Math::NormalizeVector(mouseToPlayer);
 
@@ -170,6 +173,7 @@ bool MainScene::Update(const float deltaTime)
 
 		constexpr float LENGTH = 15.0f;
 		constexpr float RANGE = LENGTH * LENGTH;
+		constexpr float SWING_COOLTIME = 0.7f;
 		if (active->isValue)
 		{
 			const Point toEffect = effectTransform->position - playerTransform->position;
@@ -177,7 +181,21 @@ bool MainScene::Update(const float deltaTime)
 
 			if (length >= RANGE)
 			{
+				Animator* effectAnim = mSwordSkill.GetComponent<Animator>();
+				effectAnim->frameIndex = 0;
+				effectAnim->elapsedTime = 0.0f;
+
 				active->isValue = false;
+				effect->isDisabled = true;
+			}
+		}
+		else
+		{
+			effect->coolTimer += deltaTime;
+			if (effect->coolTimer >= SWING_COOLTIME)
+			{
+				effect->isDisabled = false;
+				effect->coolTimer = 0.0f;
 			}
 		}
 	}
