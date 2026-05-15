@@ -109,7 +109,7 @@ private:
 	std::array<Entity, 6> mDeadParticle{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
-	std::array<Clip, uint32_t(Monster::eState::Count)> mMonsterClips{};
+	std::array<Clip, uint32_t(Monster::eState::Count)> mKnightClips{};
 	Clip mSwordClip{};
 	Clip mSwordSkillClip{};
 	Clip mBulletClip{};

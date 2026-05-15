@@ -368,7 +368,7 @@ bool MainScene::Update(const float deltaTime)
 	}
 
 	playerSetClip();
-	monsterSetClip(&mMonsters, mMonsterClips);
+	monsterSetClip(&mMonsters, mKnightClips);
 
 	return mIsUpdate;
 }
@@ -580,7 +580,7 @@ void MainScene::initialize_Resource()
 				.durationTime = 0.12f
 			};
 
-			mMonsterClips[uint32_t(Monster::eState::Spwan)].AddClip(frame);
+			mKnightClips[uint32_t(Monster::eState::Spwan)].AddClip(frame);
 		}
 
 		// Idle
@@ -593,7 +593,7 @@ void MainScene::initialize_Resource()
 				.durationTime = 0.12f
 			};
 
-			mMonsterClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
+			mKnightClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
 		}
 
 		// Run
@@ -608,7 +608,7 @@ void MainScene::initialize_Resource()
 				.durationTime = 0.12f
 			};
 
-			mMonsterClips[uint32_t(Monster::eState::Run)].AddClip(frame);
+			mKnightClips[uint32_t(Monster::eState::Run)].AddClip(frame);
 		}
 
 		cnt = 0;
@@ -622,7 +622,7 @@ void MainScene::initialize_Resource()
 				.durationTime = 0.12f
 			};
 
-			mMonsterClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
+			mKnightClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
 		}
 	}
 }
@@ -905,9 +905,9 @@ void MainScene::initialize_Entity()
 
 	// Monster
 	{
-		mMonsterClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
-		mMonsterClips[uint32_t(Monster::eState::Run)].SetLoop(true);
-		mMonsterClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
+		mKnightClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
+		mKnightClips[uint32_t(Monster::eState::Run)].SetLoop(true);
+		mKnightClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
 		constexpr uint32_t KNIGHT_MONSTER_COUNT = 1;
 		mMonsters.reserve(KNIGHT_MONSTER_COUNT);
@@ -935,7 +935,7 @@ void MainScene::initialize_Entity()
 			entity.AddComponent(transform);
 
 			Animator animator{};
-			animator.clipState = &mMonsterClips[uint32_t(Monster::eState::Dead)];
+			animator.clipState = &mKnightClips[uint32_t(Monster::eState::Dead)];
 			entity.AddComponent(animator);
 
 			Active active{};
@@ -1193,7 +1193,7 @@ void MainScene::monsterState(const MonsterStateDesc& desc)
 		SpwanTimer* spwan = entity.GetComponent<SpwanTimer>();
 
 		Animator* anim = entity.GetComponent<Animator>();
-		const Clip& attackClip = mMonsterClips[uint32_t(Monster::eState::Attack)];
+		const Clip& attackClip = mKnightClips[uint32_t(Monster::eState::Attack)];
 
 		if (monster->state == Monster::eState::Spwan)
 		{
