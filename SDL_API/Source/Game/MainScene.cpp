@@ -8,6 +8,8 @@
 
 #include "MainScene.h"
 
+constexpr float PRIMARY_SIZE = 3.0f;
+
 // Core
 struct CollisionDetector final : public Component
 {
@@ -340,7 +342,7 @@ bool MainScene::Update(const float deltaTime)
 			float speed = getRandom(100.0f, 500.0f);
 			monsterMove(&mBigWhiteSkels, speed, deltaTime);
 		}
-		
+
 		// Archer
 		{
 			// State
@@ -809,8 +811,7 @@ void MainScene::initialize_Entity()
 	// Tile
 	{
 		constexpr uint32_t TILE_SIZE = 16;
-		constexpr float TILE_SCALE = 4.0f;
-		mTilePositionOffset = TILE_SIZE * TILE_SCALE;
+		mTilePositionOffset = TILE_SIZE * PRIMARY_SIZE;
 
 		FILE* file = nullptr;
 		fopen_s(&file, "Resource/Tile/Tile.txt", "r");
@@ -843,8 +844,8 @@ void MainScene::initialize_Entity()
 				Entity& entity = mTiles[y][x];
 
 				Transform transform{};
-				transform.position = { .x = (x + centerOffset.x) * TILE_SIZE * TILE_SCALE, .y = (offsetY - y * TILE_SIZE) * TILE_SCALE };
-				transform.scale = { .width = TILE_SCALE, .height = TILE_SCALE };
+				transform.position = { .x = (x + centerOffset.x) * TILE_SIZE * PRIMARY_SIZE, .y = (offsetY - y * TILE_SIZE) * PRIMARY_SIZE };
+				transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 				entity.AddComponent(transform);
 
 				Image image{};
@@ -887,8 +888,6 @@ void MainScene::initialize_Entity()
 
 	// Player
 	{
-		const float SIZE = 4.0f;
-
 		Player player{};
 		player.state = Player::eState::Idle;
 		mPlayer.AddComponent(player);
@@ -898,7 +897,7 @@ void MainScene::initialize_Entity()
 		mPlayer.AddComponent(direction);
 
 		Transform transform{};
-		transform.scale = { .width = SIZE, .height = SIZE };
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 		mPlayer.AddComponent(transform);
 
 		mPlayerClips[uint32_t(Player::eState::Idle)].SetLoop(true);
@@ -1009,8 +1008,7 @@ void MainScene::initialize_Entity()
 
 	// Gun
 	{
-		constexpr float SIZE = 3.0f;
-		constexpr Point CENTER = { .x = 0.0f,.y = 0.5f };
+		constexpr Point CENTER = { .x = -0.5f,.y = 0.0f };
 
 		Gun gun{};
 		mGun.AddComponent(gun);
@@ -1019,7 +1017,7 @@ void MainScene::initialize_Entity()
 		mGun.AddComponent(direction);
 
 		Transform transform{};
-		transform.scale = { .width = 3.0f, .height = 3.0f };
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 		transform.center = CENTER;
 		mGun.AddComponent(transform);
 
@@ -1242,9 +1240,9 @@ void MainScene::playerMove(const float deltaTime)
 	static int32_t prevMoveX;
 	static int32_t prevMoveY;
 
-	Point moveVelocity = {};
-	constexpr float MAX_SPEED = 500.0f;
-	constexpr float ACC = 40.0f;
+	static Point moveVelocity = {};
+	constexpr float MAX_SPEED = 300.0f;
+	constexpr float ACC = 60.0f;
 
 	if (moveX != 0)
 	{
@@ -1285,7 +1283,9 @@ void MainScene::playerMove(const float deltaTime)
 
 	Direction* direction = mPlayer.GetComponent<Direction>();
 	direction->value = Math::NormalizeVector(moveVelocity);
-	moveVelocity = direction->value * MAX_SPEED;
+
+	float velocity = fmin(Math::GetVectorLength(moveVelocity), MAX_SPEED);
+	moveVelocity = direction->value * velocity;
 
 	constexpr float KNOCKBACK_FORCE = 500.0f;
 	constexpr float KNOCKBACK_COOLTIMER = 0.7f;
@@ -1315,7 +1315,15 @@ void MainScene::playerMove(const float deltaTime)
 	Transform* transform = mPlayer.GetComponent<Transform>();
 	clampToTile(transform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
 	transform->position = transform->position + moveVelocity * deltaTime;
-	transform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+	if (direction->value.x > 0.0f)
+	{
+		transform->flip = SDL_FLIP_NONE;
+	}
+	else if (direction->value.x < 0.0f)
+	{
+		transform->flip = SDL_FLIP_HORIZONTAL;
+	}
 }
 
 void MainScene::playerSetClip()
@@ -1642,6 +1650,14 @@ void MainScene::setWeaponPosition(const SetWeaponDesc& desc)
 	const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
 	float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
 	degree = degree + dgreeOffset;
+
+	constexpr Point OFFSET =
+	{
+		.x = 3.0f,
+		.y = 20.0f
+	};
+
+	transform->position = playerTransform->position + OFFSET;
 	transform->angle = -degree;
 
 	const float length = Math::GetVectorLength(mouseToPlayer);
