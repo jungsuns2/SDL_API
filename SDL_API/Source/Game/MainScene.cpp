@@ -102,7 +102,6 @@ bool MainScene::Update(const float deltaTime)
 		}
 	}
 
-
 	// 플레이어를 업데이트한다.
 	{
 		input();
@@ -903,6 +902,9 @@ void MainScene::initialize_Entity()
 		mPlayerClips[uint32_t(Player::eState::Idle)].SetLoop(true);
 		mPlayerClips[uint32_t(Player::eState::Run)].SetLoop(true);
 
+		Image image{};
+		mPlayer.AddComponent(image);
+
 		Animator animator{};
 		animator.clipState = &mPlayerClips[uint32_t(Player::eState::Idle)];
 		mPlayer.AddComponent(animator);
@@ -960,6 +962,9 @@ void MainScene::initialize_Entity()
 
 		mSwordClip.SetLoop(true);
 
+		Image image{};
+		mSword.AddComponent(image);
+
 		Animator animator{};
 		animator.clipState = &mSwordClip;
 		mSword.AddComponent(animator);
@@ -992,6 +997,9 @@ void MainScene::initialize_Entity()
 		mSwordSkill.AddComponent(transform);
 
 		mSwordSkillClip.SetLoop(true);
+
+		Image image{};
+		mSwordSkill.AddComponent(image);
 
 		Animator animator{};
 		animator.clipState = &mSwordSkillClip;
@@ -1054,6 +1062,9 @@ void MainScene::initialize_Entity()
 
 		mBulletClip.SetLoop(true);
 
+		Image image{};
+		mBullet.AddComponent(image);
+
 		Animator animator{};
 		animator.clipState = &mBulletClip;
 		mBullet.AddComponent(animator);
@@ -1080,14 +1091,16 @@ void MainScene::initialize_Entity()
 			Entity& entity = mBigWhiteSkels.emplace_back();
 
 			Monster monster{};
-			monster.state = Monster::eState::Dead;
+			monster.state = Monster::eState::None;
 			entity.AddComponent(monster);
 
 			Transform transform{};
 			entity.AddComponent(transform);
 
+			Image image{};
+			entity.AddComponent(image);
+
 			Animator animator{};
-			animator.clipState = &mBigWhiteSkelClips[uint32_t(Monster::eState::Dead)];
 			entity.AddComponent(animator);
 
 			Direction direction{};
@@ -1133,14 +1146,16 @@ void MainScene::initialize_Entity()
 				Entity& entity = mArchers.emplace_back();
 
 				Monster monster{};
-				monster.state = Monster::eState::Dead;
+				monster.state = Monster::eState::None;
 				entity.AddComponent(monster);
 
 				Transform transform{};
 				entity.AddComponent(transform);
 
+				Image image{};
+				entity.AddComponent(image);
+
 				Animator animator{};
-				animator.clipState = &mArcherClips[uint32_t(Monster::eState::Dead)];
 				entity.AddComponent(animator);
 
 				Direction direction{};
@@ -1482,7 +1497,7 @@ void MainScene::monsterDeadParticle(std::vector<Entity>* entities, const float d
 
 		if (hp->value <= 0)
 		{
-			if (monster->state != Monster::eState::Dead
+			if (monster->state != Monster::eState::None
 				and monster->state != Monster::eState::Spwan)
 			{
 				for (Entity& entity : mDeadParticle)
@@ -1500,7 +1515,7 @@ void MainScene::monsterDeadParticle(std::vector<Entity>* entities, const float d
 				}
 			}
 
-			monster->state = Monster::eState::Dead;
+			monster->state = Monster::eState::None;
 			Active* monsterActive = entity.GetComponent<Active>();
 			monsterActive->isValue = false;
 
@@ -1578,6 +1593,10 @@ void MainScene::monsterSetClip(std::vector<Entity>* entities, std::array<Clip, u
 
 		switch (monster->state)
 		{
+		case Monster::eState::None:
+			__noop;
+			break;
+
 		case Monster::eState::Spwan:
 			animator->SetClip(&clips[uint32_t(Monster::eState::Spwan)]);
 			break;
@@ -1592,10 +1611,6 @@ void MainScene::monsterSetClip(std::vector<Entity>* entities, std::array<Clip, u
 
 		case Monster::eState::Attack:
 			animator->SetClip(&clips[uint32_t(Monster::eState::Attack)]);
-			break;
-
-		case Monster::eState::Dead:
-			animator->SetClip(&clips[uint32_t(Monster::eState::Idle)]);
 			break;
 
 		default:

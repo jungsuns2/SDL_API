@@ -310,6 +310,10 @@ bool StudyScene::Update(const float deltaTime)
 
 		switch (monster->state)
 		{
+		case Monster::eState::None:
+			__noop;
+			break;
+
 		case Monster::eState::Spwan:
 			animator->SetClip(&mArcherClips[uint32_t(Monster::eState::Spwan)]);
 			break;
@@ -324,10 +328,6 @@ bool StudyScene::Update(const float deltaTime)
 
 		case Monster::eState::Attack:
 			animator->SetClip(&mArcherClips[uint32_t(Monster::eState::Attack)]);
-			break;
-
-		case Monster::eState::Dead:
-			animator->SetClip(&mArcherClips[uint32_t(Monster::eState::Idle)]);
 			break;
 
 		default:

@@ -6,8 +6,8 @@
 struct TextureSystemDesc
 {
 	const Scale textureScale;
-	Transform* textureTransform;
-	Transform* cameraTransform;
+	const Transform* textureTransform;
+	const Transform* cameraTransform;
 	SDL_FRect* rect;
 	SDL_FPoint* angleCenter;
 };
@@ -36,11 +36,11 @@ public:
 	void Finalize();
 
 private:
+	void updateAnimator(const EntityWorld* entityWorld, const float deltaTime);
 	Transform* cameraSystem(const EntityWorld* entityWorld);
 	void textureSystem(const TextureSystemDesc& desc);
 	void drawSystem(const DrawSystemDesc& desc);
-	void imageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
-	void animatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime);
+	void drawImages(const EntityWorld* entityWorld, const Transform* cameraTransform);
 	void colliderAnimatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
 	void colliderImageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
 	void labelRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);

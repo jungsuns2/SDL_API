@@ -29,11 +29,11 @@ struct Monster : public Component
 
 	enum class eState
 	{
+		None,
 		Spwan,
 		Idle,
 		Run,
 		Attack,
-		Dead,
 		Count
 	};
 

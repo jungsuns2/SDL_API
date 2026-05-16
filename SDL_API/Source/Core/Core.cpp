@@ -40,30 +40,27 @@ void Core::Initialize(Scene* scene)
 
 bool Core::Update(const float deltaTime)
 {
-	// Render
+	SDL_SetRenderDrawColor(mRenderer, 255, 174, 201, 255);
+	SDL_RenderClear(mRenderer);	// 화면을 지정색으로 채운다.
+
+	if (not mScene->Update(deltaTime))
 	{
-		SDL_SetRenderDrawColor(mRenderer, 255, 174, 201, 255);
-		SDL_RenderClear(mRenderer);	// 화면을 지정색으로 채운다.
-
-		if (not mScene->Update(deltaTime))
-		{
-			return false;
-		}
-
-		const EntityWorld* entityWorld = mScene->GetEntityWorld();
-		Transform* cameraTransform = cameraSystem(entityWorld);
-
-		imageRenderingSystem(entityWorld, cameraTransform);
-		animatorRenderingSystem(entityWorld, cameraTransform, deltaTime);
-
-		colliderAnimatorRenderingSystem(entityWorld, cameraTransform);
-		colliderImageRenderingSystem(entityWorld, cameraTransform);
-
-		labelUIRenderingSystem(entityWorld, cameraTransform);
-		labelRenderingSystem(entityWorld, cameraTransform);
-
-		SDL_RenderPresent(mRenderer); // 화면에 출력한다.
+		return false;
 	}
+
+	const EntityWorld* entityWorld = mScene->GetEntityWorld();
+	Transform* cameraTransform = cameraSystem(entityWorld);
+
+	updateAnimator(entityWorld, deltaTime);
+	drawImages(entityWorld, cameraTransform);
+
+	colliderAnimatorRenderingSystem(entityWorld, cameraTransform);
+	colliderImageRenderingSystem(entityWorld, cameraTransform);
+
+	labelUIRenderingSystem(entityWorld, cameraTransform);
+	labelRenderingSystem(entityWorld, cameraTransform);
+
+	SDL_RenderPresent(mRenderer); // 화면에 출력한다.
 
 	return true;
 }
@@ -78,6 +75,70 @@ void Core::Finalize()
 	SDL_DestroyWindow(mWindow);
 
 	SDL_Quit();
+}
+
+void Core::updateAnimator(const EntityWorld* entityWorld, const float deltaTime)
+{
+	assert(entityWorld != nullptr);
+
+	for (const Entity* entity : entityWorld->GetAllEntites())
+	{
+		if (not entity->HasComponent<Animator>())
+		{
+			continue;
+		}
+
+		if (entity->HasComponent<Active>())
+		{
+			if (const Active* active = entity->GetComponent<Active>();
+				not active->isValue)
+			{
+				continue;
+			}
+		}
+
+		Animator* animator = entity->GetComponent<Animator>();
+
+		const Clip* clip = animator->clipState;
+		assert(clip != nullptr and "animator 컴포넌트에 설정된 clip이 없습니다.");
+
+		const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
+		assert(frames.size() > 0 and "clip 컴포넌트에 설정된 frame이 없습니다.");
+
+		const Clip::Frame* frame = &frames[animator->frameIndex];
+
+		animator->elapsedTime += deltaTime;
+		if (animator->elapsedTime >= frame->durationTime)
+		{
+			if (++animator->frameIndex >= frames.size())
+			{
+				if (clip->IsLoop())
+				{
+					animator->frameIndex = 0;
+				}
+				else
+				{
+					animator->frameIndex = uint32_t(frames.size() - 1);
+				}
+
+				frame = &frames[animator->frameIndex];
+			}
+
+			animator->elapsedTime = 0.0f;
+		}
+
+		if (entity->HasComponent<Transform>())
+		{
+			Transform* transform = entity->GetComponent<Transform>();
+			transform->center = frame->center;
+		}
+
+		if (entity->HasComponent<Image>())
+		{
+			Image* image = entity->GetComponent<Image>();
+			image->texture = frame->texture;
+		}
+	}
 }
 
 Transform* Core::cameraSystem(const EntityWorld* entityWorld)
@@ -106,8 +167,8 @@ Transform* Core::cameraSystem(const EntityWorld* entityWorld)
 void Core::textureSystem(const TextureSystemDesc& desc)
 {
 	const Scale textureScale = desc.textureScale;
-	Transform* textureTransform = desc.textureTransform;
-	Transform* cameraTransform = desc.cameraTransform;
+	const Transform* textureTransform = desc.textureTransform;
+	const Transform* cameraTransform = desc.cameraTransform;
 	SDL_FRect* rect = desc.rect;
 	SDL_FPoint* angleCenter = desc.angleCenter;
 
@@ -186,7 +247,7 @@ void Core::drawSystem(const DrawSystemDesc& desc)
 	rect->h = textureScale.height * transform->scale.height;
 }
 
-void Core::imageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+void Core::drawImages(const EntityWorld* entityWorld, const Transform* cameraTransform)
 {
 	assert(entityWorld != nullptr);
 	assert(cameraTransform != nullptr);
@@ -194,109 +255,46 @@ void Core::imageRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
 		if (not entity->HasComponent<Transform>()
-			or not entity->HasComponent<Image>()
-			or not entity->HasComponent<Active>()
-			or not entity->HasComponent<Color>())
+			or not entity->HasComponent<Image>())
 		{
 			continue;
 		}
 
-		const Active* active = entity->GetComponent<Active>();
-		if (not active->isValue)
+		if (entity->HasComponent<Active>())
 		{
-			continue;
+			if (const Active* active = entity->GetComponent<Active>();
+				not active->isValue)
+			{
+				continue;
+			}
 		}
 
-		Transform* transform = entity->GetComponent<Transform>();
-		Color* color = entity->GetComponent<Color>();
-		SDL_FRect rect{};
-		SDL_FPoint angleCenter{};
-
+		const Transform* transform = entity->GetComponent<Transform>();
 		const Image* image = entity->GetComponent<Image>();
-		textureSystem
-		(
-			TextureSystemDesc
-			{
-				.textureScale = {.width = float(image->texture->GetWidth()), .height = float(image->texture->GetHeight()) },
-				.textureTransform = transform,
-				.cameraTransform = cameraTransform,
-				.rect = &rect,
-				.angleCenter = &angleCenter
-			}
-		);
+		const Texture* texture = image->texture;
+		assert(texture != nullptr and "image 컴포넌트에 설정된 texture가 유효하지 않습니다.");
 
-		SDL_SetTextureColorMod(image->texture->GetTexture(), color->r, color->g, color->b);
-		SDL_SetTextureAlphaMod(image->texture->GetTexture(), color->a);
-		SDL_RenderCopyExF(mRenderer, image->texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
-	}
-}
-
-void Core::animatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform, const float deltaTime)
-{
-	assert(entityWorld != nullptr);
-	assert(cameraTransform != nullptr);
-
-	for (const Entity* entity : entityWorld->GetAllEntites())
-	{
-		if (not entity->HasComponent<Transform>()
-			or not entity->HasComponent<Animator>()
-			or not entity->HasComponent<Active>()
-			or not entity->HasComponent<Color>())
-		{
-			continue;
-		}
-
-		Active* active = entity->GetComponent<Active>();
-		if (not active->isValue)
-		{
-			continue;
-		}
-
-		Animator* animator = entity->GetComponent<Animator>();
-		const Clip* clip = animator->clipState;
-		const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
-		const Clip::Frame& frame = frames[animator->frameIndex];
-
-		animator->elapsedTime += deltaTime;
-		if (animator->elapsedTime >= frame.durationTime)
-		{
-			if (++animator->frameIndex >= frames.size())
-			{
-				if (clip->IsLoop())
-				{
-					animator->frameIndex = 0;
-				}
-				else
-				{
-					animator->frameIndex = uint32_t(frames.size() - 1);
-				}
-			}
-
-			animator->elapsedTime = 0.0f;
-		}
-
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->center = frame.center;
-
-		Color* color = entity->GetComponent<Color>();
 		SDL_FRect rect{};
 		SDL_FPoint angleCenter{};
 
-		textureSystem
-		(
-			TextureSystemDesc
+		textureSystem(TextureSystemDesc
 			{
-				.textureScale = {.width = float(frame.texture->GetWidth()), .height = float(frame.texture->GetHeight()) },
+				.textureScale = {.width = float(texture->GetWidth()), .height = float(texture->GetHeight()) },
 				.textureTransform = transform,
 				.cameraTransform = cameraTransform,
 				.rect = &rect,
 				.angleCenter = &angleCenter
-			}
-		);
+			});
 
-		SDL_SetTextureColorMod(frame.texture->GetTexture(), color->r, color->g, color->b);
-		SDL_SetTextureAlphaMod(frame.texture->GetTexture(), color->a);
-		SDL_RenderCopyExF(mRenderer, frame.texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
+		Color color{};
+		if (entity->HasComponent<Color>())
+		{
+			color = *entity->GetComponent<Color>();
+		}
+
+		SDL_SetTextureColorMod(texture->GetTexture(), color.r, color.g, color.b);
+		SDL_SetTextureAlphaMod(texture->GetTexture(), color.a);
+		SDL_RenderCopyExF(mRenderer, texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
 	}
 }
 
