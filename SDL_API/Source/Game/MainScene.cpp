@@ -259,90 +259,176 @@ bool MainScene::Update(const float deltaTime)
 
 	// 몬스터를 업데이트한다.
 	{
-		// State
+		// Big White
 		{
-			constexpr float SPWAN_POSITION_TIME = 0.5f;
-			constexpr float SPWAN_SCALE = 0.7f;
-			monsterSpwan
-			(
-				MonsterSpwanDesc
-				{
-					.entities = &mMonsters,
-					.spwanPositionTime = SPWAN_POSITION_TIME,
-					.rangeX = {.x = -150.0f, .xx = 150.0f },
-					.rangeY = {.y = -150.0f, .yy = 150.0f },
-					.spwanScale = SPWAN_SCALE,
-					.maxHp = 1, 
-					.deltaTime = deltaTime
-				}
-			);
-
-			constexpr float ORIGNAL_SCALE = 4.0f;
-			constexpr float SPWAN_WAITING_TIME = 1.0f;
-			constexpr float ATTACK_DISTANCE = 90.0f;
-			monsterState
-			(
-				{
-					.entities = &mMonsters,
-					.spwanPositionTime = SPWAN_POSITION_TIME,
-					.spwanScale = SPWAN_SCALE,
-					.originScale = ORIGNAL_SCALE,
-					.spwanWaitingTime = SPWAN_WAITING_TIME,
-					.attackDistance = ATTACK_DISTANCE,
-					.deltaTime = deltaTime
-				}
-			);
-
-			// 충돌했을 때 애니메이션 처리
+			// State
 			{
-			//	constexpr float DAMAGE_TIME = 0.3f;
-			//	static int32_t prevHp[10]{};
-			//	for (uint32_t i = 0; i < mMonsters.size(); ++i)
-			//	{
-			//		Entity entity = mMonsters[i];
-			//		Monster* monster = entity.GetComponent<Monster>();
-			//		DamageTimer* damage = entity.GetComponent<DamageTimer>();
-			//		Hp* hp = entity.GetComponent<Hp>();
-			//		prevHp[i] = hp->value;
+				constexpr float SPWAN_POSITION_TIME = 0.5f;
+				constexpr float SPWAN_SCALE = 0.7f;
+				monsterSpwan
+				(
+					MonsterSpwanDesc
+					{
+						.entities = &mBigWhiteSkels,
+						.spwanPositionTime = SPWAN_POSITION_TIME,
+						.rangeX = {.x = -150.0f, .xx = 150.0f },
+						.rangeY = {.y = -150.0f, .yy = 150.0f },
+						.spwanScale = SPWAN_SCALE,
+						.maxHp = 1,
+						.deltaTime = deltaTime
+					}
+				);
 
-			//		if (prevHp[i] != hp->value)
-			//		{
-			//			Color* color = entity.GetComponent<Color>();
-			//			color->r = 200;
-			//			color->g = 0;
-			//			color->b = 0;
+				constexpr float ORIGNAL_SCALE = 4.0f;
+				constexpr float SPWAN_WAITING_TIME = 1.0f;
+				constexpr float ATTACK_DISTANCE = 90.0f;
+				monsterState
+				(
+					{
+						.entities = &mBigWhiteSkels,
+						.attackClip = mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)],
+						.spwanPositionTime = SPWAN_POSITION_TIME,
+						.spwanScale = SPWAN_SCALE,
+						.originScale = ORIGNAL_SCALE,
+						.spwanWaitingTime = SPWAN_WAITING_TIME,
+						.attackDistance = ATTACK_DISTANCE,
+						.deltaTime = deltaTime
+					}
+				);
 
-			//			damage->damageTimer += deltaTime;
-			//			if (damage->damageTimer >= DAMAGE_TIME)
-			//			{
-			//				monster->state = Monster::eState::Run;
-			//				Color* color = entity.GetComponent<Color>();
-			//				color->r = 255;
-			//				color->g = 255;
-			//				color->b = 255;
+				// 충돌했을 때 애니메이션 처리
+				{
+					//	constexpr float DAMAGE_TIME = 0.3f;
+					//	static int32_t prevHp[10]{};
+					//	for (uint32_t i = 0; i < mMonsters.size(); ++i)
+					//	{
+					//		Entity entity = mMonsters[i];
+					//		Monster* monster = entity.GetComponent<Monster>();
+					//		DamageTimer* damage = entity.GetComponent<DamageTimer>();
+					//		Hp* hp = entity.GetComponent<Hp>();
+					//		prevHp[i] = hp->value;
 
-			//				prevHp[i] = hp->value;
-			//				damage->damageTimer = 0.0f;
-			//			}
-			//		}
-			//	}
+					//		if (prevHp[i] != hp->value)
+					//		{
+					//			Color* color = entity.GetComponent<Color>();
+					//			color->r = 200;
+					//			color->g = 0;
+					//			color->b = 0;
+
+					//			damage->damageTimer += deltaTime;
+					//			if (damage->damageTimer >= DAMAGE_TIME)
+					//			{
+					//				monster->state = Monster::eState::Run;
+					//				Color* color = entity.GetComponent<Color>();
+					//				color->r = 255;
+					//				color->g = 255;
+					//				color->b = 255;
+
+					//				prevHp[i] = hp->value;
+					//				damage->damageTimer = 0.0f;
+					//			}
+					//		}
+					//	}
+				}
+
+				// 파티클이 생성된다.
+				constexpr float SPEED = 300.0f;
+				constexpr float DEAD_TIME = 0.5f;
+				monsterDeadParticle(&mBigWhiteSkels, DEAD_TIME, SPEED, deltaTime);
 			}
 
-			// 파티클이 생성된다.
-			constexpr float SPEED = 300.0f;
-			constexpr float DEAD_TIME = 0.5f;
-			monsterDeadParticle(&mMonsters, DEAD_TIME, SPEED, deltaTime);
+			float speed = getRandom(100.0f, 500.0f);
+			monsterMove(&mBigWhiteSkels, speed, deltaTime);
 		}
+		
+		// Archer
+		{
+			// State
+			{
+				constexpr float SPWAN_POSITION_TIME = 0.7f;
+				constexpr float SPWAN_SCALE = 0.7f;
+				monsterSpwan
+				(
+					MonsterSpwanDesc
+					{
+						.entities = &mArchers,
+						.spwanPositionTime = SPWAN_POSITION_TIME,
+						.rangeX = {.x = -300.0f, .xx = 300.0f },
+						.rangeY = {.y = -300.0f, .yy = 300.0f },
+						.spwanScale = SPWAN_SCALE,
+						.maxHp = 1,
+						.deltaTime = deltaTime
+					}
+				);
 
-		float speed = getRandom(100.0f, 500.0f);
-		monsterMove(&mMonsters, speed, deltaTime);
+				constexpr float ORIGNAL_SCALE = 4.0f;
+				constexpr float SPWAN_WAITING_TIME = 1.0f;
+				constexpr float ATTACK_DISTANCE = 90.0f;
+				monsterState
+				(
+					{
+						.entities = &mArchers,
+						.attackClip = mArcherClips[uint32_t(Monster::eState::Attack)],
+						.spwanPositionTime = SPWAN_POSITION_TIME,
+						.spwanScale = SPWAN_SCALE,
+						.originScale = ORIGNAL_SCALE,
+						.spwanWaitingTime = SPWAN_WAITING_TIME,
+						.attackDistance = ATTACK_DISTANCE,
+						.deltaTime = deltaTime
+					}
+				);
+
+				// 충돌했을 때 애니메이션 처리
+				{
+					//	constexpr float DAMAGE_TIME = 0.3f;
+					//	static int32_t prevHp[10]{};
+					//	for (uint32_t i = 0; i < mMonsters.size(); ++i)
+					//	{
+					//		Entity entity = mMonsters[i];
+					//		Monster* monster = entity.GetComponent<Monster>();
+					//		DamageTimer* damage = entity.GetComponent<DamageTimer>();
+					//		Hp* hp = entity.GetComponent<Hp>();
+					//		prevHp[i] = hp->value;
+
+					//		if (prevHp[i] != hp->value)
+					//		{
+					//			Color* color = entity.GetComponent<Color>();
+					//			color->r = 200;
+					//			color->g = 0;
+					//			color->b = 0;
+
+					//			damage->damageTimer += deltaTime;
+					//			if (damage->damageTimer >= DAMAGE_TIME)
+					//			{
+					//				monster->state = Monster::eState::Run;
+					//				Color* color = entity.GetComponent<Color>();
+					//				color->r = 255;
+					//				color->g = 255;
+					//				color->b = 255;
+
+					//				prevHp[i] = hp->value;
+					//				damage->damageTimer = 0.0f;
+					//			}
+					//		}
+					//	}
+				}
+
+				// 파티클이 생성된다.
+				constexpr float SPEED = 300.0f;
+				constexpr float DEAD_TIME = 0.5f;
+				monsterDeadParticle(&mBigWhiteSkels, DEAD_TIME, SPEED, deltaTime);
+			}
+
+			float speed = getRandom(50.0f, 400.0f);
+			monsterMove(&mArchers, speed, deltaTime);
+		}
 	}
 
 	Hp* playerHp = mPlayer.GetComponent<Hp>();
 	Label* playerLabel = mPlayer.GetComponent<Label>();
 	Knockback* knockback = mPlayer.GetComponent<Knockback>();
 
-	for (const auto& monster : mMonsters)
+	for (const auto& monster : mBigWhiteSkels)
 	{	
 		if (isCollisionEnter(mPlayer, monster))
 		{
@@ -368,7 +454,8 @@ bool MainScene::Update(const float deltaTime)
 	}
 
 	playerSetClip();
-	monsterSetClip(&mMonsters, mKnightClips);
+	monsterSetClip(&mBigWhiteSkels, mBigWhiteSkelClips);
+	monsterSetClip(&mArchers, mArcherClips);
 
 	return mIsUpdate;
 }
@@ -394,7 +481,9 @@ void MainScene::Finalize()
 
 	// Monster
 	{
-		mMonsterSpwanTexture.Finalize();
+		mArrowTexture.Finalize();
+
+		mSpwanTexture.Finalize();
 		mMonsterIdleTexture.Finalize();
 
 		for (Texture& texture : mMonsterRunTextures)
@@ -403,6 +492,21 @@ void MainScene::Finalize()
 		}
 
 		for (Texture& texture : mMonsterAttackTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mArcherIdleTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mArcherRunTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mArcherAttackTextures)
 		{
 			texture.Finalize();
 		}
@@ -567,20 +671,21 @@ void MainScene::initialize_Resource()
 			mBulletClip.AddClip(frame);
 		}
 	}
+	
+	mSpwanTexture.Initialize(GetHelper(), "Resource/Monster/Effect/Die/Die01.png");
+	uint32_t index{};
 
-	// Monster
-	{
+	// Big White
+	{	
 		// Spwan
 		{
-			mMonsterSpwanTexture.Initialize(GetHelper(), "Resource/Monster/Effect/Die/Die01.png");
-
-			Clip::Frame frame = 
+			Clip::Frame frame =
 			{
-				.texture = &mMonsterSpwanTexture, 
+				.texture = &mSpwanTexture,
 				.durationTime = 0.12f
 			};
 
-			mKnightClips[uint32_t(Monster::eState::Spwan)].AddClip(frame);
+			mBigWhiteSkelClips[uint32_t(Monster::eState::Spwan)].AddClip(frame);
 		}
 
 		// Idle
@@ -593,14 +698,13 @@ void MainScene::initialize_Resource()
 				.durationTime = 0.12f
 			};
 
-			mKnightClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
+			mBigWhiteSkelClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
 		}
 
 		// Run
-		uint32_t cnt{};
 		for (Texture& texture : mMonsterRunTextures)
 		{
-			texture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Run/" + std::to_string(cnt++) + ".png");
+			texture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Run/" + std::to_string(index++) + ".png");
 
 			Clip::Frame frame = 
 			{
@@ -608,13 +712,13 @@ void MainScene::initialize_Resource()
 				.durationTime = 0.12f
 			};
 
-			mKnightClips[uint32_t(Monster::eState::Run)].AddClip(frame);
+			mBigWhiteSkelClips[uint32_t(Monster::eState::Run)].AddClip(frame);
 		}
 
-		cnt = 0;
+		index = 0;
 		for (Texture& texture : mMonsterAttackTextures)
 		{
-			texture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Attack/" + std::to_string(cnt++) + ".png");
+			texture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Attack/" + std::to_string(index++) + ".png");
 
 			Clip::Frame frame = 
 			{
@@ -622,7 +726,69 @@ void MainScene::initialize_Resource()
 				.durationTime = 0.12f
 			};
 
-			mKnightClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
+			mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
+		}
+		index = 0;
+	}
+
+	// Archer
+	{
+		// Spwan
+		{
+			Clip::Frame frame =
+			{
+				.texture = &mSpwanTexture,
+				.durationTime = 0.12f
+			};
+			mArcherClips[uint32_t(Monster::eState::Spwan)].AddClip(frame);
+		}
+
+		// Idle
+		{
+			for (Texture& texture : mArcherIdleTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Archer/Idle/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+				mArcherClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
+			}
+			index = 0;
+		}
+
+		// Run
+		{
+			for (Texture& texture : mArcherRunTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Archer/Run/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+				mArcherClips[uint32_t(Monster::eState::Run)].AddClip(frame);
+			}
+			index = 0;
+		}
+
+		// Attack
+		{
+			for (Texture& texture : mArcherAttackTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Archer/Attack/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+				mArcherClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
+			}
+			index = 0;
 		}
 	}
 }
@@ -903,21 +1069,28 @@ void MainScene::initialize_Entity()
 		GetEntityWorld()->AddEntity(&mBullet);
 	}
 
-	// Monster
+	// Big White
 	{
-		mKnightClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
-		mKnightClips[uint32_t(Monster::eState::Run)].SetLoop(true);
-		mKnightClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
+		mBigWhiteSkelClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
+		mBigWhiteSkelClips[uint32_t(Monster::eState::Run)].SetLoop(true);
+		mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
 		constexpr uint32_t KNIGHT_MONSTER_COUNT = 1;
-		mMonsters.reserve(KNIGHT_MONSTER_COUNT);
+		mBigWhiteSkels.reserve(KNIGHT_MONSTER_COUNT);
 		for (uint32_t i = 0; i < KNIGHT_MONSTER_COUNT; ++i)
 		{
-			Entity& entity = mMonsters.emplace_back();
+			Entity& entity = mBigWhiteSkels.emplace_back();
 
 			Monster monster{};
 			monster.state = Monster::eState::Dead;
 			entity.AddComponent(monster);
+
+			Transform transform{};
+			entity.AddComponent(transform);
+
+			Animator animator{};
+			animator.clipState = &mBigWhiteSkelClips[uint32_t(Monster::eState::Dead)];
+			entity.AddComponent(animator);
 
 			Direction direction{};
 			entity.AddComponent(direction);
@@ -930,13 +1103,6 @@ void MainScene::initialize_Entity()
 
 			Hp hp{};
 			entity.AddComponent(hp);
-
-			Transform transform{};
-			entity.AddComponent(transform);
-
-			Animator animator{};
-			animator.clipState = &mKnightClips[uint32_t(Monster::eState::Dead)];
-			entity.AddComponent(animator);
 
 			Active active{};
 			entity.AddComponent(active);
@@ -953,6 +1119,60 @@ void MainScene::initialize_Entity()
 			entity.AddComponent(boxCollider);
 
 			GetEntityWorld()->AddEntity(&entity);
+		}
+
+		// Archer
+		{
+			mArcherClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
+			mArcherClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
+			mArcherClips[uint32_t(Monster::eState::Run)].SetLoop(true);
+			mArcherClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
+
+			constexpr uint32_t ARCHER_COUNT = 1;
+			mArchers.reserve(ARCHER_COUNT);
+			for (uint32_t i = 0; i < ARCHER_COUNT; ++i)
+			{
+				Entity& entity = mArchers.emplace_back();
+
+				Monster monster{};
+				monster.state = Monster::eState::Dead;
+				entity.AddComponent(monster);
+
+				Transform transform{};
+				entity.AddComponent(transform);
+
+				Animator animator{};
+				animator.clipState = &mArcherClips[uint32_t(Monster::eState::Dead)];
+				entity.AddComponent(animator);
+
+				Direction direction{};
+				entity.AddComponent(direction);
+
+				SpwanTimer spwanTimer{};
+				entity.AddComponent(spwanTimer);
+
+				DamageTimer damageTimer{};
+				entity.AddComponent(damageTimer);
+
+				Hp hp{};
+				entity.AddComponent(hp);
+
+				Active active{};
+				entity.AddComponent(active);
+
+				Color color{};
+				entity.AddComponent(color);
+
+				CollisionDetector collider(static_cast<uint32_t>(CollisionLayer::Monster));
+				collider.CollisionLayerMask.set(uint32_t(CollisionLayer::Monster));
+				entity.AddComponent(collider);
+
+				BoxCollider boxCollider{};
+				boxCollider.size = { .width = float(mArcherRunTextures[2].GetWidth()), .height = float(mArcherRunTextures[2].GetHeight()) };
+				entity.AddComponent(boxCollider);
+
+				GetEntityWorld()->AddEntity(&entity);
+			}
 		}
 	}
 
@@ -1180,11 +1400,11 @@ void MainScene::monsterSpwan(const MonsterSpwanDesc& desc)
 void MainScene::monsterState(const MonsterStateDesc& desc)
 {
 	std::vector<Entity>* entities = desc.entities;
+	const Clip& attackClip = desc.attackClip;
 	const float originScale = desc.originScale;
 	const float spwanWaitingTime = desc.spwanWaitingTime;
 	const float attackDistance = desc.attackDistance;
 	const float deltaTime = desc.deltaTime;
-
 	for (Entity& entity : *entities)
 	{
 		Monster* monster = entity.GetComponent<Monster>();
@@ -1193,7 +1413,6 @@ void MainScene::monsterState(const MonsterStateDesc& desc)
 		SpwanTimer* spwan = entity.GetComponent<SpwanTimer>();
 
 		Animator* anim = entity.GetComponent<Animator>();
-		const Clip& attackClip = mKnightClips[uint32_t(Monster::eState::Attack)];
 
 		if (monster->state == Monster::eState::Spwan)
 		{

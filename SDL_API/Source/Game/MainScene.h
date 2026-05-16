@@ -36,6 +36,7 @@ struct MonsterSpwanDesc
 struct MonsterStateDesc
 {
 	std::vector<Entity>* entities;
+	const Clip& attackClip;
 	const float spwanPositionTime;
 	const float spwanScale;
 	const float originScale;
@@ -100,7 +101,6 @@ private:
 	Entity mMainCamera{};
 	Entity mLabelEntity{};
 	Entity mPlayer{};
-	std::vector<Entity> mMonsters{};
 	Entity mSword{};
 	Entity mSwordSkill{};
 	Entity mGun{};
@@ -108,8 +108,13 @@ private:
 	Entity** mTiles = nullptr;
 	std::array<Entity, 6> mDeadParticle{};
 
+	std::vector<Entity> mBigWhiteSkels{};
+	std::vector<Entity> mArchers{};
+
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
-	std::array<Clip, uint32_t(Monster::eState::Count)> mKnightClips{};
+	std::array<Clip, uint32_t(Monster::eState::Count)> mBigWhiteSkelClips{};
+	std::array<Clip, uint32_t(Monster::eState::Count)> mArcherClips{};
+
 	Clip mSwordClip{};
 	Clip mSwordSkillClip{};
 	Clip mBulletClip{};
@@ -118,10 +123,15 @@ private:
 	std::array<Texture, 6> mPlayerRunTextures{};
 	Texture mPlayerDeadTexture{};
 
-	Texture mMonsterSpwanTexture{};
+	Texture mSpwanTexture{};
 	Texture mMonsterIdleTexture{};
 	std::array<Texture, 8> mMonsterRunTextures{};
 	std::array<Texture, 7> mMonsterAttackTextures{};
+
+	Texture mArrowTexture{};
+	std::array<Texture, 3> mArcherIdleTextures{};
+	std::array<Texture, 3> mArcherRunTextures{};
+	std::array<Texture, 13> mArcherAttackTextures{};
 
 	std::array<Texture, 12> mSwordTextures{};
 	std::array<Texture, 8> mSwordSkillTextures{};
