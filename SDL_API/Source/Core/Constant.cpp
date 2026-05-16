@@ -9,10 +9,10 @@ const Constant& Constant::Get()
 
 uint32_t Constant::GetWidth() const
 {
-	return 1080;
+	return 800;
 }
 
 uint32_t Constant::GetHeight() const
 {
-	return 720;
+	return 600;
 }
