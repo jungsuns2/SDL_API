@@ -1237,6 +1237,8 @@ void MainScene::playerSetClip()
 
 void MainScene::spawnMonsterGroup(const MonsterGroupDesc& desc)
 {
+	constexpr float SIZE = 0.7f;
+
 	const Monster::eType type = desc.type;
 	const RangeX rangeX = desc.rangeX;
 	const RangeY rangeY = desc.rangeY;
@@ -1254,7 +1256,6 @@ void MainScene::spawnMonsterGroup(const MonsterGroupDesc& desc)
 		monster->type = type;
 		monster->state = Monster::eState::Spawn;
 
-		constexpr float SIZE = 0.7f;
 		Transform* monsterTransform = entity.GetComponent<Transform>();
 		monsterTransform->position =
 		{
