@@ -1296,11 +1296,9 @@ void MainScene::playerMove(const float deltaTime)
 	Player* player = mPlayer.GetComponent<Player>();
 	player->length = Math::GetVectorLength(moveVelocity);
 
-	Direction* direction = mPlayer.GetComponent<Direction>();
-	direction->value = Math::NormalizeVector(moveVelocity);
-
+	Point moveDirection = Math::NormalizeVector(moveVelocity);
 	float velocity = fmin(Math::GetVectorLength(moveVelocity), MAX_SPEED);
-	moveVelocity = direction->value * velocity;
+	moveVelocity = moveDirection * velocity;
 
 	constexpr float KNOCKBACK_FORCE = 500.0f;
 	constexpr float KNOCKBACK_COOLTIMER = 0.7f;
@@ -1330,6 +1328,9 @@ void MainScene::playerMove(const float deltaTime)
 	Transform* transform = mPlayer.GetComponent<Transform>();
 	clampToTile(transform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
 	transform->position = transform->position + moveVelocity * deltaTime;
+
+	Direction* direction = mPlayer.GetComponent<Direction>();
+	direction->value = Math::NormalizeVector(getScreenMousePosition() - transform->position);
 
 	if (direction->value.x > 0.0f)
 	{
