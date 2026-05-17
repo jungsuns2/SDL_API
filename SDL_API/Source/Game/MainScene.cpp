@@ -1296,11 +1296,18 @@ void MainScene::updateMonsterStates(const float deltaTime)
 	for (Entity& entity : mMonsters)
 	{
 		Monster* monster = entity.GetComponent<Monster>();
+		if (monster->state == Monster::eState::None)
+		{
+			continue;
+		}
+
 		Transform* monsterTransform = entity.GetComponent<Transform>();
 		Active* active = entity.GetComponent<Active>();
 		const Animator& anim = *entity.GetComponent<Animator>();
 
-		if (monster->state == Monster::eState::Spawn)
+		switch (monster->state)
+		{
+		case Monster::eState::Spawn:
 		{
 			monster->spawnBlinkTimer += deltaTime;
 			if (monster->spawnBlinkTimer >= 0.5f)
@@ -1310,8 +1317,11 @@ void MainScene::updateMonsterStates(const float deltaTime)
 				monster->spawnBlinkTimer = 0.0f;
 				active->isValue = true;
 			}
+
+			break;
 		}
-		else if (monster->state == Monster::eState::Attack)
+
+		case Monster::eState::Attack:
 		{
 			const Clip& attackClip = monster->clips[uint32_t(Monster::eState::Attack)];
 			if (anim.clipState == &attackClip
@@ -1322,17 +1332,23 @@ void MainScene::updateMonsterStates(const float deltaTime)
 					monster->state = Monster::eState::Run;
 				}
 			}
+
+			break;
 		}
-		else if (monster->state == Monster::eState::Run)
+
+		case Monster::eState::Run:
 		{
 			if (monster->length <= monster->attackDistance)
 			{
 				monster->state = Monster::eState::Attack;
 			}
-		}
-		else
-		{
 
+			break;
+		}
+
+		default:
+			assert(false && "지원하지 않는 애니메이션입니다.");
+			break;
 		}
 	}
 }
