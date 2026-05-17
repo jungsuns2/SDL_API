@@ -327,8 +327,9 @@ bool MainScene::Update(const float deltaTime)
 			//monsterDeadParticle(mMonsters.data(), mMonsters.size(), DEAD_TIME, SPEED, deltaTime);
 		}
 
-		float speed = getRandom(100.0f, 500.0f);
-		monsterMove(mMonsters.data(), mMonsters.size(), speed, deltaTime);
+		// TODO: 몬스터 종류(archer, skel)마다 속도가 결정되도록 수정이 필요하다.
+		constexpr float SPEED = 35.0f;
+		monsterMove(mMonsters.data(), mMonsters.size(), SPEED, deltaTime);
 	}
 
 	Hp* playerHp = mPlayer.GetComponent<Hp>();
@@ -655,7 +656,7 @@ void MainScene::initialize_Resource()
 			Clip::Frame frame = 
 			{
 				.texture = &texture, 
-				.durationTime = 0.12f,
+				.durationTime = 0.14f,
 				.center = RUN_OFFSETS[index]
 			};
 
