@@ -1257,7 +1257,7 @@ void MainScene::playerMove(const float deltaTime)
 
 	static Point moveVelocity = {};
 	constexpr float MAX_SPEED = 300.0f;
-	constexpr float ACC = 60.0f;
+	constexpr float ACC = 62.0f;
 
 	if (moveX != 0)
 	{
