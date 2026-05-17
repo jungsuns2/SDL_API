@@ -22,15 +22,15 @@ struct Monster : public Component
 {
 	enum class eType
 	{
-		Knight,
-		Dog,
+		BigWhite,
+		Archer,
 		Count
 	};
 
 	enum class eState
 	{
 		None,
-		Spwan,
+		Spawn,
 		Idle,
 		Run,
 		Attack,
@@ -41,7 +41,10 @@ struct Monster : public Component
 	Monster() : Component(&_ID) {}
 
 	eState state{};
-	float length{};
+	eType type{};
+	float length = 0.0f;
+
+	float spawnBlinkTimer = 0.0f;
 };
 
 struct Sword : public Component
@@ -82,19 +85,6 @@ struct Particle : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	Particle() : Component(&_ID) {}
-};
-
-struct SpwanTimer : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	SpwanTimer() : Component(&_ID) {}
-
-	bool isSpwan = false;
-	bool isBlinkOn = false;
-
-	float spwanPositionTimer{};
-	float spwanWaitingTimer{};
-	float spwanBlinkTimer{};
 };
 
 struct DamageTimer : public Component

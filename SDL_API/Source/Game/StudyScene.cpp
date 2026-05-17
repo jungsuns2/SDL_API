@@ -22,7 +22,7 @@ void StudyScene::Initialize()
 					.texture = &mspwanTexture,
 					.durationTime = 0.12f
 				};
-				mArcherClips[uint32_t(Monster::eState::Spwan)].AddClip(frame);
+				mArcherClips[uint32_t(Monster::eState::Spawn)].AddClip(frame);
 			}
 
 			uint32_t index{};
@@ -89,7 +89,7 @@ void StudyScene::Initialize()
 
 	 // Monster
 	{
-		mArcherClips[uint32_t(Monster::eState::Spwan)].SetLoop(true);
+		mArcherClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
@@ -314,8 +314,8 @@ bool StudyScene::Update(const float deltaTime)
 			__noop;
 			break;
 
-		case Monster::eState::Spwan:
-			animator->SetClip(&mArcherClips[uint32_t(Monster::eState::Spwan)]);
+		case Monster::eState::Spawn:
+			animator->SetClip(&mArcherClips[uint32_t(Monster::eState::Spawn)]);
 			break;
 
 		case Monster::eState::Idle:

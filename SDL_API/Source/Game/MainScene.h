@@ -22,25 +22,21 @@ struct SetWeaponDesc
 	const SDL_RendererFlip flipY;
 };
 
-struct MonsterSpwanDesc
+struct MonsterGroupDesc
 {
-	std::vector<Entity>* entities;
-	const float spwanPositionTime;
+	const Monster::eType type;
+	const uint32_t count;
 	const RangeX rangeX;
 	const RangeY rangeY;
-	const float spwanScale;
-	const uint32_t maxHp;
-	const float deltaTime;
 };
 
 struct MonsterStateDesc
 {
-	std::vector<Entity>* entities;
+	Entity* entities;
+	const uint32_t size;
 	const Clip& attackClip;
-	const float spwanPositionTime;
 	const float spwanScale;
 	const float originScale;
-	const float spwanWaitingTime;
 	const float attackDistance;
 	const float deltaTime;
 };
@@ -77,11 +73,11 @@ private:
 	void playerMove(const float deltaTime);
 	void playerSetClip();
 
-	void monsterSpwan(const MonsterSpwanDesc& desc);
-	void monsterState(const MonsterStateDesc& desc);
-	void monsterDeadParticle(std::vector<Entity>* entities, const float deadTime, const float speed, const float deltaTime);
-	void monsterMove(std::vector<Entity>* entities, const float maxSpeed, const float deltaTime);
-	void monsterSetClip(std::vector<Entity>* entities, std::array<Clip, uint32_t(Monster::eState::Count)>& clips);
+	void spawnMonsterGroup(const MonsterGroupDesc& desc);
+	void updateMonsterStates(const MonsterStateDesc& desc);
+	void monsterDeadParticle(Entity* entities, uint32_t size, const float deadTime, const float speed, const float deltaTime);
+	void monsterMove(Entity* entities, uint32_t size, const float maxSpeed, const float deltaTime);
+	void monsterSetClip(Entity* entities, uint32_t size, std::array<Clip, uint32_t(Monster::eState::Count)>& clips);
 
 	void clampToTile(Transform* transform,const RangeX offsetX, const RangeY offsetY);
 
@@ -94,6 +90,9 @@ private:
 	bool mIsUpdate = true;
 	uint32_t mTileMaxCount{};
 	float mTilePositionOffset{};
+
+	float mDurationTimer{};
+	float mSpawnIntervalTimer{};
 
 	Font mUIFont{};
 	Font mHpFont{};
@@ -108,8 +107,7 @@ private:
 	Entity** mTiles = nullptr;
 	std::array<Entity, 6> mDeadParticle{};
 
-	std::vector<Entity> mBigWhiteSkels{};
-	std::vector<Entity> mArchers{};
+	std::array<Entity, 20> mMonsters{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBigWhiteSkelClips{};
