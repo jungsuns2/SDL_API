@@ -114,9 +114,9 @@ private:
 	Texture mPlayerDeadTexture{};
 
 	std::array<Texture, 2> mSpwanTextures{};
-	Texture mMonsterIdleTexture{};
-	std::array<Texture, 8> mMonsterRunTextures{};
-	std::array<Texture, 7> mMonsterAttackTextures{};
+	std::array<Texture, 5> mBigWhiteSkelIdleTextures{};
+	std::array<Texture, 6> mBigWhiteSkelRunTextures{};
+	std::array<Texture, 12> mBigWhiteSkelAttackTextures{};
 
 	Texture mArrowTexture{};
 	std::array<Texture, 3> mArcherIdleTextures{};

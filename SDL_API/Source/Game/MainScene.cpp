@@ -389,20 +389,23 @@ void MainScene::Finalize()
 	// Monster
 	{
 		mArrowTexture.Finalize();
-		mMonsterIdleTexture.Finalize();
+
+		for (Texture& texture : mBigWhiteSkelIdleTextures)
+		{
+			texture.Finalize();
+		}
 
 		for (Texture& texture : mSpwanTextures)
 		{
 			texture.Finalize();
 		}
 
-
-		for (Texture& texture : mMonsterRunTextures)
+		for (Texture& texture : mBigWhiteSkelRunTextures)
 		{
 			texture.Finalize();
 		}
 
-		for (Texture& texture : mMonsterAttackTextures)
+		for (Texture& texture : mBigWhiteSkelAttackTextures)
 		{
 			texture.Finalize();
 		}
@@ -588,7 +591,7 @@ void MainScene::initialize_Resource()
 	uint32_t index{};
 
 	// Big White
-	{	
+	{
 		// Spwan
 		for (Texture& texture : mSpwanTextures)
 		{
@@ -604,48 +607,95 @@ void MainScene::initialize_Resource()
 		}
 
 		index = 0;
-		
 
-		// Idle
+		constexpr Point IDLE_OFFSETS[] =
 		{
-			mMonsterIdleTexture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Idle/0.png");
+			{.x = 0.07f, .y = -0.5f },
+			{.x = 0.07f, .y = -0.5f },
+			{.x = 0.07f, .y = -0.5f },
+			{.x = 0.07f, .y = -0.5f },
+			{.x = 0.07f, .y = -0.5f },
+		};
+		assert(std::size(IDLE_OFFSETS) == mBigWhiteSkelIdleTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
+		
+		// Idle
+		for (Texture& texture : mBigWhiteSkelIdleTextures)
+		{
+			texture.Initialize(GetHelper(), "Resource/Monster/BigWhiteSekl/Idle/" + std::to_string(index) + ".png");
 
-			Clip::Frame frame = 
+			Clip::Frame frame =
 			{
-				.texture = &mMonsterIdleTexture, 
-				.durationTime = 0.12f
+				.texture = &texture,
+				.durationTime = 0.12f,
+				.center = IDLE_OFFSETS[index]
 			};
 
 			mBigWhiteSkelClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
-		}
-
-		// Run
-		for (Texture& texture : mMonsterRunTextures)
-		{
-			texture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Run/" + std::to_string(index++) + ".png");
-
-			Clip::Frame frame = 
-			{
-				.texture = &texture, 
-				.durationTime = 0.12f
-			};
-
-			mBigWhiteSkelClips[uint32_t(Monster::eState::Run)].AddClip(frame);
+			++index;
 		}
 
 		index = 0;
 
-		for (Texture& texture : mMonsterAttackTextures)
+		constexpr Point RUN_OFFSETS[] =
 		{
-			texture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Attack/" + std::to_string(index++) + ".png");
+			{.x = 0.07f, .y = -0.5f },
+			{.x = 0.07f, .y = -0.5f },
+			{.x = 0.07f, .y = -0.5f },
+			{.x = 0.07f, .y = -0.5f },
+			{.x = 0.07f, .y = -0.5f },
+			{.x = 0.07f, .y = -0.5f },
+		};
+		assert(std::size(RUN_OFFSETS) == mBigWhiteSkelRunTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
+
+		// Run
+		for (Texture& texture : mBigWhiteSkelRunTextures)
+		{
+			texture.Initialize(GetHelper(), "Resource/Monster/BigWhiteSekl/Run/" + std::to_string(index) + ".png");
 
 			Clip::Frame frame = 
 			{
 				.texture = &texture, 
-				.durationTime = 0.12f
+				.durationTime = 0.12f,
+				.center = RUN_OFFSETS[index]
+			};
+
+			mBigWhiteSkelClips[uint32_t(Monster::eState::Run)].AddClip(frame);
+			++index;
+		}
+
+		index = 0;
+
+		constexpr Point ATTACK_OFFSETS[] =
+		{
+			{ .x = 0.13f, .y = -0.5f },
+			{ .x = 0.08f, .y = -0.5f },
+			{ .x = -0.24f,.y = -0.5f },
+			{ .x = -0.34f,.y = -0.5f },
+			{ .x = -0.34f,.y = -0.5f },
+			{ .x = -0.35f,.y = -0.5f },
+			{ .x = -0.30f,.y = -0.5f },
+			{ .x = -0.28f,.y = -0.5f },
+			{ .x = -0.28f,.y = -0.5f },
+			{ .x = -0.16f,.y = -0.5f },
+			{ .x = -0.14f,.y = -0.5f },
+			{ .x = 0.11f, .y = -0.5f }
+		};
+		assert(std::size(ATTACK_OFFSETS) == mBigWhiteSkelAttackTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
+
+		// Attack
+		for (Texture& texture : mBigWhiteSkelAttackTextures)
+		{
+			texture.Initialize(GetHelper(), "Resource/Monster/BigWhiteSekl/Attack/" + std::to_string(index) + ".png");
+
+			Clip::Frame frame = 
+			{
+				.texture = &texture, 
+				.durationTime = 0.1f,
+				.center = ATTACK_OFFSETS[index]
 			};
 
 			mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
+			++index;
 		}
 
 		index = 0;
@@ -1037,6 +1087,7 @@ void MainScene::initialize_Entity()
 	// Monster
 	{
 		mBigWhiteSkelClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
+		mBigWhiteSkelClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mBigWhiteSkelClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
@@ -1079,7 +1130,7 @@ void MainScene::initialize_Entity()
 			entity.AddComponent(collider);
 
 			BoxCollider boxCollider{};
-			boxCollider.size = { .width = float(mMonsterAttackTextures[3].GetWidth()), .height = float(mMonsterAttackTextures[3].GetHeight()) };
+			boxCollider.size = { .width = float(mBigWhiteSkelAttackTextures[3].GetWidth()), .height = float(mBigWhiteSkelAttackTextures[3].GetHeight()) };
 			entity.AddComponent(boxCollider);
 
 			GetEntityWorld()->AddEntity(&entity);
