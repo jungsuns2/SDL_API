@@ -1016,7 +1016,7 @@ void MainScene::initialize_Entity()
 
 	// Gun
 	{
-		constexpr Point CENTER = { .x = -0.5f,.y = 0.0f };
+		constexpr Point CENTER = { .x = -0.5f,.y = -0.1f };
 
 		Gun gun{};
 		mGun.AddComponent(gun);
@@ -1664,20 +1664,33 @@ void MainScene::setWeaponPosition(const SetWeaponDesc& desc)
 
 	const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 	const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
-	float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
-	degree = degree + dgreeOffset;
+	float degree = dgreeOffset + std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
+
+	transform->position = playerTransform->position;
+	transform->flip = playerTransform->flip;
 
 	constexpr Point OFFSET =
 	{
-		.x = 3.0f,
-		.y = 20.0f
+		.x = 6.0f,
+		.y = 15.0f
 	};
 
-	transform->position = playerTransform->position + OFFSET;
+	transform->position.y += OFFSET.y;
+
+	if (transform->flip == SDL_FLIP_HORIZONTAL)
+	{
+		degree += 180.0f;
+		transform->position.x -= OFFSET.x;
+	}
+	else
+	{
+		transform->position.x += OFFSET.x;
+	}
+
 	transform->angle = -degree;
 
 	const float length = Math::GetVectorLength(mouseToPlayer);
-	direction->value = mouseToPlayer / length;
+	direction->value = mouseToPlayer / length;	
 }
 
 float MainScene::getRandom(const float min, const float max)
