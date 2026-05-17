@@ -131,7 +131,7 @@ namespace Math
 
 	[[nodiscard]] inline Point RotatePoint(const Point point, const float degree)
 	{
-		const float radian = degree * (180.0f / 3.141592f);
+		const float radian = degree * (3.141592f / 180.0f);
 		const float cosTheta = cos(radian);
 		const float sinTheta = sin(radian);
 
