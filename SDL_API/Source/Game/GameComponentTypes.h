@@ -1,6 +1,8 @@
 #pragma once
 #include "Core/Entity/Component.h"
 
+class Clip;
+
 struct Player : public Component
 {
 	enum class eState
@@ -40,10 +42,11 @@ struct Monster : public Component
 	static constexpr uint32_t _ID = 0;
 	Monster() : Component(&_ID) {}
 
+	const Clip* clips = nullptr;
 	eState state{};
 	eType type{};
 	float length = 0.0f;
-
+	float attackDistance = 0.0f;
 	float spawnBlinkTimer = 0.0f;
 };
 

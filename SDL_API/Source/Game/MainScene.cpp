@@ -262,8 +262,8 @@ bool MainScene::Update(const float deltaTime)
 	{
 		// State
 		{
-			mDurationTimer += deltaTime;
-			if (mDurationTimer >= 5.0f)
+			mSpawnIntervalTimer += deltaTime;
+			if (mSpawnIntervalTimer >= 2.5f)
 			{
 				spawnMonsterGroup
 				(
@@ -276,7 +276,7 @@ bool MainScene::Update(const float deltaTime)
 					}
 				);
 
-				mDurationTimer = 0.0f;
+				mSpawnIntervalTimer = 0.0f;
 			}
 
 			constexpr float SPWAN_SCALE = 0.7f;
@@ -284,19 +284,7 @@ bool MainScene::Update(const float deltaTime)
 			constexpr float SPWAN_WAITING_TIME = 1.0f;
 			constexpr float ATTACK_DISTANCE = 90.0f;
 
-			updateMonsterStates
-			(
-				MonsterStateDesc
-				{
-					.entities = mMonsters.data(),
-					.size = uint32_t(mMonsters.size()),
-					.attackClip = mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)],
-					.spwanScale = SPWAN_SCALE,
-					.originScale = ORIGNAL_SCALE,
-					.attackDistance = ATTACK_DISTANCE,
-					.deltaTime = deltaTime
-				}
-			);
+			updateMonsterStates(deltaTime);
 
 			// 충돌했을 때 애니메이션 처리
 			{
@@ -400,9 +388,13 @@ void MainScene::Finalize()
 	// Monster
 	{
 		mArrowTexture.Finalize();
-
-		mSpwanTexture.Finalize();
 		mMonsterIdleTexture.Finalize();
+
+		for (Texture& texture : mSpwanTextures)
+		{
+			texture.Finalize();
+		}
+
 
 		for (Texture& texture : mMonsterRunTextures)
 		{
@@ -575,10 +567,10 @@ void MainScene::initialize_Resource()
 
 	// Bullet
 	{
-		uint32_t cnt{};
+		uint32_t index{};
 		for (Texture& texture : mBulletTextures)
 		{
-			texture.Initialize(GetHelper(), "Resource/Gun/Bullet/" + std::to_string(cnt++) + ".png");
+			texture.Initialize(GetHelper(), "Resource/Gun/Bullet/" + std::to_string(index++) + ".png");
 
 			Clip::Frame frame = 
 			{
@@ -590,21 +582,26 @@ void MainScene::initialize_Resource()
 		}
 	}
 	
-	mSpwanTexture.Initialize(GetHelper(), "Resource/Monster/Effect/Die/Die01.png");
 	uint32_t index{};
 
 	// Big White
 	{	
 		// Spwan
+		for (Texture& texture : mSpwanTextures)
 		{
+			texture.Initialize(GetHelper(), "Resource/Monster/Spawn/" + std::to_string(index++) + ".png");
+
 			Clip::Frame frame =
 			{
-				.texture = &mSpwanTexture,
-				.durationTime = 0.12f
+				.texture = &texture,
+				.durationTime = 0.06f
 			};
 
 			mBigWhiteSkelClips[uint32_t(Monster::eState::Spawn)].AddClip(frame);
 		}
+
+		index = 0;
+		
 
 		// Idle
 		{
@@ -634,6 +631,7 @@ void MainScene::initialize_Resource()
 		}
 
 		index = 0;
+
 		for (Texture& texture : mMonsterAttackTextures)
 		{
 			texture.Initialize(GetHelper(), "Resource/Monster/AbyssKnight/Attack/" + std::to_string(index++) + ".png");
@@ -646,6 +644,7 @@ void MainScene::initialize_Resource()
 
 			mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
 		}
+
 		index = 0;
 	}
 
@@ -653,12 +652,20 @@ void MainScene::initialize_Resource()
 	{
 		// Spwan
 		{
-			Clip::Frame frame =
+			for (Texture& texture : mSpwanTextures)
 			{
-				.texture = &mSpwanTexture,
-				.durationTime = 0.12f
-			};
-			mArcherClips[uint32_t(Monster::eState::Spawn)].AddClip(frame);
+				texture.Initialize(GetHelper(), "Resource/Monster/Spawn/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.06f
+				};
+
+				mArcherClips[uint32_t(Monster::eState::Spawn)].AddClip(frame);
+			}
+
+			index = 0;
 		}
 
 		// Idle
@@ -674,6 +681,7 @@ void MainScene::initialize_Resource()
 				};
 				mArcherClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
 			}
+
 			index = 0;
 		}
 
@@ -690,6 +698,7 @@ void MainScene::initialize_Resource()
 				};
 				mArcherClips[uint32_t(Monster::eState::Run)].AddClip(frame);
 			}
+
 			index = 0;
 		}
 
@@ -706,6 +715,7 @@ void MainScene::initialize_Resource()
 				};
 				mArcherClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
 			}
+
 			index = 0;
 		}
 	}
@@ -1259,16 +1269,19 @@ void MainScene::spawnMonsterGroup(const MonsterGroupDesc& desc)
 		{
 		case Monster::eType::BigWhite:
 			hp->max = 2;
-			anim->clipState = &mBigWhiteSkelClips[uint32_t(Monster::eState::Spawn)];
+			monster->attackDistance = 90.0f;
+			monster->clips = mBigWhiteSkelClips.data();
 			break;
 		case Monster::eType::Archer:
 			hp->max = 3;
-			anim->clipState = &mArcherClips[uint32_t(Monster::eState::Spawn)];
+			monster->attackDistance = 160.0f;
+			monster->clips = mArcherClips.data();
 			break;
 		default:
 			break;
 		}
 
+		anim->clipState = &monster->clips[uint32_t(Monster::eState::Spawn)];
 		active.isValue = true;
 
 		if (--remainingCount == 0)
@@ -1278,30 +1291,21 @@ void MainScene::spawnMonsterGroup(const MonsterGroupDesc& desc)
 	}
 }
 
-void MainScene::updateMonsterStates(const MonsterStateDesc& desc)
+void MainScene::updateMonsterStates(const float deltaTime)
 {
-	Entity* entities = desc.entities;
-	const uint32_t size = desc.size;
-	const Clip& attackClip = desc.attackClip;
-	const float originScale = desc.originScale;
-	const float attackDistance = desc.attackDistance;
-	const float deltaTime = desc.deltaTime;
-
-	for (uint32_t i = 0; i < size; ++i)
+	for (Entity& entity : mMonsters)
 	{
-		Entity& entity = entities[i];
-
 		Monster* monster = entity.GetComponent<Monster>();
 		Transform* monsterTransform = entity.GetComponent<Transform>();
 		Active* active = entity.GetComponent<Active>();
-		Animator* anim = entity.GetComponent<Animator>();
+		const Animator& anim = *entity.GetComponent<Animator>();
 
 		if (monster->state == Monster::eState::Spawn)
 		{
 			monster->spawnBlinkTimer += deltaTime;
-			if (monster->spawnBlinkTimer >= 2.0f)
+			if (monster->spawnBlinkTimer >= 0.5f)
 			{
-				monsterTransform->scale = { .width = originScale, .height = originScale };
+				monsterTransform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 				monster->state = Monster::eState::Run;
 				monster->spawnBlinkTimer = 0.0f;
 				active->isValue = true;
@@ -1309,10 +1313,11 @@ void MainScene::updateMonsterStates(const MonsterStateDesc& desc)
 		}
 		else if (monster->state == Monster::eState::Attack)
 		{
-			if (anim->clipState == &attackClip
-				and anim->frameIndex >= attackClip.GetLastFrameIndex() - 1)
+			const Clip& attackClip = monster->clips[uint32_t(Monster::eState::Attack)];
+			if (anim.clipState == &attackClip
+				and anim.frameIndex >= attackClip.GetLastFrameIndex() - 1)
 			{
-				if (monster->length > attackDistance)
+				if (monster->length > monster->attackDistance)
 				{
 					monster->state = Monster::eState::Run;
 				}
@@ -1320,7 +1325,7 @@ void MainScene::updateMonsterStates(const MonsterStateDesc& desc)
 		}
 		else if (monster->state == Monster::eState::Run)
 		{
-			if (monster->length <= attackDistance)
+			if (monster->length <= monster->attackDistance)
 			{
 				monster->state = Monster::eState::Attack;
 			}

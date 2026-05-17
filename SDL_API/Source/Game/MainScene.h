@@ -30,17 +30,6 @@ struct MonsterGroupDesc
 	const RangeY rangeY;
 };
 
-struct MonsterStateDesc
-{
-	Entity* entities;
-	const uint32_t size;
-	const Clip& attackClip;
-	const float spwanScale;
-	const float originScale;
-	const float attackDistance;
-	const float deltaTime;
-};
-
 class EntityWorld;
 
 class MainScene final : public Scene
@@ -74,7 +63,7 @@ private:
 	void playerSetClip();
 
 	void spawnMonsterGroup(const MonsterGroupDesc& desc);
-	void updateMonsterStates(const MonsterStateDesc& desc);
+	void updateMonsterStates(const float deltaTime);
 	void monsterDeadParticle(Entity* entities, uint32_t size, const float deadTime, const float speed, const float deltaTime);
 	void monsterMove(Entity* entities, uint32_t size, const float maxSpeed, const float deltaTime);
 	void monsterSetClip(Entity* entities, uint32_t size, std::array<Clip, uint32_t(Monster::eState::Count)>& clips);
@@ -121,7 +110,7 @@ private:
 	std::array<Texture, 6> mPlayerRunTextures{};
 	Texture mPlayerDeadTexture{};
 
-	Texture mSpwanTexture{};
+	std::array<Texture, 2> mSpwanTextures{};
 	Texture mMonsterIdleTexture{};
 	std::array<Texture, 8> mMonsterRunTextures{};
 	std::array<Texture, 7> mMonsterAttackTextures{};
