@@ -89,6 +89,8 @@ private:
 	Entity mMainCamera{};
 	Entity mLabelEntity{};
 	Entity mPlayer{};
+	Entity mPlayerLeftHand{};
+	Entity mPlayerRightHand{};
 	Entity mSword{};
 	Entity mSwordSkill{};
 	Entity mGun{};
@@ -108,6 +110,7 @@ private:
 
 	std::array<Texture, 5> mPlayerIdleTextures{};
 	std::array<Texture, 6> mPlayerRunTextures{};
+	Texture mPlayerHandTexture{};
 	Texture mPlayerDeadTexture{};
 
 	std::array<Texture, 2> mSpwanTextures{};

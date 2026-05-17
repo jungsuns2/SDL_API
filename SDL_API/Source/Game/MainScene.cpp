@@ -382,6 +382,7 @@ void MainScene::Finalize()
 			texture.Finalize();
 		}
 
+		mPlayerHandTexture.Finalize();
 		mPlayerDeadTexture.Finalize();
 	}
 
@@ -519,6 +520,8 @@ void MainScene::initialize_Resource()
 
 			mPlayerClips[uint32_t(Player::eState::Run)].AddClip(frame);
 		}
+
+		mPlayerHandTexture.Initialize(GetHelper(), "Resource/Char/Alice/Hand/0.png");
 
 		mPlayerDeadTexture.Initialize(GetHelper(), "Resource/Char/Alice/Dead/0.png");
 		Clip::Frame frame =
@@ -812,6 +815,48 @@ void MainScene::initialize_Entity()
 		GetEntityWorld()->AddEntity(&mLabelEntity);
 	}
 
+	// Gun
+	{
+		constexpr Point CENTER = { .x = -0.25f,.y = -0.25f };
+
+		Gun gun{};
+		mGun.AddComponent(gun);
+
+		Direction direction{};
+		mGun.AddComponent(direction);
+
+		Transform transform{};
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		transform.center = CENTER;
+		mGun.AddComponent(transform);
+
+		Image image;
+		image.texture = &mGunTexture;
+		mGun.AddComponent(image);
+
+		Active active{};
+		active.isValue = true;
+		mGun.AddComponent(active);
+
+		Color color{};
+		mGun.AddComponent(color);
+
+		GetEntityWorld()->AddEntity(&mGun);
+	}
+
+	// Player Left Hand
+	{
+		Transform transform{};
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		mPlayerLeftHand.AddComponent(transform);
+
+		Image image{};
+		image.texture = &mPlayerHandTexture;
+		mPlayerLeftHand.AddComponent(image);
+
+		GetEntityWorld()->AddEntity(&mPlayerLeftHand);
+	}
+
 	// Player
 	{
 		Player player{};
@@ -867,6 +912,19 @@ void MainScene::initialize_Entity()
 		mPlayer.AddComponent(boxCollider);
 
 		GetEntityWorld()->AddEntity(&mPlayer);
+	}
+
+	// Player Right Hand
+	{
+		Transform transform{};
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		mPlayerRightHand.AddComponent(transform);
+
+		Image image{};
+		image.texture = &mPlayerHandTexture;
+		mPlayerRightHand.AddComponent(image);
+
+		GetEntityWorld()->AddEntity(&mPlayerRightHand);
 	}
 
 	// Sword
@@ -939,35 +997,6 @@ void MainScene::initialize_Entity()
 		mSwordSkill.AddComponent(color);
 
 		GetEntityWorld()->AddEntity(&mSwordSkill);
-	}
-
-	// Gun
-	{
-		constexpr Point CENTER = { .x = -0.5f,.y = -0.1f };
-
-		Gun gun{};
-		mGun.AddComponent(gun);
-
-		Direction direction{};
-		mGun.AddComponent(direction);
-
-		Transform transform{};
-		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-		transform.center = CENTER;
-		mGun.AddComponent(transform);
-
-		Image image;
-		image.texture = &mGunTexture;
-		mGun.AddComponent(image);
-
-		Active active{};
-		active.isValue = true;
-		mGun.AddComponent(active);
-
-		Color color{};
-		mGun.AddComponent(color);
-
-		GetEntityWorld()->AddEntity(&mGun);
 	}
 
 	// Bullet
@@ -1207,6 +1236,42 @@ void MainScene::playerMove(const float deltaTime)
 	else if (direction->value.x < 0.0f)
 	{
 		transform->flip = SDL_FLIP_HORIZONTAL;
+	}
+
+	// Update Left Hand
+	{
+		constexpr Point OFFSET = { .x = 14.0f, .y = 18.0f };
+		Transform* leftHandTransform = mPlayerLeftHand.GetComponent<Transform>();
+		leftHandTransform->position = transform->position;
+		
+		leftHandTransform->position.y += OFFSET.y;
+
+		if (transform->flip == SDL_FLIP_NONE)
+		{
+			leftHandTransform->position.x += OFFSET.x;
+		}
+		else
+		{
+			leftHandTransform->position.x -= OFFSET.x;
+		}
+	}
+
+	// Update Right Hand
+	{
+		constexpr Point OFFSET = { .x = -10.0f, .y = 15.0f };
+		Transform* rightHandTransform = mPlayerRightHand.GetComponent<Transform>();
+		rightHandTransform->position = transform->position ;
+
+		rightHandTransform->position.y += OFFSET.y;
+
+		if (transform->flip == SDL_FLIP_NONE)
+		{
+			rightHandTransform->position.x += OFFSET.x;
+		}
+		else
+		{
+			rightHandTransform->position.x -= OFFSET.x;
+		}
 	}
 }
 
@@ -1540,8 +1605,8 @@ void MainScene::setWeaponPosition(const SetWeaponDesc& desc)
 
 	constexpr Point OFFSET =
 	{
-		.x = 6.0f,
-		.y = 15.0f
+		.x = 16.0f,
+		.y = 14.0f
 	};
 
 	transform->position.y += OFFSET.y;
