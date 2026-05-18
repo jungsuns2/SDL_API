@@ -52,6 +52,30 @@ void MainScene::Initialize()
 	initialize_Resource();
 
 	initialize_Entity();
+
+	Wave& wave1 = mWaves[0];
+	wave1 = 
+	{
+		.isValue = true,
+		.durationTime = 20.0f,
+		.spwanIntervalTime = 3.0f,
+		.durationTimer = 0.0f,
+		.spawnIntervalTimer = 0.0f
+	};
+
+
+	for (uint32_t i = 1; i < mWaves.size(); ++i)
+	{
+		Wave& wave = mWaves[i];
+		wave = 
+		{
+			.isValue = false,
+			.durationTime = mWaves[0].durationTime + i * 5.0f,
+			.spwanIntervalTime = 1.0f,
+			.durationTimer = 0.0f,
+			.spawnIntervalTimer = 0.0f
+		};
+	}
 }
 
 bool MainScene::Update(const float deltaTime)
@@ -102,10 +126,34 @@ bool MainScene::Update(const float deltaTime)
 		}
 	}
 
-	// 플레이어를 업데이트한다.
+	// Wave를 업데이트한다.
 	{
 		input();
 
+		for (Wave& wave : mWaves)
+		{
+			if (not wave.isValue)
+			{
+				continue;
+			}
+
+			wave.durationTimer += deltaTime;
+			if (wave.durationTimer >= wave.durationTime
+				and wave.isValue)
+			{
+				wave.isValue = false;
+				wave.durationTimer = 0.0f;
+			}
+
+			if (not wave.isValue)
+			{
+				return mIsUpdate;
+			}
+		}	
+	}
+
+	// 플레이어를 업데이트한다.
+	{
 		playerState(deltaTime);
 
 		playerMove(deltaTime);
@@ -260,10 +308,15 @@ bool MainScene::Update(const float deltaTime)
 
 	// 몬스터를 업데이트한다.
 	{
-		// State
+		for (Wave& wave : mWaves)
 		{
-			mSpawnIntervalTimer += deltaTime;
-			if (mSpawnIntervalTimer >= 2.5f)
+			if (not wave.isValue)
+			{
+				continue;
+			}
+
+			wave.spawnIntervalTimer += deltaTime;
+			if (wave.spawnIntervalTimer >= wave.spwanIntervalTime)
 			{
 				spawnMonsterGroup
 				(
@@ -274,15 +327,10 @@ bool MainScene::Update(const float deltaTime)
 						.rangeX = {.x = -150.0f, .xx = 150.0f },
 						.rangeY = {.y = -150.0f, .yy = 150.0f },
 					}
-				);
+					);
 
-				mSpawnIntervalTimer = 0.0f;
+				wave.spawnIntervalTimer = 0.0f;
 			}
-
-			constexpr float SPWAN_SCALE = 0.7f;
-			constexpr float ORIGNAL_SCALE = 4.0f;
-			constexpr float SPWAN_WAITING_TIME = 1.0f;
-			constexpr float ATTACK_DISTANCE = 90.0f;
 
 			updateMonsterStates(deltaTime);
 
@@ -1260,7 +1308,7 @@ void MainScene::playerMove(const float deltaTime)
 		color->g = 0;
 		color->b = 0;
 
-		moveVelocity = moveVelocity + knockback->direction * KNOCKBACK_FORCE;
+		moveVelocity += knockback->direction * KNOCKBACK_FORCE;
 
 		knockback->coolTimer += deltaTime;
 		if (knockback->coolTimer >= KNOCKBACK_COOLTIMER)
@@ -1276,7 +1324,7 @@ void MainScene::playerMove(const float deltaTime)
 
 	Transform* transform = mPlayer.GetComponent<Transform>();
 	clampToTile(transform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
-	transform->position = transform->position + moveVelocity * deltaTime;
+	transform->position += moveVelocity * deltaTime;
 
 	Direction* direction = mPlayer.GetComponent<Direction>();
 	direction->value = Math::NormalizeVector(getScreenMousePosition() - transform->position);
@@ -1312,7 +1360,7 @@ void MainScene::playerMove(const float deltaTime)
 	{
 		constexpr Point OFFSET = { .x = -10.0f, .y = 15.0f };
 		Transform* rightHandTransform = mPlayerRightHand.GetComponent<Transform>();
-		rightHandTransform->position = transform->position ;
+		rightHandTransform->position = transform->position;
 
 		rightHandTransform->position.y += OFFSET.y;
 
@@ -1515,7 +1563,7 @@ void MainScene::monsterDeadParticle(Entity* entities, uint32_t size, const float
 					Transform* transform = entity.GetComponent<Transform>();
 					Particle* particle = entity.GetComponent<Particle>();
 					Direction* direction = entity.GetComponent<Direction>();
-					transform->position = transform->position + direction->value * speed * deltaTime;
+					transform->position += direction->value * speed * deltaTime;
 				}
 			}
 
@@ -1563,7 +1611,7 @@ void MainScene::monsterMove(Entity* entities, uint32_t size, const float maxSpee
 			playerKnockback->direction = direction->value;
 
 			clampToTile(monsterTransform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
-			monsterTransform->position = monsterTransform->position + velocity * deltaTime;
+			monsterTransform->position += velocity * deltaTime;
 			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 		}
 	}
@@ -1633,7 +1681,7 @@ Point MainScene::getScreenMousePosition() const
 		.y = centerOffset.y - mousePosition.y
 	};
 	
-	screenPosition = screenPosition + mMainCamera.GetComponent<Transform>()->position;
+	screenPosition += mMainCamera.GetComponent<Transform>()->position;
 
 	return screenPosition;
 }
