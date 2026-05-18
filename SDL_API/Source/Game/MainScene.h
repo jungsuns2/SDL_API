@@ -30,6 +30,16 @@ struct MonsterGroupDesc
 	const RangeY rangeY;
 };
 
+struct Wave
+{
+	uint32_t stage;
+	bool isValue;
+	float durationTimer;
+	float durationTime;
+	float spawnIntervalTimer;
+	float spwanIntervalTime;
+};
+
 class EntityWorld;
 
 class MainScene final : public Scene
@@ -80,8 +90,7 @@ private:
 	uint32_t mTileMaxCount{};
 	float mTilePositionOffset{};
 
-	float mDurationTimer{};
-	float mSpawnIntervalTimer{};
+	Wave mWave{};
 
 	Font mUIFont{};
 	Font mHpFont{};

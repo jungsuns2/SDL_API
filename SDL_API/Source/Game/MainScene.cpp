@@ -52,6 +52,14 @@ void MainScene::Initialize()
 	initialize_Resource();
 
 	initialize_Entity();
+
+	mWave =
+	{
+		.stage = 1,
+		.isValue = true,
+		.durationTimer = 0.0f,
+		.spawnIntervalTimer = 0.0f
+	};
 }
 
 bool MainScene::Update(const float deltaTime)
@@ -102,10 +110,46 @@ bool MainScene::Update(const float deltaTime)
 		}
 	}
 
+	// Wave를 업데이트한다.
+	{
+		switch (mWave.stage)
+		{
+		case 1:
+		{
+			mWave.durationTime = 20.0f;
+			mWave.spwanIntervalTime = 2.0f;
+			break;
+		}
+
+		case 2:
+		{
+			mWave.durationTime = 25.0f;
+			mWave.spwanIntervalTime = 2.0f;
+			break;
+		}
+
+		default:
+			break;
+		}
+
+		input();
+		
+		mWave.durationTimer += deltaTime;
+		if (mWave.durationTimer >= mWave.durationTime
+			and mWave.isValue)
+		{
+			mWave.isValue = false;
+			mWave.durationTimer = 0.0f;
+		}
+		
+		if (not mWave.isValue)
+		{
+			return mIsUpdate;
+		}
+	}
+
 	// 플레이어를 업데이트한다.
 	{
-		input();
-
 		playerState(deltaTime);
 
 		playerMove(deltaTime);
@@ -262,8 +306,8 @@ bool MainScene::Update(const float deltaTime)
 	{
 		// State
 		{
-			mSpawnIntervalTimer += deltaTime;
-			if (mSpawnIntervalTimer >= 2.5f)
+			mWave.spawnIntervalTimer += deltaTime;
+			if (mWave.spawnIntervalTimer >= mWave.spwanIntervalTime)
 			{
 				spawnMonsterGroup
 				(
@@ -276,13 +320,8 @@ bool MainScene::Update(const float deltaTime)
 					}
 				);
 
-				mSpawnIntervalTimer = 0.0f;
+				mWave.spawnIntervalTimer = 0.0f;
 			}
-
-			constexpr float SPWAN_SCALE = 0.7f;
-			constexpr float ORIGNAL_SCALE = 4.0f;
-			constexpr float SPWAN_WAITING_TIME = 1.0f;
-			constexpr float ATTACK_DISTANCE = 90.0f;
 
 			updateMonsterStates(deltaTime);
 
