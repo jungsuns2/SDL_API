@@ -16,32 +16,35 @@ struct Point
 	float x;
 	float y;
 
-	[[nodiscard]] Point operator+(const Point other) const
+	Point operator+(const Point other) const
 	{
 		return { .x = x + other.x, .y = y + other.y };
 	}
 
-	[[nodiscard]] Point operator+(const float other) const
+	Point& operator+=(const Point& other)
 	{
-		return { .x = x + other, .y = y + other };
+		x += other.x;		
+		y += other.y;
+
+		return *this;
 	}
 
-	[[nodiscard]] Point operator-(const Point other) const
+	Point operator-(const Point other) const
 	{
 		return { .x = x - other.x, .y = y - other.y };
 	}
 
-	[[nodiscard]] Point operator*(const Point other) const
+	Point operator*(const Point other) const
 	{
 		return { .x = x * other.x, .y = y * other.y };
 	}
 
-	[[nodiscard]] Point operator*(const float other) const
+	Point operator*(const float other) const
 	{
 		return { .x = x * other, .y = y * other };
 	}
 
-	[[nodiscard]] Point operator/(const float other) const
+	Point operator/(const float other) const
 	{
 		assert(other != 0.0f and "Division Error");
 
@@ -54,12 +57,12 @@ struct Scale
 	float width;
 	float height;
 
-	[[nodiscard]] Scale operator*(const Scale other) const
+	Scale operator*(const Scale other) const
 	{
 		return { .width = width * other.width, .height = height * other.height };
 	}
 
-	[[nodiscard]] Scale operator*(const float other) const
+	Scale operator*(const float other) const
 	{
 		return { .width = width * other, .height = height * other };
 	}

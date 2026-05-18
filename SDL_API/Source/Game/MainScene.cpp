@@ -1299,7 +1299,7 @@ void MainScene::playerMove(const float deltaTime)
 		color->g = 0;
 		color->b = 0;
 
-		moveVelocity = moveVelocity + knockback->direction * KNOCKBACK_FORCE;
+		moveVelocity += knockback->direction * KNOCKBACK_FORCE;
 
 		knockback->coolTimer += deltaTime;
 		if (knockback->coolTimer >= KNOCKBACK_COOLTIMER)
@@ -1315,7 +1315,7 @@ void MainScene::playerMove(const float deltaTime)
 
 	Transform* transform = mPlayer.GetComponent<Transform>();
 	clampToTile(transform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
-	transform->position = transform->position + moveVelocity * deltaTime;
+	transform->position += moveVelocity * deltaTime;
 
 	Direction* direction = mPlayer.GetComponent<Direction>();
 	direction->value = Math::NormalizeVector(getScreenMousePosition() - transform->position);
@@ -1351,7 +1351,7 @@ void MainScene::playerMove(const float deltaTime)
 	{
 		constexpr Point OFFSET = { .x = -10.0f, .y = 15.0f };
 		Transform* rightHandTransform = mPlayerRightHand.GetComponent<Transform>();
-		rightHandTransform->position = transform->position ;
+		rightHandTransform->position = transform->position;
 
 		rightHandTransform->position.y += OFFSET.y;
 
@@ -1554,7 +1554,7 @@ void MainScene::monsterDeadParticle(Entity* entities, uint32_t size, const float
 					Transform* transform = entity.GetComponent<Transform>();
 					Particle* particle = entity.GetComponent<Particle>();
 					Direction* direction = entity.GetComponent<Direction>();
-					transform->position = transform->position + direction->value * speed * deltaTime;
+					transform->position += direction->value * speed * deltaTime;
 				}
 			}
 
@@ -1602,7 +1602,7 @@ void MainScene::monsterMove(Entity* entities, uint32_t size, const float maxSpee
 			playerKnockback->direction = direction->value;
 
 			clampToTile(monsterTransform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
-			monsterTransform->position = monsterTransform->position + velocity * deltaTime;
+			monsterTransform->position += velocity * deltaTime;
 			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 		}
 	}
@@ -1672,7 +1672,7 @@ Point MainScene::getScreenMousePosition() const
 		.y = centerOffset.y - mousePosition.y
 	};
 	
-	screenPosition = screenPosition + mMainCamera.GetComponent<Transform>()->position;
+	screenPosition += mMainCamera.GetComponent<Transform>()->position;
 
 	return screenPosition;
 }
