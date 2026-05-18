@@ -32,12 +32,11 @@ struct MonsterGroupDesc
 
 struct Wave
 {
-	uint32_t stage;
 	bool isValue;
-	float durationTimer;
 	float durationTime;
-	float spawnIntervalTimer;
 	float spwanIntervalTime;
+	float durationTimer;
+	float spawnIntervalTimer;
 };
 
 class EntityWorld;
@@ -90,7 +89,7 @@ private:
 	uint32_t mTileMaxCount{};
 	float mTilePositionOffset{};
 
-	Wave mWave{};
+	std::array<Wave, 20> mWaves{};
 
 	Font mUIFont{};
 	Font mHpFont{};

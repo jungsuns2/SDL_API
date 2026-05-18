@@ -53,13 +53,29 @@ void MainScene::Initialize()
 
 	initialize_Entity();
 
-	mWave =
+	Wave& wave1 = mWaves[0];
+	wave1 = 
 	{
-		.stage = 1,
 		.isValue = true,
+		.durationTime = 20.0f,
+		.spwanIntervalTime = 3.0f,
 		.durationTimer = 0.0f,
 		.spawnIntervalTimer = 0.0f
 	};
+
+
+	for (uint32_t i = 1; i < mWaves.size(); ++i)
+	{
+		Wave& wave = mWaves[i];
+		wave = 
+		{
+			.isValue = false,
+			.durationTime = mWaves[0].durationTime + i * 5.0f,
+			.spwanIntervalTime = 1.0f,
+			.durationTimer = 0.0f,
+			.spawnIntervalTimer = 0.0f
+		};
+	}
 }
 
 bool MainScene::Update(const float deltaTime)
@@ -112,40 +128,28 @@ bool MainScene::Update(const float deltaTime)
 
 	// Wave를 업데이트한다.
 	{
-		switch (mWave.stage)
-		{
-		case 1:
-		{
-			mWave.durationTime = 20.0f;
-			mWave.spwanIntervalTime = 2.0f;
-			break;
-		}
-
-		case 2:
-		{
-			mWave.durationTime = 25.0f;
-			mWave.spwanIntervalTime = 2.0f;
-			break;
-		}
-
-		default:
-			break;
-		}
-
 		input();
-		
-		mWave.durationTimer += deltaTime;
-		if (mWave.durationTimer >= mWave.durationTime
-			and mWave.isValue)
+
+		for (Wave& wave : mWaves)
 		{
-			mWave.isValue = false;
-			mWave.durationTimer = 0.0f;
-		}
-		
-		if (not mWave.isValue)
-		{
-			return mIsUpdate;
-		}
+			if (not wave.isValue)
+			{
+				continue;
+			}
+
+			wave.durationTimer += deltaTime;
+			if (wave.durationTimer >= wave.durationTime
+				and wave.isValue)
+			{
+				wave.isValue = false;
+				wave.durationTimer = 0.0f;
+			}
+
+			if (not wave.isValue)
+			{
+				return mIsUpdate;
+			}
+		}	
 	}
 
 	// 플레이어를 업데이트한다.
@@ -304,10 +308,15 @@ bool MainScene::Update(const float deltaTime)
 
 	// 몬스터를 업데이트한다.
 	{
-		// State
+		for (Wave& wave : mWaves)
 		{
-			mWave.spawnIntervalTimer += deltaTime;
-			if (mWave.spawnIntervalTimer >= mWave.spwanIntervalTime)
+			if (not wave.isValue)
+			{
+				continue;
+			}
+
+			wave.spawnIntervalTimer += deltaTime;
+			if (wave.spawnIntervalTimer >= wave.spwanIntervalTime)
 			{
 				spawnMonsterGroup
 				(
@@ -318,9 +327,9 @@ bool MainScene::Update(const float deltaTime)
 						.rangeX = {.x = -150.0f, .xx = 150.0f },
 						.rangeY = {.y = -150.0f, .yy = 150.0f },
 					}
-				);
+					);
 
-				mWave.spawnIntervalTimer = 0.0f;
+				wave.spawnIntervalTimer = 0.0f;
 			}
 
 			updateMonsterStates(deltaTime);
