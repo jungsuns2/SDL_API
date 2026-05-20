@@ -187,7 +187,7 @@ bool MainScene::Update(const float deltaTime)
 			const std::string fMinutes = (minutes < 10) ? "0" + std::to_string(minutes) : std::to_string(minutes);
 
 			const std::string name = "Timer: " + fMinutes + ":" + fseconds;
-			label->SetText(GetHelper(), name);
+			label->text = name;
 		}
 
 		// Upeate Wave Stage
@@ -213,7 +213,7 @@ bool MainScene::Update(const float deltaTime)
 			{
 				Label* label = mStageLabel.GetComponent<Label>();
 				const std::string name = std::to_string(mWaves[i].stage) + " Wave";
-				label->SetText(GetHelper(), name);
+				label->text = name;
 			}
 
 			mStage.durationTimer += deltaTime;
@@ -480,8 +480,8 @@ bool MainScene::Update(const float deltaTime)
 	}
 
 	Hp* playerHp = mPlayer.GetComponent<Hp>();
-	Label* playerLabel = mPlayer.GetComponent<Label>();
 	Knockback* knockback = mPlayer.GetComponent<Knockback>();
+	// TODO: 플레이어 체력 라벨 만들기
 
 	//for (const auto& monster : mMonsters)
 	//{
@@ -1011,6 +1011,7 @@ void MainScene::initialize_Entity()
 
 			Label label{};
 			label.font = &mUIFont;
+			label.text = "dd";
 			mWaveTimerLebel.AddComponent(label);
 
 			Transform transform{};
@@ -1031,6 +1032,7 @@ void MainScene::initialize_Entity()
 
 			Label label{};
 			label.font = &mUIFont;
+			label.text = "dddd";
 			mStageLabel.AddComponent(label);
 
 			Transform transform{};
@@ -1116,12 +1118,6 @@ void MainScene::initialize_Entity()
 		hp.value = hp.max;
 		mPlayer.AddComponent(hp);
 
-		Label label;
-		label.font = &mHpFont;
-		std::string name = "Hp: " + std::to_string(hp.value);
-		label.SetText(GetHelper(), name);
-		mPlayer.AddComponent(label);
-
 		Knockback knockback{};
 		mPlayer.AddComponent(knockback);
 
@@ -1141,6 +1137,25 @@ void MainScene::initialize_Entity()
 		mPlayer.AddComponent(boxCollider);
 
 		GetEntityWorld()->AddEntity(&mPlayer);
+	}
+
+	{
+		Label label{};
+		label.font = &mHpFont;
+		label.text = "hp: ";
+		mPlayerHp.AddComponent(label);
+
+		Transform transform{};
+		mPlayerHp.AddComponent(transform);
+
+		Active active{};
+		active.isValue = true;
+		mPlayerHp.AddComponent(active);
+
+		Color color{};
+		mPlayerHp.AddComponent(color);
+
+		GetEntityWorld()->AddEntity(&mPlayerHp);
 	}
 
 	// Player Right Hand

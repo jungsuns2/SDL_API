@@ -428,23 +428,41 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 
 		Transform* transform = entity->GetComponent<Transform>();
 		const Label* label = entity->GetComponent<Label>();
-		const SDL_Rect rect =
-		{
-			.x = int(cameraOffset.x + transform->position.x),
-			.y = int(cameraOffset.y - transform->position.y),
-			.w = int(label->scale.width),
-			.h = int(label->scale.height),
-		};
 
 		Color color{};
 		if (entity->HasComponent<Color>())
 		{
 			color = *entity->GetComponent<Color>();
 		}
+		SDL_Surface* surface = TTF_RenderText_Blended(label->font->GetFont(), label->text.c_str(), { color.r, color.g, color.b , color.a });
+		//if (surface != nullptr)
+		//{
+		//	SDL_FreeSurface(surface);
+		//}
 
-		SDL_SetTextureColorMod(label->texture, color.r, color.g, color.b);
-		SDL_SetTextureAlphaMod(label->texture, color.a);
-		SDL_RenderCopy(mRenderer, label->texture, nullptr, &rect);
+		const Scale scale =
+		{
+			.width = float(surface->w),
+			.height = float(surface->h)
+		};
+
+		SDL_Texture* texture = SDL_CreateTextureFromSurface(mRenderer, surface);
+		//if (texture != nullptr)
+		//{
+		//	SDL_DestroyTexture(texture);
+		//}
+
+		//SDL_SetTextureColorMod(label->texture, color.r, color.g, color.b);
+		//SDL_SetTextureAlphaMod(label->texture, color.a);
+		 
+		const SDL_Rect rect =
+		{
+			.x = int(cameraOffset.x + transform->position.x),
+			.y = int(cameraOffset.y - transform->position.y),
+			.w = int(scale.width),
+			.h = int(scale.height),
+		};
+		//SDL_RenderCopy(mRenderer, label->texture, nullptr, &rect);
 	}
 }
 
@@ -471,14 +489,7 @@ void Core::labelUIRenderingSystem(const EntityWorld* entityWorld, Transform* cam
 		}
 
 		const Transform* transform = entity->GetComponent<Transform>();
-		const Label* label = entity->GetComponent<Label>();
-		const SDL_Rect rect =
-		{
-			.x = int(transform->position.x),
-			.y = int(transform->position.y),
-			.w = int(label->scale.width),
-			.h = int(label->scale.height),
-		};
+		Label* label = entity->GetComponent<Label>();
 
 		Color color{};
 		if (entity->HasComponent<Color>())
@@ -486,9 +497,33 @@ void Core::labelUIRenderingSystem(const EntityWorld* entityWorld, Transform* cam
 			color = *entity->GetComponent<Color>();
 		}
 
-		SDL_SetTextureColorMod(label->texture, color.r, color.g, color.b);
-		SDL_SetTextureAlphaMod(label->texture, color.a);
-		SDL_RenderCopy(mRenderer, label->texture, nullptr, &rect);
+		SDL_Surface* surface = TTF_RenderText_Blended(label->font->GetFont(), label->text.c_str(), { color.r, color.g, color.b , color.a });
+		
+		const Scale scale =
+		{
+			.width = float(surface->w),
+			.height = float(surface->h)
+		};
+
+
+		label->texture = SDL_CreateTextureFromSurface(mRenderer, surface);
+		SDL_FreeSurface(surface);
+		
+		if (label->texture != nullptr)
+		{
+			const SDL_Rect rect =
+			{
+				.x = int(transform->position.x),
+				.y = int(transform->position.y),
+				.w = int(scale.width),
+				.h = int(scale.height),
+			};
+
+			SDL_RenderCopy(mRenderer, label->texture, nullptr, &rect);
+
+			SDL_DestroyTexture(label->texture);
+			label->texture = nullptr;
+		}
 	}
 }
 

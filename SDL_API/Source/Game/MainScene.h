@@ -117,6 +117,7 @@ private:
 	Entity mWaveTimerLebel{};
 	Entity mStageLabel{};
 	Entity mPlayer{};
+	Entity mPlayerHp{};
 	Entity mPlayerLeftHand{};
 	Entity mPlayerRightHand{};
 	Entity mSword{};

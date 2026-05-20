@@ -31,53 +31,20 @@ struct Image final : public Component
 struct Label final : public Component
 {
 	static constexpr uint32_t _ID = 0;
-
 	Label() : Component(&_ID) {}
 
-	// TODO: Label에서 리소스를 들고 있기 때문에, 직접 해제한다.
-	//~Label()
-	//{
-	//	if (surface != nullptr)
-	//	{
-	//		SDL_FreeSurface(surface);
-	//	}
-
-	//	if (texture != nullptr)
-	//	{
-	//		SDL_DestroyTexture(texture);
-	//	}
-	//}
-
-	void SetText(Helper* helper, const std::string& text)
+	~Label()
 	{
-		assert(helper != nullptr);
-
-		if (surface != nullptr)
-		{
-			SDL_FreeSurface(surface);
-		}
-
 		if (texture != nullptr)
 		{
 			SDL_DestroyTexture(texture);
+			texture = nullptr;
 		}
-
-		surface = TTF_RenderText_Blended(font->GetFont(), text.c_str(), color);
-		assert(surface != nullptr);
-
-		scale.width = float(surface->w);
-		scale.height = float(surface->h);
-		
-		texture = SDL_CreateTextureFromSurface(helper->GetRenderer(), surface);
-		assert(texture != nullptr);
 	}
 
 	Font* font = nullptr;
-	SDL_Color color{ .a = 255 };
-	SDL_Surface* surface = nullptr;
 	SDL_Texture* texture = nullptr;
-
-	Scale scale{};
+	std::string text{};
 };
 
 struct Camera final : public Component
