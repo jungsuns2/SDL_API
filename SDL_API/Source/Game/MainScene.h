@@ -41,11 +41,17 @@ struct MonsterGroup
 
 struct Wave
 {
+	uint32_t stage;
 	bool isValue;
 	float durationTime;
-	float durationTimer;
 	std::vector<MonsterGroup> groups;
 	uint32_t monsterCount;
+};
+
+struct Stage
+{
+	float durationTimer;
+	float coolTimer;
 };
 
 class EntityWorld;
@@ -102,12 +108,14 @@ private:
 
 	std::vector<MonsterGroup> mMonsterGroups{};
 	std::array<Wave, 20> mWaves{};
+	Stage mStage{};
 
 	Font mUIFont{};
 	Font mHpFont{};
 
 	Entity mMainCamera{};
-	Entity mWaveTimer{};
+	Entity mWaveTimerLebel{};
+	Entity mStageLabel{};
 	Entity mPlayer{};
 	Entity mPlayerLeftHand{};
 	Entity mPlayerRightHand{};

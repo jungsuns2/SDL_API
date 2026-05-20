@@ -405,10 +405,13 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 			continue;
 		}
 
-		const Label* label = entity->GetComponent<Label>();
-		if (not label->active)
+		if (entity->HasComponent<Active>())
 		{
-			continue;
+			if (const Active* active = entity->GetComponent<Active>();
+				not active->isValue)
+			{
+				continue;
+			}
 		}
 
 		const Point cameraCenter =
@@ -424,6 +427,7 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 		};
 
 		Transform* transform = entity->GetComponent<Transform>();
+		const Label* label = entity->GetComponent<Label>();
 		const SDL_Rect rect =
 		{
 			.x = int(cameraOffset.x + transform->position.x),
@@ -432,9 +436,14 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 			.h = int(label->scale.height),
 		};
 
-		Color* color = entity->GetComponent<Color>();
-		SDL_SetTextureColorMod(label->texture, color->r, color->g, color->b);
-		SDL_SetTextureAlphaMod(label->texture, color->a);
+		Color color{};
+		if (entity->HasComponent<Color>())
+		{
+			color = *entity->GetComponent<Color>();
+		}
+
+		SDL_SetTextureColorMod(label->texture, color.r, color.g, color.b);
+		SDL_SetTextureAlphaMod(label->texture, color.a);
 		SDL_RenderCopy(mRenderer, label->texture, nullptr, &rect);
 	}
 }
@@ -452,13 +461,17 @@ void Core::labelUIRenderingSystem(const EntityWorld* entityWorld, Transform* cam
 			continue;
 		}
 
-		const Label* label = entity->GetComponent<Label>();
-		if (not label->active)
+		if (entity->HasComponent<Active>())
 		{
-			continue;
+			if (const Active* active = entity->GetComponent<Active>();
+				not active->isValue)
+			{
+				continue;
+			}
 		}
 
 		const Transform* transform = entity->GetComponent<Transform>();
+		const Label* label = entity->GetComponent<Label>();
 		const SDL_Rect rect =
 		{
 			.x = int(transform->position.x),
@@ -467,9 +480,14 @@ void Core::labelUIRenderingSystem(const EntityWorld* entityWorld, Transform* cam
 			.h = int(label->scale.height),
 		};
 
-		Color* color = entity->GetComponent<Color>();
-		SDL_SetTextureColorMod(label->texture, color->r, color->g, color->b);
-		SDL_SetTextureAlphaMod(label->texture, color->a);
+		Color color{};
+		if (entity->HasComponent<Color>())
+		{
+			color = *entity->GetComponent<Color>();
+		}
+
+		SDL_SetTextureColorMod(label->texture, color.r, color.g, color.b);
+		SDL_SetTextureAlphaMod(label->texture, color.a);
 		SDL_RenderCopy(mRenderer, label->texture, nullptr, &rect);
 	}
 }

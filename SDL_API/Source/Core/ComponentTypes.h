@@ -78,7 +78,6 @@ struct Label final : public Component
 	SDL_Texture* texture = nullptr;
 
 	Scale scale{};
-	bool active = false;
 };
 
 struct Camera final : public Component

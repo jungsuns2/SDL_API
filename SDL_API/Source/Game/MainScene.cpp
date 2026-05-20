@@ -59,21 +59,21 @@ void MainScene::Initialize()
 		{
 			.type = Monster::eType::BigWhite,
 			.count = 2,
-			.spawnIntervalTime = 4.0f,
+			.spawnIntervalTime = 1.0f,
 			.rangeX = {.x = -150.0f, .xx = 150.0f },
 			.rangeY = {.y = -150.0f, .yy = 150.0f }
 		};
 		setMonsterGroup(desc);
 
-		desc =
+		MonsterGroup desc1 =
 		{
 			.type = Monster::eType::Archer,
-			.count = 2,
-			.spawnIntervalTime = 5.0f,
+			.count = 1,
+			.spawnIntervalTime = 1.0f,
 			.rangeX = {.x = -300.0f, .xx = 300.0f },
 			.rangeY = {.y = -300.0f, .yy = 300.0f }
 		};
-		setMonsterGroup(desc);
+		setMonsterGroup(desc1);
 	}
 
 	// 1단계만 모두 초기화한다.
@@ -81,16 +81,14 @@ void MainScene::Initialize()
 		Wave& wave1 = mWaves[0];
 		wave1 =
 		{
+			.stage = 1,
 			.isValue = true,
-			.durationTime = 20.0f,
-			.durationTimer = 0.0f,
+			.durationTime = 2.0f,
 		};
+		wave1.groups.reserve(3);
 		wave1.groups.push_back(mMonsterGroups[0]);
 		wave1.groups.push_back(mMonsterGroups[1]);
-		wave1.groups.push_back(mMonsterGroups[0]);
 		wave1.groups.push_back(mMonsterGroups[1]);
-		wave1.groups.push_back(mMonsterGroups[0]);
-		wave1.groups.push_back(mMonsterGroups[0]);
 	}
 
 	// 0~19 단계의 기본 초기화한다.
@@ -99,11 +97,14 @@ void MainScene::Initialize()
 		Wave& wave = mWaves[i];
 		wave =
 		{
+			.stage = i + 1,
 			.isValue = false,
-			.durationTime = mWaves[0].durationTime + i * 5.0f,
-			.durationTimer = 0.0f,
+			.durationTime = /*mWaves[0].durationTime + i * 5.0f*/ 4.0f,
 		};
 	}
+
+	mWaves[1].groups.push_back(mMonsterGroups[0]);
+	mWaves[1].groups.push_back(mMonsterGroups[1]);
 
 	// 몬스터의 개수를 저장한다.
 	for (uint32_t i = 0; i < mWaves.size(); ++i)
@@ -175,38 +176,78 @@ bool MainScene::Update(const float deltaTime)
 	{
 		input();
 
-		for (Wave& wave : mWaves)
+
+		// Upeate Wave Timer
 		{
-			if (not wave.isValue)
+			Label* label = mWaveTimerLebel.GetComponent<Label>();
+			const uint32_t seconds = uint32_t(mStage.durationTimer) % 60;
+			const uint32_t minutes = uint32_t(mStage.durationTimer) / 60;
+
+			const std::string fseconds = (seconds < 10) ? "0" + std::to_string(seconds) : std::to_string(seconds);
+			const std::string fMinutes = (minutes < 10) ? "0" + std::to_string(minutes) : std::to_string(minutes);
+
+			const std::string name = "Timer: " + fMinutes + ":" + fseconds;
+			label->SetText(GetHelper(), name);
+		}
+
+		// Upeate Wave Stage
+		{
+			mStage.coolTimer += deltaTime;
+
+			Active* active = mStageLabel.GetComponent<Active>();
+			if (active->isValue
+				and mStage.coolTimer >= 2.0f)
+			{
+				active->isValue = false;
+			}
+		}
+
+		for (uint32_t i = 0; i < mWaves.size(); ++i)
+		{
+			if (not mWaves[i].isValue)
 			{
 				continue;
 			}
 
-			wave.durationTimer += deltaTime;
-
-			// Wave Timer
+			// Wave Stage
 			{
-				Label* label = mWaveTimer.GetComponent<Label>();
-				const uint32_t seconds = uint32_t(wave.durationTimer) % 60;
-				const uint32_t minutes = uint32_t(wave.durationTimer) / 60;
-
-				const std::string fseconds = (seconds < 10) ? "0" + std::to_string(seconds) : std::to_string(seconds);
-				const std::string fMinutes = (minutes < 10) ? "0" + std::to_string(minutes) : std::to_string(minutes);
-
-				const std::string name = "Timer: " + fMinutes + ":" + fseconds;
+				Label* label = mStageLabel.GetComponent<Label>();
+				const std::string name = std::to_string(mWaves[i].stage) + " Wave";
 				label->SetText(GetHelper(), name);
 			}
 
-			if (wave.durationTimer >= wave.durationTime
-				and wave.isValue)
+			mStage.durationTimer += deltaTime;
+			if (mStage.durationTimer >= mWaves[i].durationTime
+				and mWaves[i].isValue)
 			{
-				wave.isValue = false;
-				wave.durationTimer = 0.0f;
+				mWaves[i].isValue = false;
+				mStage.coolTimer = 0.0f;
 			}
 
-			if (not wave.isValue)
+			if (not mWaves[i].isValue)
 			{
-				return mIsUpdate;
+				mStage.durationTimer = 0.0f;
+
+				if (i + 1 < mWaves.size())
+				{
+					mWaves[i + 1].isValue = true;
+
+					//for (Entity*& entity : mMonsters)
+					//{
+					//	if (entity != nullptr)
+					//	{
+					//		delete entity;
+					//		entity = nullptr;
+					//	}
+					//}
+
+					//initializeSpawnMonsterGroup();
+					break;
+
+					//Active* active = mWaveStage.GetComponent<Active>();
+					//active->isValue = true;
+
+				}
 			}
 		}
 	}
@@ -967,21 +1008,41 @@ void MainScene::initialize_Entity()
 		// Timer
 		{
 			UI ui{};
-			mWaveTimer.AddComponent(ui);
+			mWaveTimerLebel.AddComponent(ui);
 
 			Label label{};
 			label.font = &mUIFont;
-			label.active = true;
-			mWaveTimer.AddComponent(label);
+			mWaveTimerLebel.AddComponent(label);
 
 			Transform transform{};
 			transform.position = { .x = Constant::Get().GetHalfWidth() - 150.0f, .y = 0.0f };
-			mWaveTimer.AddComponent(transform);
+			mWaveTimerLebel.AddComponent(transform);
 
-			Color color{};
-			mWaveTimer.AddComponent(color);
+			Active active{};
+			active.isValue = true;
+			mWaveTimerLebel.AddComponent(active);
 
-			GetEntityWorld()->AddEntity(&mWaveTimer);
+			GetEntityWorld()->AddEntity(&mWaveTimerLebel);
+		}
+
+		// Wave Stage
+		{
+			UI ui{};
+			mStageLabel.AddComponent(ui);
+
+			Label label{};
+			label.font = &mUIFont;
+			mStageLabel.AddComponent(label);
+
+			Transform transform{};
+			transform.position = { .x = Constant::Get().GetHalfWidth() - 80.0f, .y = Constant::Get().GetHalfHeight() - 50.0f };
+			mStageLabel.AddComponent(transform);
+
+			Active active{};
+			active.isValue = true;
+			mStageLabel.AddComponent(active);
+
+			GetEntityWorld()->AddEntity(&mStageLabel);
 		}
 	}
 
@@ -1058,7 +1119,6 @@ void MainScene::initialize_Entity()
 
 		Label label;
 		label.font = &mHpFont;
-		label.active = true;
 		std::string name = "Hp: " + std::to_string(hp.value);
 		label.SetText(GetHelper(), name);
 		mPlayer.AddComponent(label);
@@ -1269,8 +1329,9 @@ void MainScene::playerState(const float deltaTime)
 		if (deadTimer >= 0.5f)
 		{
 			player->state = Player::eState::Dead;
-			Label* label = mPlayer.GetComponent<Label>();
-			label->active = false;
+			// TODO: Label 수정하기
+			//Label* label = mPlayer.GetComponent<Label>();
+			//label->active = false;
 		}
 	}
 }
