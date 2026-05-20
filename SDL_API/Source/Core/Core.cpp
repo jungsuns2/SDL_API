@@ -427,18 +427,15 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 		};
 
 		Transform* transform = entity->GetComponent<Transform>();
-		const Label* label = entity->GetComponent<Label>();
+		Label* label = entity->GetComponent<Label>();
 
 		Color color{};
 		if (entity->HasComponent<Color>())
 		{
 			color = *entity->GetComponent<Color>();
 		}
+
 		SDL_Surface* surface = TTF_RenderText_Blended(label->font->GetFont(), label->text.c_str(), { color.r, color.g, color.b , color.a });
-		//if (surface != nullptr)
-		//{
-		//	SDL_FreeSurface(surface);
-		//}
 
 		const Scale scale =
 		{
@@ -446,23 +443,25 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 			.height = float(surface->h)
 		};
 
-		SDL_Texture* texture = SDL_CreateTextureFromSurface(mRenderer, surface);
-		//if (texture != nullptr)
-		//{
-		//	SDL_DestroyTexture(texture);
-		//}
 
-		//SDL_SetTextureColorMod(label->texture, color.r, color.g, color.b);
-		//SDL_SetTextureAlphaMod(label->texture, color.a);
-		 
-		const SDL_Rect rect =
+		label->texture = SDL_CreateTextureFromSurface(mRenderer, surface);
+		SDL_FreeSurface(surface);
+
+		if (label->texture != nullptr)
 		{
-			.x = int(cameraOffset.x + transform->position.x),
-			.y = int(cameraOffset.y - transform->position.y),
-			.w = int(scale.width),
-			.h = int(scale.height),
-		};
-		//SDL_RenderCopy(mRenderer, label->texture, nullptr, &rect);
+			const SDL_Rect rect =
+			{
+				.x = int(cameraOffset.x + transform->position.x),
+				.y = int(cameraOffset.y - transform->position.y),
+				.w = int(scale.width),
+				.h = int(scale.height),
+			};
+
+			SDL_RenderCopy(mRenderer, label->texture, nullptr, &rect);
+
+			SDL_DestroyTexture(label->texture);
+			label->texture = nullptr;
+		}
 	}
 }
 

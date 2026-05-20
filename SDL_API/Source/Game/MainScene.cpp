@@ -479,34 +479,35 @@ bool MainScene::Update(const float deltaTime)
 		monsterMove(SPEED, deltaTime);
 	}
 
-	Hp* playerHp = mPlayer.GetComponent<Hp>();
-	Knockback* knockback = mPlayer.GetComponent<Knockback>();
-	// TODO: 플레이어 체력 라벨 만들기
+	// 충돌을 업데이트한다.
+	{
+		for (const auto& monster : mMonsters)
+		{
+			if (isCollisionEnter(mPlayer, *monster))
+			{
+				if (monster->GetComponent<Monster>()->state == Monster::eState::Run)
+				{
+					Hp* playerHp = mPlayer.GetComponent<Hp>();
+					playerHp->value -= 1;
 
-	//for (const auto& monster : mMonsters)
-	//{
-	//	if (isCollisionEnter(mPlayer, monster))
-	//	{
-	//		if (monster.GetComponent<Monster>()->state == Monster::eState::Run)
-	//		{
-	//			playerHp->value -= 1;
-	//			std::string name = "Hp: " + std::to_string(playerHp->value);
-	//			playerLabel->SetText(GetHelper(), name);
-	//		}
-	//	}
-	//	else if (isCollisionStay(mPlayer, monster))
-	//	{
-	//		if (monster.GetComponent<Monster>()->state == Monster::eState::Attack)
-	//		{
-	//			knockback->isValue = true;
-	//		}
-	//	}
-	//}
+					std::string name = "Hp: " + std::to_string(playerHp->value);
+					Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+					playerLabel->text = name;
+				}
+			}
+			else if (isCollisionStay(mPlayer, *monster))
+			{
+				if (monster->GetComponent<Monster>()->state == Monster::eState::Attack)
+				{
+					Knockback* knockback = mPlayer.GetComponent<Knockback>();
+					knockback->isValue = true;
+				}
+			}
+		}
 
-	//{
-	//	mPreviousCollidedEntityPairs = mCollidedEntityPairs;
-	//	mCollidedEntityPairs.clear();
-	//}
+		mPreviousCollidedEntityPairs = mCollidedEntityPairs;
+		mCollidedEntityPairs.clear();
+	}
 
 	playerSetClip();
 	monsterSetClip();
@@ -1086,11 +1087,17 @@ void MainScene::initialize_Entity()
 		image.texture = &mPlayerHandTexture;
 		mPlayerLeftHand.AddComponent(image);
 
+		Active active{};
+		active.isValue = true;
+		mPlayerLeftHand.AddComponent(active);
+
 		GetEntityWorld()->AddEntity(&mPlayerLeftHand);
 	}
 
 	// Player
 	{
+		constexpr uint32_t MAX_HP = 100;
+
 		Player player{};
 		player.state = Player::eState::Idle;
 		mPlayer.AddComponent(player);
@@ -1114,7 +1121,7 @@ void MainScene::initialize_Entity()
 		mPlayer.AddComponent(animator);
 
 		Hp hp{};
-		hp.max = 1;
+		hp.max = MAX_HP;
 		hp.value = hp.max;
 		mPlayer.AddComponent(hp);
 
@@ -1139,23 +1146,29 @@ void MainScene::initialize_Entity()
 		GetEntityWorld()->AddEntity(&mPlayer);
 	}
 
+	// Player Hp
 	{
+		UI ui{};
+		mUIPlayerHp.AddComponent(ui);
+
 		Label label{};
-		label.font = &mHpFont;
-		label.text = "hp: ";
-		mPlayerHp.AddComponent(label);
+		label.font = &mUIFont;
+		const Hp* hp = mPlayer.GetComponent<Hp>();
+		std::string hpName = "HP: " + std::to_string(hp->value);
+		label.text = hpName;
+		mUIPlayerHp.AddComponent(label);
 
 		Transform transform{};
-		mPlayerHp.AddComponent(transform);
+		mUIPlayerHp.AddComponent(transform);
 
 		Active active{};
 		active.isValue = true;
-		mPlayerHp.AddComponent(active);
+		mUIPlayerHp.AddComponent(active);
 
 		Color color{};
-		mPlayerHp.AddComponent(color);
+		mUIPlayerHp.AddComponent(color);
 
-		GetEntityWorld()->AddEntity(&mPlayerHp);
+		GetEntityWorld()->AddEntity(&mUIPlayerHp);
 	}
 
 	// Player Right Hand
@@ -1167,6 +1180,10 @@ void MainScene::initialize_Entity()
 		Image image{};
 		image.texture = &mPlayerHandTexture;
 		mPlayerRightHand.AddComponent(image);
+
+		Active active{};
+		active.isValue = true;
+		mPlayerRightHand.AddComponent(active);
 
 		GetEntityWorld()->AddEntity(&mPlayerRightHand);
 	}
@@ -1339,13 +1356,18 @@ void MainScene::playerState(const float deltaTime)
 	Hp* playerHp = mPlayer.GetComponent<Hp>();
 	if (playerHp->value <= 0)
 	{
+		playerHp->value = 0;
+
 		deadTimer += deltaTime;
 		if (deadTimer >= 0.5f)
 		{
 			player->state = Player::eState::Dead;
-			// TODO: Label 수정하기
-			//Label* label = mPlayer.GetComponent<Label>();
-			//label->active = false;
+			
+			Active* leftHandActive = mPlayerLeftHand.GetComponent<Active>();
+			leftHandActive->isValue = false;
+
+			Active* rightHandActive = mPlayerRightHand.GetComponent<Active>();
+			rightHandActive->isValue = false;
 		}
 	}
 }
