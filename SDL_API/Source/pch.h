@@ -88,12 +88,22 @@ struct RangeX
 {
 	float x;
 	float xx;
+
+	bool operator==(const RangeX& other) const
+	{
+		return (x == other.x) and (xx == other.xx);
+	}
 };
 
 struct RangeY
 {
 	float y;
 	float yy;
+
+	bool operator==(const RangeY& other) const
+	{
+		return (y == other.y) and (yy == other.yy);
+	}
 };
 
 struct Rect

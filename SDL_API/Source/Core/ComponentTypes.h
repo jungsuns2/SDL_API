@@ -106,7 +106,7 @@ struct Animator final : public Component
 		elapsedTime = 0;
 	}
 
-	const Clip* clipState = nullptr;
+	Clip* clipState = nullptr;
 	float elapsedTime{}; // »Â∏• Ω√∞£
 	uint32_t frameIndex{};
 };

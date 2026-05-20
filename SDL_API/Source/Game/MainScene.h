@@ -22,21 +22,29 @@ struct SetWeaponDesc
 	const SDL_RendererFlip flipY;
 };
 
-struct MonsterGroupDesc
+struct MonsterGroup
 {
-	const Monster::eType type;
-	const uint32_t count;
-	const RangeX rangeX;
-	const RangeY rangeY;
+	Monster::eType type;
+	uint32_t count;
+	float intervalTime;
+	RangeX rangeX;
+	RangeY rangeY;
+
+	bool operator==(const MonsterGroup& other) const 
+	{
+		return type == other.type 
+			and count == other.count 
+			and rangeX == other.rangeX  
+			and rangeY == other.rangeY;
+	}
 };
 
 struct Wave
 {
 	bool isValue;
 	float durationTime;
-	float spwanIntervalTime;
 	float durationTimer;
-	float spawnIntervalTimer;
+	std::vector<MonsterGroup> groups;
 };
 
 class EntityWorld;
@@ -71,13 +79,15 @@ private:
 	void playerMove(const float deltaTime);
 	void playerSetClip();
 
-	void spawnMonsterGroup(const MonsterGroupDesc& desc);
+	void setMonsterGroup(const MonsterGroup& group);
+	void initializeSpawnMonsterGroup();
+	void spawnMonsterGroup(const uint32_t count);
 	void updateMonsterStates(const float deltaTime);
 	void monsterDeadParticle(Entity* entities, uint32_t size, const float deadTime, const float speed, const float deltaTime);
 	void monsterMove(Entity* entities, uint32_t size, const float maxSpeed, const float deltaTime);
-	void monsterSetClip(Entity* entities, uint32_t size, std::array<Clip, uint32_t(Monster::eState::Count)>& clips);
+	void monsterSetClip(Entity* entities, uint32_t size);
 
-	void clampToTile(Transform* transform,const RangeX offsetX, const RangeY offsetY);
+	void clampToTile(Transform* transform, const RangeX offsetX, const RangeY offsetY);
 
 	Point getScreenMousePosition() const;
 	void setWeaponPosition(const SetWeaponDesc& desc);
@@ -89,7 +99,8 @@ private:
 	uint32_t mTileMaxCount{};
 	float mTilePositionOffset{};
 
-	std::array<Wave, 20> mWaves{};
+	std::vector<MonsterGroup> mMonsterGroups{};
+	std::array<Wave, 100> mWaves{};
 
 	Font mUIFont{};
 	Font mHpFont{};

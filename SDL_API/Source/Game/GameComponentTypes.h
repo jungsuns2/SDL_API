@@ -24,6 +24,7 @@ struct Monster : public Component
 {
 	enum class eType
 	{
+		None,
 		BigWhite,
 		Archer,
 		Count
@@ -42,7 +43,7 @@ struct Monster : public Component
 	static constexpr uint32_t _ID = 0;
 	Monster() : Component(&_ID) {}
 
-	const Clip* clips = nullptr;
+	Clip* clips = nullptr;
 	eState state{};
 	eType type{};
 	float length = 0.0f;

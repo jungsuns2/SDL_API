@@ -53,29 +53,60 @@ void MainScene::Initialize()
 
 	initialize_Entity();
 
-	Wave& wave1 = mWaves[0];
-	wave1 = 
+	// Monster Groups
 	{
-		.isValue = true,
-		.durationTime = 20.0f,
-		.spwanIntervalTime = 3.0f,
-		.durationTimer = 0.0f,
-		.spawnIntervalTimer = 0.0f
-	};
+		MonsterGroup desc =
+		{
+			.type = Monster::eType::BigWhite,
+			.count = 2,
+			.intervalTime = 4.0f,
+			.rangeX = {.x = -150.0f, .xx = 150.0f },
+			.rangeY = {.y = -150.0f, .yy = 150.0f }
+		};
+		setMonsterGroup(desc);
 
+		//desc =
+		//{
+		//	.type = Monster::eType::Archer,
+		//	.count = 2,
+		//	.spawnIntervalTime = 5.0f,
+		//	.rangeX = {.x = -300.0f, .xx = 300.0f },
+		//	.rangeY = {.y = -300.0f, .yy = 300.0f }
+		//};
+		//setMonsterGroup(desc);
+	}
 
+	// 1단계만 모두 초기화한다.
+	{
+		Wave& wave1 = mWaves[0];
+		wave1 =
+		{
+			.isValue = true,
+			.durationTime = 20.0f,
+			.durationTimer = 0.0f,
+		};
+		wave1.groups.push_back(mMonsterGroups[0]);
+		wave1.groups.push_back(mMonsterGroups[0]);
+		wave1.groups.push_back(mMonsterGroups[0]);
+		wave1.groups.push_back(mMonsterGroups[0]);
+		wave1.groups.push_back(mMonsterGroups[0]);
+		wave1.groups.push_back(mMonsterGroups[0]);
+	}
+
+	// 0~19 단계의 기본 초기화한다.
 	for (uint32_t i = 1; i < mWaves.size(); ++i)
 	{
 		Wave& wave = mWaves[i];
-		wave = 
+
+		wave =
 		{
 			.isValue = false,
 			.durationTime = mWaves[0].durationTime + i * 5.0f,
-			.spwanIntervalTime = 1.0f,
 			.durationTimer = 0.0f,
-			.spawnIntervalTimer = 0.0f
 		};
 	}
+
+	initializeSpawnMonsterGroup();
 }
 
 bool MainScene::Update(const float deltaTime)
@@ -149,7 +180,7 @@ bool MainScene::Update(const float deltaTime)
 			{
 				return mIsUpdate;
 			}
-		}	
+		}
 	}
 
 	// 플레이어를 업데이트한다.
@@ -194,7 +225,7 @@ bool MainScene::Update(const float deltaTime)
 	{
 		Transform* effectTransform = mSwordSkill.GetComponent<Transform>();
 		Direction* effectDirection = mSwordSkill.GetComponent<Direction>();
-		
+
 		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 
 		Active* active = mSwordSkill.GetComponent<Active>();
@@ -256,7 +287,7 @@ bool MainScene::Update(const float deltaTime)
 			{
 				.weaponEntity = &mGun,
 				.dgreeOffset = 0.0f,
-				.flipX = SDL_FLIP_NONE, 
+				.flipX = SDL_FLIP_NONE,
 				.flipY = SDL_FLIP_VERTICAL
 			}
 		);
@@ -299,7 +330,7 @@ bool MainScene::Update(const float deltaTime)
 		const Point toBullet = bulletTransform->position - gunTransform->position;
 		const float distSq = Math::GetVectorLength(toBullet);
 		const float rangeSq = LENGTH * LENGTH;
-		
+
 		if (distSq >= rangeSq)
 		{
 			active->isValue = false;
@@ -315,59 +346,59 @@ bool MainScene::Update(const float deltaTime)
 				continue;
 			}
 
-			wave.spawnIntervalTimer += deltaTime;
-			if (wave.spawnIntervalTimer >= wave.spwanIntervalTime)
+			static float spawnIntervalTimer;
+			spawnIntervalTimer += deltaTime;
+
+			for (MonsterGroup& group : wave.groups)
 			{
-				spawnMonsterGroup
-				(
-					MonsterGroupDesc
-					{
-						.type = Monster::eType::BigWhite,
-						.count = 2,
-						.rangeX = {.x = -150.0f, .xx = 150.0f },
-						.rangeY = {.y = -150.0f, .yy = 150.0f },
-					}
-					);
+				if (group.type == Monster::eType::None)
+				{
+					continue;
+				}
 
-				wave.spawnIntervalTimer = 0.0f;
+				if (spawnIntervalTimer >= group.intervalTime)
+				{
+					spawnMonsterGroup(group.count);
+					spawnIntervalTimer = 0.0f;
+				}
 			}
+		}
 
-			updateMonsterStates(deltaTime);
+		updateMonsterStates(deltaTime);
 
-			// 충돌했을 때 애니메이션 처리
-			{
-				//	constexpr float DAMAGE_TIME = 0.3f;
-				//	static int32_t prevHp[10]{};
-				//	for (uint32_t i = 0; i < mMonsters.size(); ++i)
-				//	{
-				//		Entity entity = mMonsters[i];
-				//		Monster* monster = entity.GetComponent<Monster>();
-				//		DamageTimer* damage = entity.GetComponent<DamageTimer>();
-				//		Hp* hp = entity.GetComponent<Hp>();
-				//		prevHp[i] = hp->value;
+		// 충돌했을 때 애니메이션 처리
+		{
+			//	constexpr float DAMAGE_TIME = 0.3f;
+			//	static int32_t prevHp[10]{};
+			//	for (uint32_t i = 0; i < mMonsters.size(); ++i)
+			//	{
+			//		Entity entity = mMonsters[i];
+			//		Monster* monster = entity.GetComponent<Monster>();
+			//		DamageTimer* damage = entity.GetComponent<DamageTimer>();
+			//		Hp* hp = entity.GetComponent<Hp>();
+			//		prevHp[i] = hp->value;
 
-				//		if (prevHp[i] != hp->value)
-				//		{
-				//			Color* color = entity.GetComponent<Color>();
-				//			color->r = 200;
-				//			color->g = 0;
-				//			color->b = 0;
+			//		if (prevHp[i] != hp->value)
+			//		{
+			//			Color* color = entity.GetComponent<Color>();
+			//			color->r = 200;
+			//			color->g = 0;
+			//			color->b = 0;
 
-				//			damage->damageTimer += deltaTime;
-				//			if (damage->damageTimer >= DAMAGE_TIME)
-				//			{
-				//				monster->state = Monster::eState::Run;
-				//				Color* color = entity.GetComponent<Color>();
-				//				color->r = 255;
-				//				color->g = 255;
-				//				color->b = 255;
+			//			damage->damageTimer += deltaTime;
+			//			if (damage->damageTimer >= DAMAGE_TIME)
+			//			{
+			//				monster->state = Monster::eState::Run;
+			//				Color* color = entity.GetComponent<Color>();
+			//				color->r = 255;
+			//				color->g = 255;
+			//				color->b = 255;
 
-				//				prevHp[i] = hp->value;
-				//				damage->damageTimer = 0.0f;
-				//			}
-				//		}
-				//	}
-			}
+			//				prevHp[i] = hp->value;
+			//				damage->damageTimer = 0.0f;
+			//			}
+			//		}
+			//	}
 
 			// 파티클이 생성된다.
 			constexpr float SPEED = 300.0f;
@@ -377,40 +408,40 @@ bool MainScene::Update(const float deltaTime)
 
 		// TODO: 몬스터 종류(archer, skel)마다 속도가 결정되도록 수정이 필요하다.
 		constexpr float SPEED = 35.0f;
-		monsterMove(mMonsters.data(), mMonsters.size(), SPEED, deltaTime);
+		monsterMove(mMonsters.data(), uint32_t(mMonsters.size()), SPEED, deltaTime);
 	}
 
 	Hp* playerHp = mPlayer.GetComponent<Hp>();
 	Label* playerLabel = mPlayer.GetComponent<Label>();
 	Knockback* knockback = mPlayer.GetComponent<Knockback>();
 
-	for (const auto& monster : mMonsters)
-	{	
-		if (isCollisionEnter(mPlayer, monster))
-		{
-			if (monster.GetComponent<Monster>()->state == Monster::eState::Run)
-			{
-				playerHp->value -= 1;
-				std::string name = "Hp: " + std::to_string(playerHp->value);
-				playerLabel->SetText(GetHelper(), name);
-			}
-		}
-		else if (isCollisionStay(mPlayer, monster))
-		{
-			if (monster.GetComponent<Monster>()->state == Monster::eState::Attack)
-			{
-				knockback->isValue = true;
-			}
-		}		
-	}
+	//for (const auto& monster : mMonsters)
+	//{
+	//	if (isCollisionEnter(mPlayer, monster))
+	//	{
+	//		if (monster.GetComponent<Monster>()->state == Monster::eState::Run)
+	//		{
+	//			playerHp->value -= 1;
+	//			std::string name = "Hp: " + std::to_string(playerHp->value);
+	//			playerLabel->SetText(GetHelper(), name);
+	//		}
+	//	}
+	//	else if (isCollisionStay(mPlayer, monster))
+	//	{
+	//		if (monster.GetComponent<Monster>()->state == Monster::eState::Attack)
+	//		{
+	//			knockback->isValue = true;
+	//		}
+	//	}
+	//}
 
-	{
-		mPreviousCollidedEntityPairs = mCollidedEntityPairs;
-		mCollidedEntityPairs.clear();
-	}
+	//{
+	//	mPreviousCollidedEntityPairs = mCollidedEntityPairs;
+	//	mCollidedEntityPairs.clear();
+	//}
 
 	playerSetClip();
-	monsterSetClip(mMonsters.data(), mMonsters.size(), mBigWhiteSkelClips);
+	monsterSetClip(mMonsters.data(), uint32_t(mMonsters.size()));
 
 	return mIsUpdate;
 }
@@ -540,8 +571,8 @@ void MainScene::initialize_Resource()
 
 			Clip::Frame frame =
 			{
-				.texture = &texture, 
-				.durationTime = 0.12f, 
+				.texture = &texture,
+				.durationTime = 0.12f,
 				.center = IDLE_OFFSETS[index++]
 			};
 			mPlayerClips[uint32_t(Player::eState::Idle)].AddClip(frame);
@@ -563,10 +594,10 @@ void MainScene::initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Char/Alice/Run/" + std::to_string(index) + ".png");
 
-			Clip::Frame frame = 
+			Clip::Frame frame =
 			{
-				.texture = &texture, 
-				.durationTime = 0.12f, 
+				.texture = &texture,
+				.durationTime = 0.12f,
 				.center = RUN_OFFSETS[index++]
 			};
 
@@ -590,9 +621,9 @@ void MainScene::initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Sword/" + std::to_string(cnt++) + ".png");
 
-			Clip::Frame frame = 
+			Clip::Frame frame =
 			{
-				.texture = &texture, 
+				.texture = &texture,
 				.durationTime = 0.12f
 			};
 
@@ -607,9 +638,9 @@ void MainScene::initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Sword/Skill/" + std::to_string(index++) + ".png");
 
-			Clip::Frame frame = 
+			Clip::Frame frame =
 			{
-				.texture = &texture, 
+				.texture = &texture,
 				.durationTime = 0.12f
 			};
 
@@ -627,16 +658,16 @@ void MainScene::initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Gun/Bullet/" + std::to_string(index++) + ".png");
 
-			Clip::Frame frame = 
+			Clip::Frame frame =
 			{
-				.texture = &texture, 
+				.texture = &texture,
 				.durationTime = 0.02f
 			};
 
 			mBulletClip.AddClip(frame);
 		}
 	}
-	
+
 	uint32_t index{};
 
 	// Big White
@@ -666,7 +697,7 @@ void MainScene::initialize_Resource()
 			{.x = 0.07f, .y = -0.5f },
 		};
 		assert(std::size(IDLE_OFFSETS) == mBigWhiteSkelIdleTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
-		
+
 		// Idle
 		for (Texture& texture : mBigWhiteSkelIdleTextures)
 		{
@@ -701,9 +732,9 @@ void MainScene::initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Monster/BigWhiteSekl/Run/" + std::to_string(index) + ".png");
 
-			Clip::Frame frame = 
+			Clip::Frame frame =
 			{
-				.texture = &texture, 
+				.texture = &texture,
 				.durationTime = 0.14f,
 				.center = RUN_OFFSETS[index]
 			};
@@ -716,18 +747,18 @@ void MainScene::initialize_Resource()
 
 		constexpr Point ATTACK_OFFSETS[] =
 		{
-			{ .x = 0.13f, .y = -0.5f },
-			{ .x = 0.08f, .y = -0.5f },
-			{ .x = -0.24f,.y = -0.5f },
-			{ .x = -0.34f,.y = -0.5f },
-			{ .x = -0.34f,.y = -0.5f },
-			{ .x = -0.35f,.y = -0.5f },
-			{ .x = -0.30f,.y = -0.5f },
-			{ .x = -0.28f,.y = -0.5f },
-			{ .x = -0.28f,.y = -0.5f },
-			{ .x = -0.16f,.y = -0.5f },
-			{ .x = -0.14f,.y = -0.5f },
-			{ .x = 0.11f, .y = -0.5f }
+			{.x = 0.13f, .y = -0.5f },
+			{.x = 0.08f, .y = -0.5f },
+			{.x = -0.24f,.y = -0.5f },
+			{.x = -0.34f,.y = -0.5f },
+			{.x = -0.34f,.y = -0.5f },
+			{.x = -0.35f,.y = -0.5f },
+			{.x = -0.30f,.y = -0.5f },
+			{.x = -0.28f,.y = -0.5f },
+			{.x = -0.28f,.y = -0.5f },
+			{.x = -0.16f,.y = -0.5f },
+			{.x = -0.14f,.y = -0.5f },
+			{.x = 0.11f, .y = -0.5f }
 		};
 		assert(std::size(ATTACK_OFFSETS) == mBigWhiteSkelAttackTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
 
@@ -736,9 +767,9 @@ void MainScene::initialize_Resource()
 		{
 			texture.Initialize(GetHelper(), "Resource/Monster/BigWhiteSekl/Attack/" + std::to_string(index) + ".png");
 
-			Clip::Frame frame = 
+			Clip::Frame frame =
 			{
-				.texture = &texture, 
+				.texture = &texture,
 				.durationTime = 0.1f,
 				.center = ATTACK_OFFSETS[index]
 			};
@@ -1007,7 +1038,7 @@ void MainScene::initialize_Entity()
 		mPlayer.AddComponent(collider);
 
 		BoxCollider boxCollider{};
-		boxCollider.size = { .width = float(mPlayerRunTextures[3].GetWidth()), .height = float(mPlayerRunTextures[3].GetHeight())};
+		boxCollider.size = { .width = float(mPlayerRunTextures[3].GetWidth()), .height = float(mPlayerRunTextures[3].GetHeight()) };
 		mPlayer.AddComponent(boxCollider);
 
 		GetEntityWorld()->AddEntity(&mPlayer);
@@ -1246,6 +1277,12 @@ void MainScene::playerState(const float deltaTime)
 
 void MainScene::playerMove(const float deltaTime)
 {
+	constexpr float MAX_SPEED = 300.0f;
+	constexpr float ACC = 62.0f;
+
+	constexpr float KNOCKBACK_FORCE = 0.0f;
+	constexpr float KNOCKBACK_COOLTIMER = 0.7f;
+
 	const int32_t moveX = Input::Get().GetKey(SDL_SCANCODE_D) - Input::Get().GetKey(SDL_SCANCODE_A);
 	const int32_t moveY = Input::Get().GetKey(SDL_SCANCODE_W) - Input::Get().GetKey(SDL_SCANCODE_S);
 
@@ -1253,8 +1290,6 @@ void MainScene::playerMove(const float deltaTime)
 	static int32_t prevMoveY;
 
 	static Point moveVelocity = {};
-	constexpr float MAX_SPEED = 300.0f;
-	constexpr float ACC = 62.0f;
 
 	if (moveX != 0)
 	{
@@ -1297,8 +1332,6 @@ void MainScene::playerMove(const float deltaTime)
 	float velocity = fmin(Math::GetVectorLength(moveVelocity), MAX_SPEED);
 	moveVelocity = moveDirection * velocity;
 
-	constexpr float KNOCKBACK_FORCE = 500.0f;
-	constexpr float KNOCKBACK_COOLTIMER = 0.7f;
 	Knockback* knockback = mPlayer.GetComponent<Knockback>();
 	Color* color = mPlayer.GetComponent<Color>();
 
@@ -1343,7 +1376,7 @@ void MainScene::playerMove(const float deltaTime)
 		constexpr Point OFFSET = { .x = 14.0f, .y = 18.0f };
 		Transform* leftHandTransform = mPlayerLeftHand.GetComponent<Transform>();
 		leftHandTransform->position = transform->position;
-		
+
 		leftHandTransform->position.y += OFFSET.y;
 
 		if (transform->flip == SDL_FLIP_NONE)
@@ -1400,54 +1433,108 @@ void MainScene::playerSetClip()
 	}
 }
 
-void MainScene::spawnMonsterGroup(const MonsterGroupDesc& desc)
+void MainScene::initializeSpawnMonsterGroup()
 {
 	constexpr float SIZE = 0.7f;
 
-	const Monster::eType type = desc.type;
-	const RangeX rangeX = desc.rangeX;
-	const RangeY rangeY = desc.rangeY;
-	uint32_t remainingCount = desc.count;
+	for (Wave& wave : mWaves)
+	{
+		if (not wave.isValue)
+		{
+			continue;
+		}
+
+		for (uint32_t i = 0; i < wave.groups.size(); ++i)
+		{
+			const MonsterGroup& group = wave.groups[i];
+
+			static uint32_t totalCount;
+			uint32_t j = 0;
+			if (i != 0)
+			{
+				j = totalCount;
+			}
+			else
+			{
+				j = 0;
+			}
+			totalCount += group.count;
+
+			for (j; j < totalCount; ++j)
+			{
+				Entity& entity = mMonsters[j];
+
+				Monster* monster = entity.GetComponent<Monster>();
+				monster->type = group.type;
+				monster->state = Monster::eState::None;
+
+				Transform* monsterTransform = entity.GetComponent<Transform>();
+				monsterTransform->position =
+				{
+					.x = getRandom(group.rangeX.x, group.rangeX.xx),
+					.y = getRandom(group.rangeY.y, group.rangeY.yy)
+				};
+				monsterTransform->scale = { .width = SIZE, .height = SIZE };
+
+				Active& active = *entity.GetComponent<Active>();
+				active.isValue = false;
+
+				Hp* hp = entity.GetComponent<Hp>();
+				switch (group.type)
+				{
+				case Monster::eType::BigWhite:
+					hp->max = 2;
+					monster->attackDistance = 90.0f;
+					monster->clips = mBigWhiteSkelClips.data();
+					break;
+				case Monster::eType::Archer:
+					hp->max = 3;
+					monster->attackDistance = 160.0f;
+					monster->clips = mArcherClips.data();
+					break;
+				default:
+					break;
+				}
+
+				Animator* anim = entity.GetComponent<Animator>();
+				anim->clipState = &monster->clips[uint32_t(Monster::eState::None)];
+			}
+		}
+	}
+}
+
+void MainScene::setMonsterGroup(const MonsterGroup& group)
+{
+	if (const auto& findGroup = std::find(mMonsterGroups.begin(), mMonsterGroups.end(), group);
+		findGroup == mMonsterGroups.end())
+	{
+		mMonsterGroups.push_back(group);
+	}
+}
+
+void MainScene::spawnMonsterGroup(const uint32_t count)
+{
+	constexpr float SIZE = 0.7f;
+	uint32_t remainingCount = count;
 
 	for (Entity& entity : mMonsters)
 	{
+		Monster* monster = entity.GetComponent<Monster>();
+		if (monster->type == Monster::eType::None)
+		{
+			continue;
+		}
+
 		Active& active = *entity.GetComponent<Active>();
 		if (active.isValue)
 		{
 			continue;
 		}
 
-		Monster* monster = entity.GetComponent<Monster>();
-		monster->type = type;
 		monster->state = Monster::eState::Spawn;
 
-		Transform* monsterTransform = entity.GetComponent<Transform>();
-		monsterTransform->position =
-		{
-			.x = getRandom(rangeX.x, rangeX.xx),
-			.y = getRandom(rangeY.y, rangeY.yy)
-		};
-		monsterTransform->scale = { .width = SIZE, .height = SIZE };
-
-		Hp* hp = entity.GetComponent<Hp>();
 		Animator* anim = entity.GetComponent<Animator>();
-		switch (type)
-		{
-		case Monster::eType::BigWhite:
-			hp->max = 2;
-			monster->attackDistance = 90.0f;
-			monster->clips = mBigWhiteSkelClips.data();
-			break;
-		case Monster::eType::Archer:
-			hp->max = 3;
-			monster->attackDistance = 160.0f;
-			monster->clips = mArcherClips.data();
-			break;
-		default:
-			break;
-		}
-
-		anim->clipState = &monster->clips[uint32_t(Monster::eState::Spawn)];
+		//anim->clipState = &monster->clips[uint32_t(Monster::eState::Spawn)];
 		active.isValue = true;
 
 		if (--remainingCount == 0)
@@ -1513,7 +1600,7 @@ void MainScene::updateMonsterStates(const float deltaTime)
 		}
 
 		default:
-			assert(false && "지원하지 않는 애니메이션입니다.");
+			assert(false and "지원하지 않는 애니메이션입니다.");
 			break;
 		}
 	}
@@ -1585,15 +1672,25 @@ void MainScene::monsterDeadParticle(Entity* entities, uint32_t size, const float
 	}
 }
 
-void MainScene::monsterMove(Entity* entities, uint32_t size, const float maxSpeed,  const float deltaTime)
+void MainScene::monsterMove(Entity* entities, uint32_t size, const float maxSpeed, const float deltaTime)
 {
 	Point velocity = {};
 
 	for (uint32_t i = 0; i < size; ++i)
 	{
 		Entity& entity = entities[i];
-
 		Monster* monster = entity.GetComponent<Monster>();
+		if (monster->type == Monster::eType::None)
+		{
+			continue;
+		}
+
+		Active* active = entity.GetComponent<Active>();
+		if (not active)
+		{
+			continue;
+		}
+
 		Transform* monsterTransform = entity.GetComponent<Transform>();
 		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 		Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
@@ -1617,15 +1714,19 @@ void MainScene::monsterMove(Entity* entities, uint32_t size, const float maxSpee
 	}
 }
 
-void MainScene::monsterSetClip(Entity* entities, uint32_t size, std::array<Clip, uint32_t(Monster::eState::Count)>& clips)
+void MainScene::monsterSetClip(Entity* entities, uint32_t size)
 {
 	for (uint32_t i = 0; i < size; ++i)
 	{
 		Entity& entity = entities[i];
 
-		Animator* animator = entity.GetComponent<Animator>();
 		Monster* monster = entity.GetComponent<Monster>();
+		if (monster->type == Monster::eType::None)
+		{
+			continue;
+		}
 
+		Animator* animator = entity.GetComponent<Animator>();
 		switch (monster->state)
 		{
 		case Monster::eState::None:
@@ -1633,19 +1734,20 @@ void MainScene::monsterSetClip(Entity* entities, uint32_t size, std::array<Clip,
 			break;
 
 		case Monster::eState::Spawn:
-			animator->SetClip(&clips[uint32_t(Monster::eState::Spawn)]);
+			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Spawn)]);
 			break;
 
 		case Monster::eState::Idle:
-			animator->SetClip(&clips[uint32_t(Monster::eState::Idle)]);
+			__noop;
+			//animator->SetClip(&monster->clips[uint32_t(Monster::eState::Idle)]);
 			break;
 
 		case Monster::eState::Run:
-			animator->SetClip(&clips[uint32_t(Monster::eState::Run)]);
+			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Run)]);
 			break;
 
 		case Monster::eState::Attack:
-			animator->SetClip(&clips[uint32_t(Monster::eState::Attack)]);
+			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Attack)]);
 			break;
 
 		default:
@@ -1680,7 +1782,7 @@ Point MainScene::getScreenMousePosition() const
 		.x = mousePosition.x - centerOffset.x,
 		.y = centerOffset.y - mousePosition.y
 	};
-	
+
 	screenPosition += mMainCamera.GetComponent<Transform>()->position;
 
 	return screenPosition;
@@ -1724,7 +1826,7 @@ void MainScene::setWeaponPosition(const SetWeaponDesc& desc)
 	transform->angle = -degree;
 
 	const float length = Math::GetVectorLength(mouseToPlayer);
-	direction->value = mouseToPlayer / length;	
+	direction->value = mouseToPlayer / length;
 }
 
 float MainScene::getRandom(const float min, const float max)
