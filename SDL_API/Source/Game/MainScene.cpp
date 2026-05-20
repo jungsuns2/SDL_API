@@ -228,25 +228,24 @@ bool MainScene::Update(const float deltaTime)
 			{
 				mStage.durationTimer = 0.0f;
 
+				for (Entity*& entity : mMonsters)
+				{
+					if (entity != nullptr)
+					{
+						GetEntityWorld()->Remove(entity);
+						entity = nullptr;
+					}
+				}
+
+
 				if (i + 1 < mWaves.size())
 				{
+					Active* active = mStageLabel.GetComponent<Active>();
+					active->isValue = true;
+
 					mWaves[i + 1].isValue = true;
-
-					//for (Entity*& entity : mMonsters)
-					//{
-					//	if (entity != nullptr)
-					//	{
-					//		delete entity;
-					//		entity = nullptr;
-					//	}
-					//}
-
-					//initializeSpawnMonsterGroup();
+					initializeSpawnMonsterGroup();
 					break;
-
-					//Active* active = mWaveStage.GetComponent<Active>();
-					//active->isValue = true;
-
 				}
 			}
 		}

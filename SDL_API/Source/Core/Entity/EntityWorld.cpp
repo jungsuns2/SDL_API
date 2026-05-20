@@ -12,19 +12,30 @@ void EntityWorld::AddEntity(Entity* entity)
 
 void EntityWorld::Remove(Entity* entity)
 {
+	//assert(entity != nullptr);
+	//assert(std::find(mEntites.begin(), mEntites.end(), entity) == mEntites.end());
+
+	//for (std::vector<Entity*>::iterator it = mEntites.begin(); it != mEntites.end(); ++it)
+	//{
+	//	Entity* removeEntity = *it;
+
+	//	if (removeEntity == entity)
+	//	{
+	//		std::swap(removeEntity, mEntites.back());
+	//		delete removeEntity;
+	//		removeEntity = nullptr;
+	//		mEntites.pop_back();
+	//	}
+	//}
+
 	assert(entity != nullptr);
-	assert(std::find(mEntites.begin(), mEntites.end(), entity) == mEntites.end());
 
-	for (std::vector<Entity*>::iterator it = mEntites.begin(); it != mEntites.end(); ++it)
+	std::vector<Entity*>::iterator it = std::find(mEntites.begin(), mEntites.end(), entity);
+	if (it != mEntites.end())
 	{
-		Entity* removeEntity = *it;
-
-		if (removeEntity == entity)
-		{
-			std::swap(removeEntity, mEntites.back());
-			delete removeEntity;
-			mEntites.pop_back();
-		}
+		std::swap(*it, mEntites.back());
+		delete mEntites.back();
+		mEntites.pop_back();
 	}
 }
 
