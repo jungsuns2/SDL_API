@@ -107,7 +107,7 @@ private:
 	Font mHpFont{};
 
 	Entity mMainCamera{};
-	Entity mLabelEntity{};
+	Entity mWaveTimer{};
 	Entity mPlayer{};
 	Entity mPlayerLeftHand{};
 	Entity mPlayerRightHand{};

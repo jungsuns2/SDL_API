@@ -183,6 +183,20 @@ bool MainScene::Update(const float deltaTime)
 			}
 
 			wave.durationTimer += deltaTime;
+
+			// Wave Timer
+			{
+				Label* label = mWaveTimer.GetComponent<Label>();
+				const uint32_t seconds = uint32_t(wave.durationTimer) % 60;
+				const uint32_t minutes = uint32_t(wave.durationTimer) / 60;
+
+				const std::string fseconds = (seconds < 10) ? "0" + std::to_string(seconds) : std::to_string(seconds);
+				const std::string fMinutes = (minutes < 10) ? "0" + std::to_string(minutes) : std::to_string(minutes);
+
+				const std::string name = "Timer: " + fMinutes + ":" + fseconds;
+				label->SetText(GetHelper(), name);
+			}
+
 			if (wave.durationTimer >= wave.durationTime
 				and wave.isValue)
 			{
@@ -213,8 +227,8 @@ bool MainScene::Update(const float deltaTime)
 		constexpr float OFFSET = 31.0f;
 		const Scale halfScreen =
 		{
-			.width = float(Constant::Get().GetWidth()) * 0.5f - OFFSET,
-			.height = float(Constant::Get().GetHeight()) * 0.5f - OFFSET,
+			.width = Constant::Get().GetHalfWidth() - OFFSET,
+			.height = Constant::Get().GetHalfHeight() - OFFSET,
 		};
 
 		clampToTile(transform, { .x = halfScreen.width, .xx = halfScreen.width }, { .y = halfScreen.height, .yy = halfScreen.height });
@@ -950,22 +964,25 @@ void MainScene::initialize_Entity()
 
 	// UI Label
 	{
-		UI ui{};
-		mLabelEntity.AddComponent(ui);
+		// Timer
+		{
+			UI ui{};
+			mWaveTimer.AddComponent(ui);
 
-		Label label;
-		label.font = &mUIFont;
-		label.active = true;
-		label.SetText(GetHelper(), "UI Label");
-		mLabelEntity.AddComponent(label);
+			Label label{};
+			label.font = &mUIFont;
+			label.active = true;
+			mWaveTimer.AddComponent(label);
 
-		Transform transform{};
-		mLabelEntity.AddComponent(transform);
+			Transform transform{};
+			transform.position = { .x = Constant::Get().GetHalfWidth() - 150.0f, .y = 0.0f };
+			mWaveTimer.AddComponent(transform);
 
-		Color color{};
-		mLabelEntity.AddComponent(color);
+			Color color{};
+			mWaveTimer.AddComponent(color);
 
-		GetEntityWorld()->AddEntity(&mLabelEntity);
+			GetEntityWorld()->AddEntity(&mWaveTimer);
+		}
 	}
 
 	// Gun
@@ -1470,11 +1487,11 @@ void MainScene::initializeSpawnMonsterGroup()
 			GetEntityWorld()->AddEntity(entity);
 		}
 
+		static uint32_t totalCount;
 		for (uint32_t i = 0; i < wave.groups.size(); ++i)
 		{
 			const MonsterGroup& group = wave.groups[i];
 
-			static uint32_t totalCount;
 			uint32_t j = 0;
 			if (i != 0)
 			{
@@ -1528,6 +1545,8 @@ void MainScene::initializeSpawnMonsterGroup()
 				anim->clipState = &monster->clips[uint32_t(Monster::eState::None)];
 			}
 		}
+
+		totalCount = 0;
 	}
 }
 

@@ -13,5 +13,7 @@ public:
 
 	[[nodiscard]] uint32_t GetWidth() const;
 	[[nodiscard]] uint32_t GetHeight() const;
-};
 
+	[[nodiscard]] float GetHalfWidth() const;
+	[[nodiscard]] float GetHalfHeight() const;
+};
