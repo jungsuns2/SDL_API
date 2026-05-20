@@ -59,21 +59,21 @@ void MainScene::Initialize()
 		{
 			.type = Monster::eType::BigWhite,
 			.count = 2,
-			.intervalTime = 4.0f,
+			.spawnIntervalTime = 4.0f,
 			.rangeX = {.x = -150.0f, .xx = 150.0f },
 			.rangeY = {.y = -150.0f, .yy = 150.0f }
 		};
 		setMonsterGroup(desc);
 
-		//desc =
-		//{
-		//	.type = Monster::eType::Archer,
-		//	.count = 2,
-		//	.spawnIntervalTime = 5.0f,
-		//	.rangeX = {.x = -300.0f, .xx = 300.0f },
-		//	.rangeY = {.y = -300.0f, .yy = 300.0f }
-		//};
-		//setMonsterGroup(desc);
+		desc =
+		{
+			.type = Monster::eType::Archer,
+			.count = 2,
+			.spawnIntervalTime = 5.0f,
+			.rangeX = {.x = -300.0f, .xx = 300.0f },
+			.rangeY = {.y = -300.0f, .yy = 300.0f }
+		};
+		setMonsterGroup(desc);
 	}
 
 	// 1단계만 모두 초기화한다.
@@ -86,9 +86,9 @@ void MainScene::Initialize()
 			.durationTimer = 0.0f,
 		};
 		wave1.groups.push_back(mMonsterGroups[0]);
+		wave1.groups.push_back(mMonsterGroups[1]);
 		wave1.groups.push_back(mMonsterGroups[0]);
-		wave1.groups.push_back(mMonsterGroups[0]);
-		wave1.groups.push_back(mMonsterGroups[0]);
+		wave1.groups.push_back(mMonsterGroups[1]);
 		wave1.groups.push_back(mMonsterGroups[0]);
 		wave1.groups.push_back(mMonsterGroups[0]);
 	}
@@ -97,13 +97,27 @@ void MainScene::Initialize()
 	for (uint32_t i = 1; i < mWaves.size(); ++i)
 	{
 		Wave& wave = mWaves[i];
-
 		wave =
 		{
 			.isValue = false,
 			.durationTime = mWaves[0].durationTime + i * 5.0f,
 			.durationTimer = 0.0f,
 		};
+	}
+
+	// 몬스터의 개수를 저장한다.
+	for (uint32_t i = 0; i < mWaves.size(); ++i)
+	{
+		Wave& wave = mWaves[i];
+		if (wave.groups.empty())
+		{
+			continue;
+		}
+
+		for (uint32_t j = 0; j < wave.groups.size(); ++j)
+		{
+			wave.monsterCount += wave.groups[j].count;
+		}
 	}
 
 	initializeSpawnMonsterGroup();
@@ -356,7 +370,7 @@ bool MainScene::Update(const float deltaTime)
 					continue;
 				}
 
-				if (spawnIntervalTimer >= group.intervalTime)
+				if (spawnIntervalTimer >= group.spawnIntervalTime)
 				{
 					spawnMonsterGroup(group.count);
 					spawnIntervalTimer = 0.0f;
@@ -408,7 +422,7 @@ bool MainScene::Update(const float deltaTime)
 
 		// TODO: 몬스터 종류(archer, skel)마다 속도가 결정되도록 수정이 필요하다.
 		constexpr float SPEED = 35.0f;
-		monsterMove(mMonsters.data(), uint32_t(mMonsters.size()), SPEED, deltaTime);
+		monsterMove(SPEED, deltaTime);
 	}
 
 	Hp* playerHp = mPlayer.GetComponent<Hp>();
@@ -441,13 +455,22 @@ bool MainScene::Update(const float deltaTime)
 	//}
 
 	playerSetClip();
-	monsterSetClip(mMonsters.data(), uint32_t(mMonsters.size()));
+	monsterSetClip();
 
 	return mIsUpdate;
 }
 
 void MainScene::Finalize()
 {
+	for (Entity*& entity : mMonsters)
+	{
+		if (entity != nullptr)
+		{
+			delete entity;
+			entity = nullptr;
+		}
+	}
+
 	mUIFont.Finalize();
 
 	// Player
@@ -1175,46 +1198,6 @@ void MainScene::initialize_Entity()
 		mArcherClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
-
-		for (Entity& entity : mMonsters)
-		{
-			Monster monster{};
-			entity.AddComponent(monster);
-
-			Transform transform{};
-			entity.AddComponent(transform);
-
-			Image image{};
-			entity.AddComponent(image);
-
-			Animator animator{};
-			entity.AddComponent(animator);
-
-			Direction direction{};
-			entity.AddComponent(direction);
-
-			DamageTimer damageTimer{};
-			entity.AddComponent(damageTimer);
-
-			Hp hp{};
-			entity.AddComponent(hp);
-
-			Active active{};
-			entity.AddComponent(active);
-
-			Color color{};
-			entity.AddComponent(color);
-
-			CollisionDetector collider(static_cast<uint32_t>(CollisionLayer::Monster));
-			collider.CollisionLayerMask.set(uint32_t(CollisionLayer::Monster));
-			entity.AddComponent(collider);
-
-			BoxCollider boxCollider{};
-			boxCollider.size = { .width = float(mBigWhiteSkelAttackTextures[3].GetWidth()), .height = float(mBigWhiteSkelAttackTextures[3].GetHeight()) };
-			entity.AddComponent(boxCollider);
-
-			GetEntityWorld()->AddEntity(&entity);
-		}
 	}
 
 	// Dead Particle
@@ -1437,11 +1420,54 @@ void MainScene::initializeSpawnMonsterGroup()
 {
 	constexpr float SIZE = 0.7f;
 
-	for (Wave& wave : mWaves)
+	for (const Wave& wave : mWaves)
 	{
 		if (not wave.isValue)
 		{
 			continue;
+		}
+
+		for (uint32_t i = 0; i < wave.monsterCount; ++i)
+		{
+			mMonsters[i] = new Entity();
+			Entity* entity = mMonsters[i];
+
+			Monster monster{};
+			entity->AddComponent(monster);
+
+			Transform transform{};
+			entity->AddComponent(transform);
+
+			Image image{};
+			entity->AddComponent(image);
+
+			Animator animator{};
+			entity->AddComponent(animator);
+
+			Direction direction{};
+			entity->AddComponent(direction);
+
+			DamageTimer damageTimer{};
+			entity->AddComponent(damageTimer);
+
+			Hp hp{};
+			entity->AddComponent(hp);
+
+			Active active{};
+			entity->AddComponent(active);
+
+			Color color{};
+			entity->AddComponent(color);
+
+			CollisionDetector collider(static_cast<uint32_t>(CollisionLayer::Monster));
+			collider.CollisionLayerMask.set(uint32_t(CollisionLayer::Monster));
+			entity->AddComponent(collider);
+
+			BoxCollider boxCollider{};
+			boxCollider.size = { .width = float(mBigWhiteSkelAttackTextures[3].GetWidth()), .height = float(mBigWhiteSkelAttackTextures[3].GetHeight()) };
+			entity->AddComponent(boxCollider);
+
+			GetEntityWorld()->AddEntity(entity);
 		}
 
 		for (uint32_t i = 0; i < wave.groups.size(); ++i)
@@ -1462,13 +1488,13 @@ void MainScene::initializeSpawnMonsterGroup()
 
 			for (j; j < totalCount; ++j)
 			{
-				Entity& entity = mMonsters[j];
+				Entity* entity = mMonsters[j];
 
-				Monster* monster = entity.GetComponent<Monster>();
+				Monster* monster = entity->GetComponent<Monster>();
 				monster->type = group.type;
 				monster->state = Monster::eState::None;
 
-				Transform* monsterTransform = entity.GetComponent<Transform>();
+				Transform* monsterTransform = entity->GetComponent<Transform>();
 				monsterTransform->position =
 				{
 					.x = getRandom(group.rangeX.x, group.rangeX.xx),
@@ -1476,10 +1502,10 @@ void MainScene::initializeSpawnMonsterGroup()
 				};
 				monsterTransform->scale = { .width = SIZE, .height = SIZE };
 
-				Active& active = *entity.GetComponent<Active>();
-				active.isValue = false;
+				Active* active = entity->GetComponent<Active>();
+				active->isValue = false;
 
-				Hp* hp = entity.GetComponent<Hp>();
+				Hp* hp = entity->GetComponent<Hp>();
 				switch (group.type)
 				{
 				case Monster::eType::BigWhite:
@@ -1487,16 +1513,18 @@ void MainScene::initializeSpawnMonsterGroup()
 					monster->attackDistance = 90.0f;
 					monster->clips = mBigWhiteSkelClips.data();
 					break;
+
 				case Monster::eType::Archer:
 					hp->max = 3;
 					monster->attackDistance = 160.0f;
 					monster->clips = mArcherClips.data();
 					break;
+
 				default:
 					break;
 				}
 
-				Animator* anim = entity.GetComponent<Animator>();
+				Animator* anim = entity->GetComponent<Animator>();
 				anim->clipState = &monster->clips[uint32_t(Monster::eState::None)];
 			}
 		}
@@ -1517,24 +1545,24 @@ void MainScene::spawnMonsterGroup(const uint32_t count)
 	constexpr float SIZE = 0.7f;
 	uint32_t remainingCount = count;
 
-	for (Entity& entity : mMonsters)
+	for (Entity* entity : mMonsters)
 	{
-		Monster* monster = entity.GetComponent<Monster>();
-		if (monster->type == Monster::eType::None)
+		if (entity == nullptr)
 		{
 			continue;
 		}
 
-		Active& active = *entity.GetComponent<Active>();
+		Active& active = *entity->GetComponent<Active>();
 		if (active.isValue)
 		{
 			continue;
 		}
 
+		Monster* monster = entity->GetComponent<Monster>();
 		monster->state = Monster::eState::Spawn;
 
-		Animator* anim = entity.GetComponent<Animator>();
-		//anim->clipState = &monster->clips[uint32_t(Monster::eState::Spawn)];
+		Animator* anim = entity->GetComponent<Animator>();
+		anim->clipState = &monster->clips[uint32_t(Monster::eState::Spawn)];
 		active.isValue = true;
 
 		if (--remainingCount == 0)
@@ -1546,17 +1574,22 @@ void MainScene::spawnMonsterGroup(const uint32_t count)
 
 void MainScene::updateMonsterStates(const float deltaTime)
 {
-	for (Entity& entity : mMonsters)
+	for (Entity* entity : mMonsters)
 	{
-		Monster* monster = entity.GetComponent<Monster>();
+		if (entity == nullptr)
+		{
+			continue;
+		}
+
+		Monster* monster = entity->GetComponent<Monster>();
 		if (monster->state == Monster::eState::None)
 		{
 			continue;
 		}
 
-		Transform* monsterTransform = entity.GetComponent<Transform>();
-		Active* active = entity.GetComponent<Active>();
-		const Animator& anim = *entity.GetComponent<Animator>();
+		Transform* monsterTransform = entity->GetComponent<Transform>();
+		Active* active = entity->GetComponent<Active>();
+		const Animator& anim = *entity->GetComponent<Animator>();
 
 		switch (monster->state)
 		{
@@ -1672,26 +1705,28 @@ void MainScene::monsterDeadParticle(Entity* entities, uint32_t size, const float
 	}
 }
 
-void MainScene::monsterMove(Entity* entities, uint32_t size, const float maxSpeed, const float deltaTime)
+void MainScene::monsterMove(const float maxSpeed, const float deltaTime)
 {
-	Point velocity = {};
-
-	for (uint32_t i = 0; i < size; ++i)
+	for (Entity* entity : mMonsters)
 	{
-		Entity& entity = entities[i];
-		Monster* monster = entity.GetComponent<Monster>();
+		if (entity == nullptr)
+		{
+			continue;
+		}
+
+		Monster* monster = entity->GetComponent<Monster>();
 		if (monster->type == Monster::eType::None)
 		{
 			continue;
 		}
 
-		Active* active = entity.GetComponent<Active>();
+		Active* active = entity->GetComponent<Active>();
 		if (not active)
 		{
 			continue;
 		}
 
-		Transform* monsterTransform = entity.GetComponent<Transform>();
+		Transform* monsterTransform = entity->GetComponent<Transform>();
 		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 		Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
 
@@ -1700,11 +1735,11 @@ void MainScene::monsterMove(Entity* entities, uint32_t size, const float maxSpee
 		const Point difference = playerPosition - monsterPosition;
 		monster->length = Math::GetVectorLength(difference);
 
-		Direction* direction = entity.GetComponent<Direction>();
+		Direction* direction = entity->GetComponent<Direction>();
 		if (monster->state == Monster::eState::Run)
 		{
 			direction->value = Math::NormalizeVector(difference);
-			velocity = direction->value * maxSpeed;
+			Point velocity = direction->value * maxSpeed;
 			playerKnockback->direction = direction->value;
 
 			clampToTile(monsterTransform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
@@ -1714,19 +1749,17 @@ void MainScene::monsterMove(Entity* entities, uint32_t size, const float maxSpee
 	}
 }
 
-void MainScene::monsterSetClip(Entity* entities, uint32_t size)
+void MainScene::monsterSetClip()
 {
-	for (uint32_t i = 0; i < size; ++i)
+	for (Entity* entity : mMonsters)
 	{
-		Entity& entity = entities[i];
-
-		Monster* monster = entity.GetComponent<Monster>();
-		if (monster->type == Monster::eType::None)
+		if (entity == nullptr)
 		{
 			continue;
 		}
 
-		Animator* animator = entity.GetComponent<Animator>();
+		Monster* monster = entity->GetComponent<Monster>();
+		Animator* animator = entity->GetComponent<Animator>();
 		switch (monster->state)
 		{
 		case Monster::eState::None:

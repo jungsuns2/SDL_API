@@ -26,7 +26,7 @@ struct MonsterGroup
 {
 	Monster::eType type;
 	uint32_t count;
-	float intervalTime;
+	float spawnIntervalTime;
 	RangeX rangeX;
 	RangeY rangeY;
 
@@ -45,6 +45,7 @@ struct Wave
 	float durationTime;
 	float durationTimer;
 	std::vector<MonsterGroup> groups;
+	uint32_t monsterCount;
 };
 
 class EntityWorld;
@@ -84,8 +85,8 @@ private:
 	void spawnMonsterGroup(const uint32_t count);
 	void updateMonsterStates(const float deltaTime);
 	void monsterDeadParticle(Entity* entities, uint32_t size, const float deadTime, const float speed, const float deltaTime);
-	void monsterMove(Entity* entities, uint32_t size, const float maxSpeed, const float deltaTime);
-	void monsterSetClip(Entity* entities, uint32_t size);
+	void monsterMove(const float maxSpeed, const float deltaTime);
+	void monsterSetClip();
 
 	void clampToTile(Transform* transform, const RangeX offsetX, const RangeY offsetY);
 
@@ -100,7 +101,7 @@ private:
 	float mTilePositionOffset{};
 
 	std::vector<MonsterGroup> mMonsterGroups{};
-	std::array<Wave, 100> mWaves{};
+	std::array<Wave, 20> mWaves{};
 
 	Font mUIFont{};
 	Font mHpFont{};
@@ -117,7 +118,7 @@ private:
 	Entity** mTiles = nullptr;
 	std::array<Entity, 6> mDeadParticle{};
 
-	std::array<Entity, 20> mMonsters{};
+	std::array<Entity*, 100> mMonsters{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBigWhiteSkelClips{};
