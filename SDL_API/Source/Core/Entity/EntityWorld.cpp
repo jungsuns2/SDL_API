@@ -2,10 +2,14 @@
 #include "EntityWorld.h"
 #include "Entity.h"
 
-void EntityWorld::AddEntity(Entity* entity)
+void EntityWorld::AddEntity(Entity* entity, std::source_location sourceLocation)
 {
 	assert(entity != nullptr);
 	assert(std::find(mEntites.begin(), mEntites.end(), entity) == mEntites.end());
+
+#if defined(_DEBUG)
+	entity->SetSourceLocation(sourceLocation.file_name(), sourceLocation.line());
+#endif
 
 	mEntites.push_back(entity);
 }

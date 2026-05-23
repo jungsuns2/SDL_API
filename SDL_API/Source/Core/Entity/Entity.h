@@ -21,6 +21,14 @@ public:
 
 private:
 	std::vector<Component*> mComponents{};
+	
+#if defined(_DEBUG)
+public:
+	void SetSourceLocation(const char* filename, const uint32_t line);
+
+private:
+	std::string mSourceLocation{};
+#endif
 };
 
 template<typename T>
