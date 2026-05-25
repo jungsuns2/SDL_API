@@ -26,8 +26,8 @@ struct MonsterGroup
 {
 	Monster::eType type;
 	uint32_t count;
-	RangeX rangeX;
-	RangeY rangeY;
+	Range rangeX;
+	Range rangeY;
 };
 
 struct Wave
@@ -90,7 +90,7 @@ private:
 	void monsterMove(const float maxSpeed, const float deltaTime);
 	void monsterSetClip();
 
-	void clampToTile(Transform* transform, const RangeX offsetX, const RangeY offsetY);
+	void clampToTile(Transform* transform, const Range rangeX, const Range RangeY);
 
 	Point getScreenMousePosition() const;
 	void setWeaponPosition(const SetWeaponDesc& desc);

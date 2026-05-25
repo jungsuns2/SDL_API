@@ -22,8 +22,8 @@ void MainScene::Initialize()
 		{
 			.type = Monster::eType::BigWhite,
 			.count = 2,
-			.rangeX = {.x = -150.0f, .xx = 150.0f },
-			.rangeY = {.y = -150.0f, .yy = 150.0f }
+			.rangeX = {.min = -150.0f, .max = 150.0f },
+			.rangeY = {.min = -150.0f, .max = 150.0f }
 		};
 		mMonsterGroups.push_back(desc);
 
@@ -31,8 +31,8 @@ void MainScene::Initialize()
 		{
 			.type = Monster::eType::Archer,
 			.count = 1,
-			.rangeX = {.x = -300.0f, .xx = 300.0f },
-			.rangeY = {.y = -300.0f, .yy = 300.0f }
+			.rangeX = {.min = -300.0f, .max = 300.0f },
+			.rangeY = {.min = -300.0f, .max = 300.0f }
 		};
 		mMonsterGroups.push_back(desc1);
 	}
@@ -232,7 +232,7 @@ bool MainScene::Update(const float deltaTime)
 			.height = Constant::Get().GetHalfHeight() - OFFSET,
 		};
 
-		clampToTile(transform, { .x = halfScreen.width, .xx = halfScreen.width }, { .y = halfScreen.height, .yy = halfScreen.height });
+		clampToTile(transform, { .min = halfScreen.width, .max = halfScreen.width }, { .min = halfScreen.height, .max = halfScreen.height });
 	}
 
 	// 칼을 업데이트한다.
@@ -1404,7 +1404,7 @@ void MainScene::playerMove(const float deltaTime)
 	}
 
 	Transform* transform = mPlayer.GetComponent<Transform>();
-	clampToTile(transform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
+	clampToTile(transform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
 	transform->position += moveVelocity * deltaTime;
 
 	Direction* direction = mPlayer.GetComponent<Direction>();
@@ -1537,8 +1537,8 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 
 	for (uint32_t i = 0; i < group.count; ++i)
 	{
-		const float x = getRandom(group.rangeX.x, group.rangeX.xx);
-		const float y = getRandom(group.rangeY.y, group.rangeY.yy);
+		const float x = getRandom(group.rangeX.min, group.rangeX.max);
+		const float y = getRandom(group.rangeY.min, group.rangeY.max);
 
 		for (__noop; monsterIndex < mMonsters.size(); ++monsterIndex)
 		{
@@ -1766,7 +1766,7 @@ void MainScene::monsterMove(const float maxSpeed, const float deltaTime)
 			Point velocity = direction->value * maxSpeed;
 			playerKnockback->direction = direction->value;
 
-			clampToTile(monsterTransform, { .x = 5.0f, .xx = 5.0f }, { .y = -8.0f, .yy = 50.0f });
+			clampToTile(monsterTransform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
 			monsterTransform->position += velocity * deltaTime;
 			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 		}
@@ -1810,15 +1810,15 @@ void MainScene::monsterSetClip()
 	}
 }
 
-void MainScene::clampToTile(Transform* transform, const RangeX offsetX, const RangeY offsetY)
+void MainScene::clampToTile(Transform* transform, const Range rangeX, const Range RangeY)
 {
 	assert(transform != nullptr);
 
 	const Point firstTilePosition = mTiles[0][0].GetComponent<Transform>()->position;
 	const Point lastTilePosition = mTiles[mTileMaxCount - 1][mTileMaxCount - 1].GetComponent<Transform>()->position;
 
-	transform->position.x = std::clamp(transform->position.x, firstTilePosition.x + offsetX.x, lastTilePosition.x - offsetX.xx);
-	transform->position.y = std::clamp(transform->position.y, lastTilePosition.y + offsetY.y, firstTilePosition.y - offsetY.yy);
+	transform->position.x = std::clamp(transform->position.x, firstTilePosition.x + rangeX.min, lastTilePosition.x - rangeX.max);
+	transform->position.y = std::clamp(transform->position.y, lastTilePosition.y + RangeY.min, firstTilePosition.y - RangeY.max);
 }
 
 Point MainScene::getScreenMousePosition() const
