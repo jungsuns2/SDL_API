@@ -10,43 +10,6 @@
 
 constexpr float PRIMARY_SIZE = 3.0f;
 
-// Core
-struct CollisionDetector final : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	CollisionDetector(const uint32_t layer) : Component(&_ID), Layer(layer) {}
-
-	const uint32_t Layer = 0;
-	std::bitset<64> CollisionLayerMask{};
-};
-
-struct BoxCollider final : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	BoxCollider() : Component(&_ID) {}
-
-	Point offset{};
-	Scale size{};
-};
-
-struct CircleCollider final : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	CircleCollider() : Component(&_ID) {}
-
-	Point offset{};
-	float radius{};
-};
-
-struct LineCollider final : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	LineCollider() : Component(&_ID) {}
-
-	Point offset{};
-	Scale scale{};
-};
-
 void MainScene::Initialize()
 {
 	initialize_Resource();
@@ -83,7 +46,7 @@ void MainScene::Initialize()
 		{
 			.stage = 1,
 			.isValue = true,
-			.durationTime = 2.0f,
+			.durationTime = 3.0f,
 		};
 		wave1.groups.reserve(3);
 		wave1.groups.push_back(mMonsterGroups[0]);
@@ -99,7 +62,7 @@ void MainScene::Initialize()
 		{
 			.stage = i + 1,
 			.isValue = false,
-			.durationTime = /*mWaves[0].durationTime + i * 5.0f*/ 4.0f,
+			.durationTime = mWaves[0].durationTime + i * 5.0f,
 		};
 	}
 
@@ -1135,13 +1098,19 @@ void MainScene::initialize_Entity()
 		Color color{};
 		mPlayer.AddComponent(color);
 
-		CollisionDetector collider(static_cast<uint32_t>(CollisionLayer::Monster));
-		collider.CollisionLayerMask.set(uint32_t(CollisionLayer::Monster));
+		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
+		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
 		mPlayer.AddComponent(collider);
 
 		BoxCollider boxCollider{};
-		boxCollider.size = { .width = float(mPlayerRunTextures[3].GetWidth()), .height = float(mPlayerRunTextures[3].GetHeight()) };
+		boxCollider.size = { .width = float(mPlayerRunTextures[3].GetWidth()), .height = float(mPlayerRunTextures[3].GetHeight())};
 		mPlayer.AddComponent(boxCollider);
+
+		DebugActive debugActive{};
+		mPlayer.AddComponent(debugActive);
+
+		DebugColor debugColor{};
+		mPlayer.AddComponent(debugColor);
 
 		GetEntityWorld()->AddEntity(&mPlayer);
 	}
@@ -1344,6 +1313,21 @@ void MainScene::input()
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_ESCAPE))
 	{
 		mIsUpdate = false;
+	}
+
+	if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
+	{
+		for (Entity* entity : GetEntityWorld()->GetAllEntites())
+		{
+			if (not entity->HasComponent<DebugActive>())
+			{
+				continue;
+			}
+
+			DebugActive* debugActive = entity->GetComponent<DebugActive>();
+			debugActive->isValue = !debugActive->isValue;
+		}
+			
 	}
 }
 
@@ -1573,13 +1557,18 @@ void MainScene::initializeSpawnMonsterGroup()
 			Color color{};
 			entity->AddComponent(color);
 
-			CollisionDetector collider(static_cast<uint32_t>(CollisionLayer::Monster));
-			collider.CollisionLayerMask.set(uint32_t(CollisionLayer::Monster));
+			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
+			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
 			entity->AddComponent(collider);
 
 			BoxCollider boxCollider{};
-			boxCollider.size = { .width = float(mBigWhiteSkelAttackTextures[3].GetWidth()), .height = float(mBigWhiteSkelAttackTextures[3].GetHeight()) };
 			entity->AddComponent(boxCollider);
+
+			DebugActive debugActive{};
+			entity->AddComponent(debugActive);
+
+			DebugColor debugColor{};
+			entity->AddComponent(debugColor);
 
 			GetEntityWorld()->AddEntity(entity);
 		}
@@ -1618,14 +1607,16 @@ void MainScene::initializeSpawnMonsterGroup()
 
 				Active* active = entity->GetComponent<Active>();
 				active->isValue = false;
-
+				
 				Hp* hp = entity->GetComponent<Hp>();
+				BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
 				switch (group.type)
 				{
 				case Monster::eType::BigWhite:
 					hp->max = 2;
 					monster->attackDistance = 90.0f;
 					monster->clips = mBigWhiteSkelClips.data();
+					boxCollider->size = { .width = float(mBigWhiteSkelAttackTextures[10].GetWidth()), .height = float(mBigWhiteSkelAttackTextures[10].GetHeight())};
 					break;
 
 				case Monster::eType::Archer:

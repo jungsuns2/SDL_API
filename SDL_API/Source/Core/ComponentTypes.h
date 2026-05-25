@@ -94,8 +94,8 @@ struct DebugColor final : public Component
 	DebugColor() : Component(&_ID) {}
 
 	Uint8 r = 0;
-	Uint8 g = 200;
-	Uint8 b = 0;
+	Uint8 g = 50;
+	Uint8 b = 100;
 	Uint8 a = 100;
 };
 
@@ -106,15 +106,6 @@ struct Direction final : public Component
 
 	Point value{};
 };
-
-//struct Collider final : public Component
-//{
-//	static constexpr uint32_t _ID = 0;
-//	Collider(const uint32_t layer) : Component(&_ID), Layer(layer) {}
-//
-//	const uint32_t Layer = 0;
-//	std::bitset<64> CollisionLayerMask{};
-//};
 
 struct Active final : public Component
 {
@@ -129,11 +120,55 @@ struct DebugActive final : public Component
 	static constexpr uint32_t _ID = 0;
 	DebugActive() : Component(&_ID) {}
 
-	bool value = false;
+	bool isValue = false;
 };
 
 struct UI : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	UI() : Component(&_ID) {}
+};
+
+struct CollisionDetector final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	CollisionDetector(const uint32_t layer) : Component(&_ID), Layer(layer) {}
+
+	const uint32_t Layer = 0;
+	std::bitset<64> CollisionLayerMask{};
+};
+
+struct BoxCollider final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BoxCollider() : Component(&_ID) {}
+
+	Point offset{};
+	Scale size{};
+};
+
+struct CircleCollider final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	CircleCollider() : Component(&_ID) {}
+
+	Point offset{};
+	float radius{};
+};
+
+struct LineCollider final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	LineCollider() : Component(&_ID) {}
+
+	Point offset{};
+	Scale scale{};
+};
+
+struct IsCollider final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	IsCollider() : Component(&_ID) {}
+
+	bool isValue = false;
 };

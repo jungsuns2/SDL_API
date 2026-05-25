@@ -7,7 +7,6 @@
 #include "Clip.h"
 #include "Collision.h"
 #include "Constant.h"
-#include "Texture.h"
 
 void Core::Initialize(Scene* scene)
 {
@@ -36,6 +35,8 @@ void Core::Initialize(Scene* scene)
 	mScene = scene;
 	mScene->_SetHelper(&mHelper);
 	mScene->Initialize();
+
+	mColliderTexture.Initialize(&mHelper, "Resource/WhileRect.png");
 }
 
 bool Core::Update(const float deltaTime)
@@ -54,7 +55,6 @@ bool Core::Update(const float deltaTime)
 	updateAnimator(entityWorld, deltaTime);
 	drawImages(entityWorld, cameraTransform);
 
-	colliderAnimatorRenderingSystem(entityWorld, cameraTransform);
 	colliderImageRenderingSystem(entityWorld, cameraTransform);
 
 	labelUIRenderingSystem(entityWorld, cameraTransform);
@@ -68,6 +68,8 @@ bool Core::Update(const float deltaTime)
 void Core::Finalize()
 {
 	mScene->Finalize();
+
+	mColliderTexture.Finalize();
 
 	IMG_Quit();
 
@@ -277,14 +279,17 @@ void Core::drawImages(const EntityWorld* entityWorld, const Transform* cameraTra
 		SDL_FRect rect{};
 		SDL_FPoint angleCenter{};
 
-		textureSystem(TextureSystemDesc
+		textureSystem
+		(
+			TextureSystemDesc
 			{
 				.textureScale = {.width = float(texture->GetWidth()), .height = float(texture->GetHeight()) },
 				.textureTransform = transform,
 				.cameraTransform = cameraTransform,
 				.rect = &rect,
 				.angleCenter = &angleCenter
-			});
+			}
+		);
 
 		Color color{};
 		if (entity->HasComponent<Color>())
@@ -298,54 +303,6 @@ void Core::drawImages(const EntityWorld* entityWorld, const Transform* cameraTra
 	}
 }
 
-void Core::colliderAnimatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
-{
-	//assert(entityWorld != nullptr);
-	//assert(cameraTransform != nullptr);
-
-	//for (const Entity* entity : entityWorld->GetAllEntites())
-	//{
-	//	if (not entity->HasComponent<Transform>()
-	//		or not entity->HasComponent<Animator>()
-	//		or not entity->HasComponent<Collider>()
-	//		or not entity->HasComponent<DebugActive>()
-	//		or not entity->HasComponent<DebugColor>()
-	//		or not entity->HasComponent<Color>())
-	//	{
-	//		continue;
-	//	}
-
-	//	DebugActive* active = entity->GetComponent<DebugActive>();
-	//	if (not active->value)
-	//	{
-	//		continue;
-	//	}
-
-	//	Animator* animator = entity->GetComponent<Animator>();
-	//	const Clip* clip = animator->clipState;
-	//	const std::vector<Clip::Frame>& frames = clip->GetAllFrames();
-	//	const Clip::Frame& frame = frames[0];
-
-	//	Transform* transform = entity->GetComponent<Transform>();
-	//	SDL_FRect rect{};
-
-	//	drawSystem
-	//	(
-	//		{
-	//			.textureScale = {.width = float(frame.texture->GetWidth()), .height = float(frame.texture->GetHeight()) },
-	//			.transform = transform,
-	//			.cameraTransform = cameraTransform,
-	//			.rect = &rect,
-	//		}
-	//	);
-
-	//	SDL_SetRenderDrawBlendMode(mRenderer, SDL_BLENDMODE_BLEND);
-	//	DebugColor* color = entity->GetComponent<DebugColor>();
-	//	SDL_SetRenderDrawColor(mRenderer, color->r, color->g, color->b, color->a);
-	//	SDL_RenderFillRectF(mRenderer, &rect);
-	//}
-}
-
 void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
 {
 	assert(entityWorld != nullptr);
@@ -355,40 +312,40 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld, Transfor
 	{
 		if (not entity->HasComponent<Transform>()
 			or not entity->HasComponent<Image>()
-			/*or not entity->HasComponent<Collider>()*/
 			or not entity->HasComponent<DebugActive>()
-			or not entity->HasComponent<DebugColor>()
-			or not entity->HasComponent<Color>())
+			or not entity->HasComponent<DebugColor>())
 		{
 			continue;
 		}
 
-		DebugActive* active = entity->GetComponent<DebugActive>();
-		if (not active->value)
+		if (const DebugActive* active = entity->GetComponent<DebugActive>();
+			not active->isValue)
 		{
 			continue;
 		}
 
-		Image* image = entity->GetComponent<Image>();
+		const Transform* transform = entity->GetComponent<Transform>();
+		const BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
 
-		Transform* transform = entity->GetComponent<Transform>();
 		SDL_FRect rect{};
-
-		drawSystem
+		SDL_FPoint angleCenter = { .x = 0.0f, .y = 0.0f };
+		
+		textureSystem
 		(
-			DrawSystemDesc
+			TextureSystemDesc
 			{
-				.textureScale = {.width = float(image->texture->GetWidth()), .height = float(image->texture->GetHeight()) },
-				.transform = transform,
+				.textureScale = {.width = boxCollider->size.width, .height = boxCollider->size.height },
+				.textureTransform = transform,
 				.cameraTransform = cameraTransform,
 				.rect = &rect,
+				.angleCenter = &angleCenter
 			}
-			);
+		);
 
-		SDL_SetRenderDrawBlendMode(mRenderer, SDL_BLENDMODE_BLEND);
-		DebugColor* color = entity->GetComponent<DebugColor>();
-		SDL_SetRenderDrawColor(mRenderer, color->r, color->g, color->b, color->a);
-		SDL_RenderFillRectF(mRenderer, &rect);
+		DebugColor* debugColor = entity->GetComponent<DebugColor>();
+		SDL_SetTextureColorMod(mColliderTexture.GetTexture(), debugColor->r, debugColor->g, debugColor->b);
+		SDL_SetTextureAlphaMod(mColliderTexture.GetTexture(), debugColor->a);
+		SDL_RenderCopyExF(mRenderer, mColliderTexture.GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
 	}
 }
 

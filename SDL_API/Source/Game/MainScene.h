@@ -58,10 +58,13 @@ class EntityWorld;
 
 class MainScene final : public Scene
 {
+public:
 	enum class CollisionLayer
 	{
+		None,
 		Player,
 		Monster,
+		Arrow,
 		Wall,
 		Count
 	};

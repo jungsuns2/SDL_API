@@ -5,6 +5,8 @@
 #include "Core/Constant.h"
 #include "Core/Input.h"
 
+#include "MainScene.h"
+
 void StudyScene::Initialize()
 {
 	// Resoruce
@@ -94,7 +96,7 @@ void StudyScene::Initialize()
 		mArcherClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
-		for (Entity& entity : mArchers)
+		for (Entity& entity : mMonsters)
 		{
 			Monster monster{};
 			monster.state = Monster::eState::Attack;
@@ -109,6 +111,9 @@ void StudyScene::Initialize()
 			active.isValue = true;
 			entity.AddComponent(active);
 
+			Image image{};
+			entity.AddComponent(image);
+
 			Animator anim{};
 			anim.clipState = &mArcherClips[0];
 			entity.AddComponent(anim);
@@ -116,14 +121,29 @@ void StudyScene::Initialize()
 			Color color{};
 			entity.AddComponent(color);
 
+			//CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
+			//collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
+			//entity.AddComponent(collider);
+
+			BoxCollider boxCollider{};
+			boxCollider.size = { .width = float(mAliceTexture.GetWidth()), .height = float(mAliceTexture.GetHeight()) };
+			entity.AddComponent(boxCollider);
+
+			DebugActive debugActive{};
+			debugActive.isValue = true;
+			entity.AddComponent(debugActive);
+
+			DebugColor debugColor{};
+			entity.AddComponent(debugColor);
+
 			GetEntityWorld()->AddEntity(&entity);
 		}
 	}
 
-
 	// Player
 	{
 		Transform transform{};
+		transform.position = { .x = -200.0f, .y = 0.0f };
 		transform.scale = { .width = 4.0f, .height = 4.0f };
 		mPlayer.AddComponent(transform);
 
@@ -137,6 +157,21 @@ void StudyScene::Initialize()
 
 		Color color{};
 		mPlayer.AddComponent(color);
+
+		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Player));
+		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
+		mPlayer.AddComponent(collider);
+
+		BoxCollider boxCollider{};
+		boxCollider.size = { .width = float(mAliceTexture.GetWidth()), .height = float(mAliceTexture.GetHeight()) };
+		mPlayer.AddComponent(boxCollider);
+
+		DebugActive debugActive{};
+		debugActive.isValue = true;
+		mPlayer.AddComponent(debugActive);
+
+		DebugColor debugColor{};
+		mPlayer.AddComponent(debugColor);
 
 		GetEntityWorld()->AddEntity(&mPlayer);
 	}
@@ -161,8 +196,19 @@ void StudyScene::Initialize()
 			image.texture = &mArrowTexture;
 			entity.AddComponent(image);
 
-			Color color{};
-			entity.AddComponent(color);
+			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Arrow));
+			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
+			entity.AddComponent(collider);
+
+			BoxCollider boxCollider{};
+			boxCollider.size = { .width = float(mArrowTexture.GetWidth()), .height = float(mArrowTexture.GetHeight()) };
+			entity.AddComponent(boxCollider);
+
+			//DebugActive debugActive{};
+			//entity.AddComponent(debugActive);
+
+			DebugColor debugColor{};
+			entity.AddComponent(debugColor);
 
 			GetEntityWorld()->AddEntity(&entity);
 		}
@@ -171,7 +217,53 @@ void StudyScene::Initialize()
 }
 
 bool StudyScene::Update(const float deltaTime)
-{
+{	
+	// Core
+	{
+		for (const Entity* entity0 : GetEntityWorld()->GetAllEntites())
+		{
+			if (not entity0->HasComponent<Transform>()
+				or not entity0->HasComponent<CollisionDetector>())
+			{
+				continue;
+			}
+
+			CollisionDetector* collisionDetector0 = entity0->GetComponent<CollisionDetector>();
+			if (collisionDetector0->CollisionLayerMask.none())
+			{
+				continue;
+			}
+
+			for (const Entity* entity1 : GetEntityWorld()->GetAllEntites())
+			{
+				if (not entity1->HasComponent<Transform>()
+					or not entity1->HasComponent<CollisionDetector>())
+				{
+					continue;
+				}
+
+				if (entity0 == entity1)
+				{
+					continue;
+				}
+
+				CollisionDetector* collisionDetector1 = entity1->GetComponent<CollisionDetector>();
+				if (not collisionDetector0->CollisionLayerMask[collisionDetector1->Layer])
+				{
+					continue;
+				}
+
+				{
+					checkCollisionBoxBox(*entity0, *entity1)
+						/*or checkCollisionBoxCircle(*entity0, *entity1)
+						or checkCollisionBoxLine(*entity0, *entity1)
+						or checkCollisionCircleCircle(*entity0, *entity1)
+						or checkCollisionCircleLine(*entity0, *entity1)*/;
+				}
+			}
+		}
+	}
+
 	// Camera
 	{
 		//Transform* transform = mMainCamera.GetComponent<Transform>();
@@ -204,7 +296,7 @@ bool StudyScene::Update(const float deltaTime)
 		static Point startPosition[3];
 		static bool isFire;
 
-		Animator* anim = mArchers[0].GetComponent<Animator>();
+		Animator* anim = mMonsters[0].GetComponent<Animator>();
 		if (anim->clipState == &mArcherClips[uint32_t(Monster::eState::Attack)]
 			and anim->frameIndex == 7)
 		{
@@ -220,7 +312,7 @@ bool StudyScene::Update(const float deltaTime)
 						const float centerOffsetX = centerOffset.x * (mArrowTexture.GetWidth() - 1.0f);
 						constexpr float monsterOffsetX = 80.0f;
 
-						Transform* monsterTransform = mArchers[0].GetComponent<Transform>();
+						Transform* monsterTransform = mMonsters[0].GetComponent<Transform>();
 						startPosition[i].x = monsterTransform->position.x 
 							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterOffsetX;
 						startPosition[i].y = monsterTransform->position.y;
@@ -242,6 +334,9 @@ bool StudyScene::Update(const float deltaTime)
 
 						active->isValue = true;
 						isFire = true;
+
+						//DebugActive* debugActive = entity.GetComponent<DebugActive>();
+						//debugActive->isValue = true;
 						break;
 					}
 				}
@@ -268,7 +363,7 @@ bool StudyScene::Update(const float deltaTime)
 				anim->elapsedTime = 0.0f;
 
 				fireTimer[i] += deltaTime;
-				if (fireTimer[i] >= 0.7f)
+				if (fireTimer[i] >= 0.3f)
 				{
 					isFire = false;
 					anim->frameIndex = 0;
@@ -281,9 +376,14 @@ bool StudyScene::Update(const float deltaTime)
 			{
 				Active* active = entity.GetComponent<Active>();
 				active->isValue = false;
+
+				//DebugActive* debugActive = entity.GetComponent<DebugActive>();
+				//debugActive->isValue = false;
 			}
 		}
 	}
+
+	Active* active = mMonsters[0].GetComponent<Active>();
 
 	// Arrow Move
 	{
@@ -303,7 +403,46 @@ bool StudyScene::Update(const float deltaTime)
 		}
 	}
 
-	for (Entity& entity : mArchers)
+	// 충돌 업데이트한다.
+	{
+		for (const auto& monster : mMonsters)
+		{
+			if (isCollisionEnter(mPlayer, monster))
+			{
+				//if (monster.GetComponent<Monster>()->state == Monster::eState::Run)
+				{
+					printf("몬 - 플 충돌\n");
+				}
+			}
+			else if (isCollisionStay(mPlayer, monster))
+			{
+				//if (monster.GetComponent<Monster>()->state == Monster::eState::Attack)
+				{
+				}
+			}
+		}
+
+		for (const auto& arrow : mArrows)
+		{
+			if (not arrow.GetComponent<Active>()->isValue)
+			{
+				continue;
+			}
+
+			if (isCollisionEnter(mPlayer, arrow))
+			{
+				printf("플 - 화 충돌\n");
+			}
+			else if (isCollisionStay(mPlayer, arrow))
+			{
+			}
+		}
+
+		mPreviousCollidedEntityPairs = mCollidedEntityPairs;
+		mCollidedEntityPairs.clear();
+	}
+
+	for (Entity& entity : mMonsters)
 	{
 		Animator* animator = entity.GetComponent<Animator>();
 		Monster* monster = entity.GetComponent<Monster>();
@@ -379,4 +518,107 @@ Point StudyScene::getScreenMousePosition() const
 	screenPosition = screenPosition + mMainCamera.GetComponent<Transform>()->position;
 
 	return screenPosition;
+}
+
+bool StudyScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entity1)
+{
+	if (not entity0.HasComponent<BoxCollider>()
+		or not entity1.HasComponent<BoxCollider>())
+	{
+		return false;
+	}
+
+	const Transform* transform0 = entity0.GetComponent<Transform>();
+	const BoxCollider* boxCollider0 = entity0.GetComponent<BoxCollider>();
+	const Rect rect0 = convertBoxColliderToWorldBox(*transform0, *boxCollider0);
+
+	const Transform* transform1 = entity1.GetComponent<Transform>();
+	const BoxCollider* boxCollider1 = entity1.GetComponent<BoxCollider>();
+	const Rect rect1 = convertBoxColliderToWorldBox(*transform1, *boxCollider1);
+
+	if (Collision::IsCollidedSqureWithSqure(rect0, rect1))
+	{
+		registerCollidedEntityPairs(entity0, entity1);
+		return true;
+	}
+
+	return false;
+}
+
+Rect StudyScene::convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const
+{
+	const Point position = transform.position + boxCollider.offset;
+	const Scale boxHalfSize = transform.scale * boxCollider.size * 0.5f;
+
+	const Rect result
+	{
+		.left = position.x - boxHalfSize.width,
+		.top = position.y + boxHalfSize.height,
+		.right = position.x + boxHalfSize.width,
+		.bottom = position.y - boxHalfSize.height,
+	};
+
+	return result;
+}
+
+void StudyScene::registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1)
+{
+	std::pair<const Entity*, const Entity*> colliderEntityPair = getCollidedEntityPair(entity0, entity1);
+
+	if (const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), colliderEntityPair);
+		foundCollidedEntityPair == mCollidedEntityPairs.end())
+	{
+		mCollidedEntityPairs.push_back(colliderEntityPair);
+	}
+}
+
+std::pair<const Entity*, const Entity*> StudyScene::getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair{};
+	if (&entity0 < &entity1)
+	{
+		collidedEntityPair = { &entity0, &entity1 };
+	}
+	else
+	{
+		collidedEntityPair = { &entity1, &entity0 };
+	}
+
+	return collidedEntityPair;
+}
+
+bool StudyScene::isCollisionEnter(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+
+	if (const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
+		foundCollidedEntityPair != mCollidedEntityPairs.end())
+	{
+		const auto& foundPreviousCollidedEntityPair = std::find(mPreviousCollidedEntityPairs.begin(), mPreviousCollidedEntityPairs.end(), collidedEntityPair);
+		return foundPreviousCollidedEntityPair == mPreviousCollidedEntityPairs.end();
+	}
+
+	return false;
+}
+
+bool StudyScene::isCollisionStay(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+
+	const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
+	return foundCollidedEntityPair != mCollidedEntityPairs.end();
+}
+
+bool StudyScene::isCollisionExit(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+
+	if (const auto& foundPreviousCollidedEntityPair = std::find(mPreviousCollidedEntityPairs.begin(), mPreviousCollidedEntityPairs.end(), collidedEntityPair);
+		foundPreviousCollidedEntityPair != mPreviousCollidedEntityPairs.end())
+	{
+		const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
+		return foundCollidedEntityPair == mCollidedEntityPairs.end();
+	}
+
+	return false;
 }

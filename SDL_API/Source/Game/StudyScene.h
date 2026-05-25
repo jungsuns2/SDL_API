@@ -9,6 +9,7 @@
 
 #include "GameComponentTypes.h"
 
+
 class StudyScene final : public Scene
 {
 public:
@@ -23,7 +24,7 @@ public:
 
 private:
 	Point getScreenMousePosition() const;
-	
+
 private:
 	Texture mspwanTexture{};
 	Texture mArrowTexture{};
@@ -37,6 +38,22 @@ private:
 
 	Entity mMainCamera{};
 	Entity mPlayer{};
-	std::array<Entity, 1> mArchers{};
+	std::array<Entity, 1> mMonsters{};
 	std::array<Entity, 3> mArrows{};
+
+	// 충돌 관련
+private:
+	bool isCollisionEnter(const Entity& entity0, const Entity& entity1) const;
+	bool isCollisionStay(const Entity& entity0, const Entity& entity1) const;
+	bool isCollisionExit(const Entity& entity0, const Entity& entity1) const;
+
+	std::pair<const Entity*, const Entity*> getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const;
+	void registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1);
+
+	Rect convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const;
+
+	bool checkCollisionBoxBox(const Entity& entity0, const Entity& entity1);
+
+	std::vector<std::pair<const Entity*, const Entity*>> mCollidedEntityPairs{};
+	std::vector<std::pair<const Entity*, const Entity*>> mPreviousCollidedEntityPairs{};
 };

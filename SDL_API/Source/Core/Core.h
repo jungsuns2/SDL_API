@@ -1,7 +1,9 @@
 #pragma once
 #include "ComponentTypes.h"
+
 #include "Helper.h"
 #include "Scene.h"
+#include "Texture.h"
 
 struct TextureSystemDesc
 {
@@ -41,7 +43,6 @@ private:
 	void textureSystem(const TextureSystemDesc& desc);
 	void drawSystem(const DrawSystemDesc& desc);
 	void drawImages(const EntityWorld* entityWorld, const Transform* cameraTransform);
-	void colliderAnimatorRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
 	void colliderImageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
 	void labelRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
 	void labelUIRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform);
@@ -54,4 +55,6 @@ private:
 
 	Helper mHelper{};
 	Scene* mScene = nullptr;
+
+	Texture mColliderTexture{};
 };
