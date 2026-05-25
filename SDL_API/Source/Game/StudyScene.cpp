@@ -449,10 +449,6 @@ bool StudyScene::Update(const float deltaTime)
 
 		switch (monster->state)
 		{
-		case Monster::eState::None:
-			__noop;
-			break;
-
 		case Monster::eState::Spawn:
 			animator->SetClip(&mArcherClips[uint32_t(Monster::eState::Spawn)]);
 			break;

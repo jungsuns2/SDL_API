@@ -26,32 +26,25 @@ struct MonsterGroup
 {
 	Monster::eType type;
 	uint32_t count;
-	float spawnIntervalTime;
 	RangeX rangeX;
 	RangeY rangeY;
-
-	bool operator==(const MonsterGroup& other) const 
-	{
-		return type == other.type 
-			and count == other.count 
-			and rangeX == other.rangeX  
-			and rangeY == other.rangeY;
-	}
 };
 
 struct Wave
 {
-	uint32_t stage;
-	bool isValue;
-	float durationTime;
-	std::vector<MonsterGroup> groups;
-	uint32_t monsterCount;
+	float durationTime; // const
+	std::vector<const MonsterGroup*> groups; // const
+	float monsterGroupSpawnIntervalTime; // const
 };
 
-struct Stage
+struct GameWaveState
 {
-	float durationTimer;
-	float coolTimer;
+	uint32_t index;
+	uint32_t groupIndex;
+
+	float durationTimer; // 현재 웨이브에서 흐른 시간.
+	float remainingMonsterGroupSpawnTime;
+	float labelShowElapsedTime;
 };
 
 class EntityWorld;
@@ -89,11 +82,11 @@ private:
 	void playerMove(const float deltaTime);
 	void playerSetClip();
 
-	void setMonsterGroup(const MonsterGroup& group);
-	void initializeSpawnMonsterGroup();
-	void spawnMonsterGroup(const uint32_t count);
+	void initializeMonsters();
+	void spawnMonsterGroup(const MonsterGroup& group);
+	void spawnMonster(Entity* entity, const Monster::eType type, const float x, const float y);
 	void updateMonsterStates(const float deltaTime);
-	void monsterDeadParticle(Entity* entities, uint32_t size, const float deadTime, const float speed, const float deltaTime);
+	void monsterDeadParticle(const float deltaTime);
 	void monsterMove(const float maxSpeed, const float deltaTime);
 	void monsterSetClip();
 
@@ -111,7 +104,7 @@ private:
 
 	std::vector<MonsterGroup> mMonsterGroups{};
 	std::array<Wave, 20> mWaves{};
-	Stage mStage{};
+	GameWaveState mGameWaveState{};
 
 	Font mUIFont{};
 	Font mHpFont{};
@@ -130,7 +123,7 @@ private:
 	Entity** mTiles = nullptr;
 	std::array<Entity, 6> mDeadParticle{};
 
-	std::array<Entity*, 100> mMonsters{};
+	std::array<Entity, 20> mMonsters{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBigWhiteSkelClips{};

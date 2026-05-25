@@ -32,7 +32,6 @@ struct Monster : public Component
 
 	enum class eState
 	{
-		None,
 		Spawn,
 		Idle,
 		Run,
