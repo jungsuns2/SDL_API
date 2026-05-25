@@ -9,6 +9,7 @@
 #include "Core/Texture.h"
 
 #include "GameComponentTypes.h"
+#include "MonsterGroupDescs.h"
 
 struct BoxCollider;
 struct CircleCollider;
@@ -22,18 +23,11 @@ struct SetWeaponDesc
 	const SDL_RendererFlip flipY;
 };
 
-struct MonsterGroup
-{
-	Monster::eType type;
-	uint32_t count;
-	Range rangeX;
-	Range rangeY;
-};
-
 struct Wave
 {
 	float durationTime; // const
-	std::vector<const MonsterGroup*> groups; // const
+	std::array<uint32_t, 20> monsterGroupIndicies;// const
+	uint32_t monsterGroupCount;
 	float monsterGroupSpawnIntervalTime; // const
 };
 
@@ -102,7 +96,6 @@ private:
 	uint32_t mTileMaxCount{};
 	float mTilePositionOffset{};
 
-	std::vector<MonsterGroup> mMonsterGroups{};
 	std::array<Wave, 20> mWaves{};
 	GameWaveState mGameWaveState{};
 

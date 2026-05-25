@@ -16,46 +16,16 @@ void MainScene::Initialize()
 
 	initialize_Entity();
 
-	// Monster Groups
-	{
-		MonsterGroup desc =
-		{
-			.type = Monster::eType::BigWhite,
-			.count = 2,
-			.rangeX = {.min = -150.0f, .max = 150.0f },
-			.rangeY = {.min = -150.0f, .max = 150.0f }
-		};
-		mMonsterGroups.push_back(desc);
-
-		MonsterGroup desc1 =
-		{
-			.type = Monster::eType::Archer,
-			.count = 1,
-			.rangeX = {.min = -300.0f, .max = 300.0f },
-			.rangeY = {.min = -300.0f, .max = 300.0f }
-		};
-		mMonsterGroups.push_back(desc1);
-	}
-
 	// 1단계만 모두 초기화한다.
 	{
 		Wave& wave1 = mWaves[0];
 		wave1 =
 		{
 			.durationTime = 10.0f,
+			.monsterGroupIndicies = {0, 3, 0, 3, 0},
+			.monsterGroupCount = 5,
 			.monsterGroupSpawnIntervalTime = 3.0f
 		};
-		wave1.groups.reserve(10);
-		wave1.groups.push_back(&mMonsterGroups[0]);
-		wave1.groups.push_back(&mMonsterGroups[1]);
-		wave1.groups.push_back(&mMonsterGroups[0]);
-		wave1.groups.push_back(&mMonsterGroups[1]);
-		wave1.groups.push_back(&mMonsterGroups[0]);
-		wave1.groups.push_back(&mMonsterGroups[1]);
-		wave1.groups.push_back(&mMonsterGroups[0]);
-		wave1.groups.push_back(&mMonsterGroups[1]);
-		wave1.groups.push_back(&mMonsterGroups[0]);
-		wave1.groups.push_back(&mMonsterGroups[1]);
 	}
 
 	// 0~19 단계의 기본 초기화한다.
@@ -67,15 +37,6 @@ void MainScene::Initialize()
 			.durationTime = mWaves[0].durationTime + i * 5.0f,
 			.monsterGroupSpawnIntervalTime = 4.0f
 		};
-
-		mWaves[i].groups.reserve(7);
-		mWaves[i].groups.push_back(&mMonsterGroups[0]);
-		mWaves[i].groups.push_back(&mMonsterGroups[0]);
-		mWaves[i].groups.push_back(&mMonsterGroups[0]);
-		mWaves[i].groups.push_back(&mMonsterGroups[0]);
-		mWaves[i].groups.push_back(&mMonsterGroups[0]);
-		mWaves[i].groups.push_back(&mMonsterGroups[0]);
-		mWaves[i].groups.push_back(&mMonsterGroups[0]);
 	}
 
 	// 현재 웨이브 상태를 초기화한다.
@@ -172,15 +133,16 @@ bool MainScene::Update(const float deltaTime)
 
 		{
 			const Wave& wave = mWaves[mGameWaveState.index];
-			const MonsterGroup* monsterGroup = wave.groups[mGameWaveState.groupIndex];
+			const uint32_t monsterGroupIndex = wave.monsterGroupIndicies[mGameWaveState.groupIndex];
+			const MonsterGroup& monsterGroup = MONSTER_GROUPS[monsterGroupIndex];
 
 			mGameWaveState.remainingMonsterGroupSpawnTime -= deltaTime;
 			if (mGameWaveState.remainingMonsterGroupSpawnTime <= 0.0f)
 			{
-				spawnMonsterGroup(*monsterGroup);
+				spawnMonsterGroup(monsterGroup);
 
 				++mGameWaveState.groupIndex;
-				assert(mGameWaveState.groupIndex < wave.groups.size() && "더 이상 그룹이 없습니다.");
+				assert(mGameWaveState.groupIndex < MONSTER_GROUPS.size() && "더 이상 그룹이 없습니다.");
 
 				mGameWaveState.remainingMonsterGroupSpawnTime = wave.monsterGroupSpawnIntervalTime;
 			}
@@ -1535,10 +1497,17 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 {
 	uint32_t monsterIndex = 0;
 
+	// TODO: Rect 멤버변수로 저장해서 처리하자.
+	const Point leftTopTilePosition = mTiles[0][0].GetComponent<Transform>()->position;
+	const Point rightBottomTilePosition = mTiles[mTileMaxCount - 1][mTileMaxCount - 1].GetComponent<Transform>()->position;
+
+	float groupX = getRandom(leftTopTilePosition.x + 30.0f, rightBottomTilePosition.x - 30.0f);
+	float groupY = getRandom(rightBottomTilePosition.y + 50.0f, leftTopTilePosition.y - 50.0f);
+
 	for (uint32_t i = 0; i < group.count; ++i)
 	{
-		const float x = getRandom(group.rangeX.min, group.rangeX.max);
-		const float y = getRandom(group.rangeY.min, group.rangeY.max);
+		const float xInGroup = getRandom(group.rangeX.min, group.rangeX.max);
+		const float yInGroup = getRandom(group.rangeY.min, group.rangeY.max);
 
 		for (__noop; monsterIndex < mMonsters.size(); ++monsterIndex)
 		{
@@ -1548,7 +1517,10 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 				continue;
 			}
 
-			spawnMonster(&monster, group.type, x, y);
+			const float monsterX = groupX + xInGroup;
+			const float monsterY = groupY + yInGroup;
+			spawnMonster(&monster, group.type, monsterX, monsterY);
+
 			break;
 		}
 

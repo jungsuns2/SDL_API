@@ -34,6 +34,7 @@
     <ClCompile Include="Source\Core\Texture.cpp" />
     <ClCompile Include="Source\Game\GameComponentTypes.cpp" />
     <ClCompile Include="Source\Game\MainScene.cpp" />
+    <ClCompile Include="Source\Game\MonsterGroupDescs.cpp" />
     <ClCompile Include="Source\Game\StudyScene.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\pch.cpp">
@@ -59,6 +60,7 @@
     <ClInclude Include="Source\Core\Texture.h" />
     <ClInclude Include="Source\Game\GameComponentTypes.h" />
     <ClInclude Include="Source\Game\MainScene.h" />
+    <ClInclude Include="Source\Game\MonsterGroupDescs.h" />
     <ClInclude Include="Source\Game\StudyScene.h" />
     <ClInclude Include="Source\pch.h" />
   </ItemGroup>
