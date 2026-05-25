@@ -1529,60 +1529,6 @@ void MainScene::initializeMonsters()
 
 		GetEntityWorld()->AddEntity(&entity);
 	}
-
-	//for (const Wave& wave : mWaves)
-	//{
-	//	if (not wave.isValue)
-	//	{
-	//		continue;
-	//	}
-	//	
-	//	const MonsterGroup& group = wave.groups[wave.stage];
-
-	//	for (uint32_t i = 0; i < MOUNSTER_COUNT; ++i)
-	//	{
-	//		Entity* entity = &mMonsters[i];
-
-	//		Monster* monster = entity->GetComponent<Monster>();
-	//		monster->type = group.type;
-	//		monster->state = Monster::eState::None;
-
-	//		Transform* monsterTransform = entity->GetComponent<Transform>();
-	//		monsterTransform->position =
-	//		{
-	//			.x = getRandom(group.rangeX.x, group.rangeX.xx),
-	//			.y = getRandom(group.rangeY.y, group.rangeY.yy)
-	//		};
-	//		monsterTransform->scale = { .width = SIZE, .height = SIZE };
-
-	//		Active* active = entity->GetComponent<Active>();
-	//		active->isValue = false;
-
-	//		Hp* hp = entity->GetComponent<Hp>();
-	//		BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
-	//		switch (group.type)
-	//		{
-	//		case Monster::eType::BigWhite:
-	//			hp->max = 2;
-	//			monster->attackDistance = 90.0f;
-	//			monster->clips = mBigWhiteSkelClips.data();
-	//			boxCollider->size = { .width = float(mBigWhiteSkelAttackTextures[10].GetWidth()), .height = float(mBigWhiteSkelAttackTextures[10].GetHeight()) };
-	//			break;
-
-	//		case Monster::eType::Archer:
-	//			hp->max = 3;
-	//			monster->attackDistance = 160.0f;
-	//			monster->clips = mArcherClips.data();
-	//			break;
-
-	//		default:
-	//			break;
-	//		}
-
-	//		Animator* anim = entity->GetComponent<Animator>();
-	//		anim->clipState = &monster->clips[uint32_t(Monster::eState::None)];	
-	//	}
-	//}
 }
 
 void MainScene::spawnMonsterGroup(const MonsterGroup& group)
