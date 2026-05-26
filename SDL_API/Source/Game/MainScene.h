@@ -10,6 +10,7 @@
 
 #include "GameComponentTypes.h"
 #include "MonsterGroupDescs.h"
+#include "WaveDesc.h"
 
 struct BoxCollider;
 struct CircleCollider;
@@ -23,20 +24,12 @@ struct SetWeaponDesc
 	const SDL_RendererFlip flipY;
 };
 
-struct Wave
-{
-	float durationTime; // const
-	std::array<uint32_t, 20> monsterGroupIndicies;// const
-	uint32_t monsterGroupCount;
-	float monsterGroupSpawnIntervalTime; // const
-};
-
 struct GameWaveState
 {
 	uint32_t index;
 	uint32_t groupIndex;
 
-	float durationTimer; // 현재 웨이브에서 흐른 시간.
+	float waveTimer; // 현재 웨이브에서 흐른 시간.
 	float remainingMonsterGroupSpawnTime;
 	float labelShowElapsedTime;
 };
@@ -96,7 +89,6 @@ private:
 	uint32_t mTileMaxCount{};
 	float mTilePositionOffset{};
 
-	std::array<Wave, 20> mWaves{};
 	GameWaveState mGameWaveState{};
 
 	Font mUIFont{};

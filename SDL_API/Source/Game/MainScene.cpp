@@ -16,33 +16,8 @@ void MainScene::Initialize()
 
 	initialize_Entity();
 
-	// 1단계만 모두 초기화한다.
-	{
-		Wave& wave1 = mWaves[0];
-		wave1 =
-		{
-			.durationTime = 10.0f,
-			.monsterGroupIndicies = {0, 3, 0, 3, 0},
-			.monsterGroupCount = 5,
-			.monsterGroupSpawnIntervalTime = 3.0f
-		};
-	}
-
-	// 0~19 단계의 기본 초기화한다.
-	for (uint32_t i = 1; i < mWaves.size(); ++i)
-	{
-		Wave& wave = mWaves[i];
-		wave =
-		{
-			.durationTime = mWaves[0].durationTime + i * 5.0f,
-			.monsterGroupSpawnIntervalTime = 4.0f
-		};
-	}
-
 	// 현재 웨이브 상태를 초기화한다.
-	{
-		mGameWaveState.remainingMonsterGroupSpawnTime = mWaves[mGameWaveState.index].monsterGroupSpawnIntervalTime;
-	}
+	mGameWaveState.remainingMonsterGroupSpawnTime = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
 
 	initializeMonsters();
 }
@@ -100,17 +75,17 @@ bool MainScene::Update(const float deltaTime)
 	// Wave를 업데이트한다.
 	{
 		// 현재 웨이브 상태를 업데이트한다.
-		mGameWaveState.durationTimer += deltaTime;
-		if (mGameWaveState.durationTimer >= mWaves[mGameWaveState.index].durationTime)
+		mGameWaveState.waveTimer += deltaTime;
+		if (mGameWaveState.waveTimer >= WAVES[mGameWaveState.index].elapsedTime)
 		{
-			if (++mGameWaveState.index >= mWaves.size())
+			if (++mGameWaveState.index >= WAVES.size())
 			{
 				assert(false && "구현 예정.");
 			}
 
-			mGameWaveState.durationTimer = 0.0f;
+			mGameWaveState.waveTimer = 0.0f;
 			mGameWaveState.groupIndex = 0;
-			mGameWaveState.remainingMonsterGroupSpawnTime = mWaves[mGameWaveState.index].monsterGroupSpawnIntervalTime;
+			mGameWaveState.remainingMonsterGroupSpawnTime = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
 			mGameWaveState.labelShowElapsedTime = 0.0f;
 
 			// 다음 웨이브를 위해 모든 몬스터를 비활성화한다.
@@ -132,8 +107,8 @@ bool MainScene::Update(const float deltaTime)
 		}
 
 		{
-			const Wave& wave = mWaves[mGameWaveState.index];
-			const uint32_t monsterGroupIndex = wave.monsterGroupIndicies[mGameWaveState.groupIndex];
+			const WaveDesc& waveDesc = WAVES[mGameWaveState.index];
+			const uint32_t monsterGroupIndex = waveDesc.monsterGroupIndicies[mGameWaveState.groupIndex];
 			const MonsterGroup& monsterGroup = MONSTER_GROUPS[monsterGroupIndex];
 
 			mGameWaveState.remainingMonsterGroupSpawnTime -= deltaTime;
@@ -144,7 +119,7 @@ bool MainScene::Update(const float deltaTime)
 				++mGameWaveState.groupIndex;
 				assert(mGameWaveState.groupIndex < MONSTER_GROUPS.size() && "더 이상 그룹이 없습니다.");
 
-				mGameWaveState.remainingMonsterGroupSpawnTime = wave.monsterGroupSpawnIntervalTime;
+				mGameWaveState.remainingMonsterGroupSpawnTime = waveDesc.monsterGroupSpawnIntervalTime;
 			}
 		}
 
@@ -163,8 +138,8 @@ bool MainScene::Update(const float deltaTime)
 		// Upeate Wave Timer Label
 		{
 			Label* label = mWaveTimerLebel.GetComponent<Label>();
-			const uint32_t seconds = uint32_t(mGameWaveState.durationTimer) % 60;
-			const uint32_t minutes = uint32_t(mGameWaveState.durationTimer) / 60;
+			const uint32_t seconds = uint32_t(mGameWaveState.waveTimer) % 60;
+			const uint32_t minutes = uint32_t(mGameWaveState.waveTimer) / 60;
 
 			const std::string fseconds = (seconds < 10) ? "0" + std::to_string(seconds) : std::to_string(seconds);
 			const std::string fMinutes = (minutes < 10) ? "0" + std::to_string(minutes) : std::to_string(minutes);
