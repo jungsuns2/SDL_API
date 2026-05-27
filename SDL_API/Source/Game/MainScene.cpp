@@ -349,7 +349,7 @@ bool MainScene::Update(const float deltaTime)
 		constexpr float SPEED = 35.0f;
 		monsterMove(SPEED, deltaTime);
 
-		monsterHpLabelMove(10.0f, 10.0f, 55.0f);
+		monsterHpBarMove(10.0f, 10.0f, 55.0f);
 	}
 
 	// Archer 몬스터의 화살을 생성한다.
@@ -357,7 +357,7 @@ bool MainScene::Update(const float deltaTime)
 		for (const Entity& monsterEntity : mMonsters)
 		{
 			Monster* monster = monsterEntity.GetComponent<Monster>();
-			if (monster->type != Monster::eType::Archer)
+			if (monster->type != eMonsterType::Archer)
 			{
 				continue;
 			}
@@ -1655,7 +1655,7 @@ void MainScene::initializeMonsters()
 		GetEntityWorld()->AddEntity(&entity);
 	}
 
-	for (Entity& entity : mMonsterHpLabels)
+	for (Entity& entity : mMonsterHpBar)
 	{
 		Transform transform{};
 		transform.scale.height = 0.2f;
@@ -1707,7 +1707,7 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 	}
 }
 
-void MainScene::spawnMonster(Entity* entity, const Monster::eType type, const float x, const float y)
+void MainScene::spawnMonster(Entity* entity, const eMonsterType type, const float x, const float y)
 {
 	assert(entity != nullptr);
 
@@ -1732,14 +1732,14 @@ void MainScene::spawnMonster(Entity* entity, const Monster::eType type, const fl
 
 	switch (monster->type)
 	{
-	case Monster::eType::BigWhite:
+	case eMonsterType::BigWhite:
 		hp->max = 2;
 		monster->attackDistance = 90.0f;
 		monster->clips = mBigWhiteSkelClips.data();
 		boxCollider->size = { .width = float(mBigWhiteSkelAttackTextures[10].GetWidth()), .height = float(mBigWhiteSkelAttackTextures[10].GetHeight()) };
 		break;
 
-	case Monster::eType::Archer:
+	case eMonsterType::Archer:
 		hp->max = 3;
 		monster->attackDistance = 300.0f;
 		monster->clips = mArcherClips.data();
@@ -1757,7 +1757,7 @@ void MainScene::spawnMonster(Entity* entity, const Monster::eType type, const fl
 	hp->value = hp->max;
 	active->isValue = true;
 
-	for (Entity& hpLabel : mMonsterHpLabels)
+	for (Entity& hpBar : mMonsterHpBar)
 	{
 		const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
 
@@ -1898,7 +1898,7 @@ void MainScene::monsterMove(const float maxSpeed, const float deltaTime)
 	for (Entity& entity : mMonsters)
 	{
 		Monster* monster = entity.GetComponent<Monster>();
-		if (monster->type == Monster::eType::None)
+		if (monster->type == eMonsterType::None)
 		{
 			continue;
 		}
@@ -1932,7 +1932,7 @@ void MainScene::monsterMove(const float maxSpeed, const float deltaTime)
 	}
 }
 
-void MainScene::monsterHpLabelMove(const float leftOffsetX, const float rightOffsetX, const float offsetY)
+void MainScene::monsterHpBarMove(const float leftOffsetX, const float rightOffsetX, const float offsetY)
 {
 	for (uint32_t i = 0; i < mMonsters.size(); ++i)
 	{
@@ -1950,17 +1950,17 @@ void MainScene::monsterHpLabelMove(const float leftOffsetX, const float rightOff
 			continue;
 		}
 
-		Entity& hpLabelEntity = mMonsterHpLabels[i];
-		Active* hpLabelActive = hpLabelEntity.GetComponent<Active>();
-		hpLabelActive->isValue = true;
+		Entity& hpBarEntity = mMonsterHpBar[i];
+		Active* hpBarActive = hpBarEntity.GetComponent<Active>();
+		hpBarActive->isValue = true;
 
-		Transform* hpLabelTransform = hpLabelEntity.GetComponent<Transform>();
+		Transform* hpBarTransform = hpBarEntity.GetComponent<Transform>();
 		const Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
 
-		hpLabelTransform->position.x = (monsterTransform->flip == SDL_FLIP_NONE) 
+		hpBarTransform->position.x = (monsterTransform->flip == SDL_FLIP_NONE) 
 			? monsterTransform->position.x - rightOffsetX 
 			: monsterTransform->position.x + leftOffsetX;
-		hpLabelTransform->position.y = monsterTransform->position.y - offsetY;
+		hpBarTransform->position.y = monsterTransform->position.y - offsetY;
 	}
 }
 

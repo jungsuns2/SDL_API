@@ -1,6 +1,8 @@
 #pragma once
 #include "Core/Entity/Component.h"
 
+#include "MonsterGroupDescs.h"
+
 class Clip;
 
 struct Player : public Component
@@ -22,14 +24,6 @@ struct Player : public Component
 
 struct Monster : public Component
 {
-	enum class eType
-	{
-		None,
-		BigWhite,
-		Archer,
-		Count
-	};
-
 	enum class eState
 	{
 		Spawn,
@@ -44,7 +38,7 @@ struct Monster : public Component
 
 	Clip* clips = nullptr;
 	eState state{};
-	eType type{};
+	eMonsterType type{};
 	float length = 0.0f;
 	float attackDistance = 0.0f;
 	float spawnBlinkTimer = 0.0f;

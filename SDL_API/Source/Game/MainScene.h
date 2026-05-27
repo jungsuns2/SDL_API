@@ -71,11 +71,11 @@ private:
 
 	void initializeMonsters();
 	void spawnMonsterGroup(const MonsterGroup& group);
-	void spawnMonster(Entity* entity, const Monster::eType type, const float x, const float y);
+	void spawnMonster(Entity* entity, const eMonsterType type, const float x, const float y);
 	void updateMonsterStates(const float deltaTime);
 	void monsterDeadParticle(const float deltaTime);
 	void monsterMove(const float maxSpeed, const float deltaTime);
-	void monsterHpLabelMove(const float leftOffsetX, const float rightOffsetX, const float offsetY);
+	void monsterHpBarMove(const float leftOffsetX, const float rightOffsetX, const float offsetY);
 	void monsterSetClip();
 
 	void clampToTile(Transform* transform, const Range rangeX, const Range RangeY);
@@ -110,7 +110,7 @@ private:
 
 	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 20> mMonsters{};
-	std::array<Entity, 20> mMonsterHpLabels{};
+	std::array<Entity, 20> mMonsterHpBar{};
 	std::array<Entity, 3> mArrows{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};

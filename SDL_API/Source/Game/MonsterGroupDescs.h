@@ -1,9 +1,16 @@
 #pragma once
-#include "GameComponentTypes.h"
+
+enum class eMonsterType
+{
+	None,
+	BigWhite,
+	Archer,
+	Count
+};
 
 struct MonsterGroup
 {
-	Monster::eType type;
+	eMonsterType type;
 	uint32_t count;
 	Range rangeX;
 	Range rangeY;
@@ -14,7 +21,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	// 0
 	MonsterGroup
 	{
-		.type = Monster::eType::BigWhite,
+		.type = eMonsterType::BigWhite,
 		.count = 2,
 		.rangeX = { .min = -100.0f, .max = 100.0f },
 		.rangeY = { .min = -100.0f, .max = 100.0f }
@@ -23,7 +30,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	// 1
 	MonsterGroup
 	{
-		.type = Monster::eType::BigWhite,
+		.type = eMonsterType::BigWhite,
 		.count = 3, 
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
@@ -33,7 +40,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	// 2
 	MonsterGroup
 	{
-		.type = Monster::eType::BigWhite,
+		.type = eMonsterType::BigWhite,
 		.count = 4, 
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
@@ -42,7 +49,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	// 3
 	MonsterGroup
 	{
-		.type = Monster::eType::Archer,
+		.type = eMonsterType::Archer,
 		.count = 1, 
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
@@ -51,7 +58,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	// 4
 	MonsterGroup
 	{
-		.type = Monster::eType::Archer,
+		.type = eMonsterType::Archer,
 		.count = 2, 
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
@@ -60,7 +67,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	// 5
 	MonsterGroup
 	{
-		.type = Monster::eType::Archer,
+		.type = eMonsterType::Archer,
 		.count = 3, 
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
@@ -69,7 +76,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	// 6
 	MonsterGroup
 	{
-		.type = Monster::eType::Archer,
+		.type = eMonsterType::Archer,
 		.count = 4, 
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
