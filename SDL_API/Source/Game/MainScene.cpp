@@ -377,27 +377,44 @@ bool MainScene::Update(const float deltaTime)
 					{
 						const Point centerOffset = { .x = -0.4f, .y = 0.0f };
 						const float centerOffsetX = centerOffset.x * (mArrowTexture.GetWidth() - 1.0f);
-						constexpr float monsterOffsetX = 80.0f;
+						constexpr float monsterLeftOffsetX = 20.0f;
+						constexpr float monsterRightOffsetX = 80.0f;
 
-						const Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
-						arrow->startPosition.x = monsterTransform->position.x
-							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterOffsetX;
-						arrow->startPosition.y = monsterTransform->position.y;
-
-						Transform* transform = arrowEntity.GetComponent<Transform>();
-						transform->position.x = monsterTransform->position.x
-							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterOffsetX;
-						transform->position.y = monsterTransform->position.y;
-
-						Direction* direction = arrowEntity.GetComponent<Direction>();
 						const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+						const Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
 						const Point diff = playerTransform->position - monsterTransform->position;
-						direction->value = Math::NormalizeVector(diff);
-						transform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+						Direction* arrowDirection = arrowEntity.GetComponent<Direction>();
+						arrowDirection->value = Math::NormalizeVector(diff);
+						
+						Transform* transform = arrowEntity.GetComponent<Transform>();
+						transform->flip = (arrowDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
 
 						float degree = std::atan2(diff.y, diff.x) * (180.0f / 3.141592f);
 						degree -= 90.0f;
 						transform->angle = -degree;
+
+						// Arrow Offset을 계산한다.
+						if (transform->flip == SDL_FLIP_NONE)
+						{
+							arrow->startPosition.x = monsterTransform->position.x
+								+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
+
+							transform->position.x = monsterTransform->position.x
+								+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
+						}
+						else
+						{
+							arrow->startPosition.x = monsterTransform->position.x
+								+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
+
+							transform->position.x = monsterTransform->position.x
+								+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
+						}
+
+						arrow->startPosition.y = monsterTransform->position.y;
+						transform->position.y = monsterTransform->position.y;
 
 						Active* arrowActive = arrowEntity.GetComponent<Active>();
 						arrowActive->isValue = true;
@@ -415,6 +432,47 @@ bool MainScene::Update(const float deltaTime)
 					arrow->isFire = false;
 				}
 			}
+		}
+	}
+
+	for (const Entity& arrowEntity : mArrows)
+	{
+		
+		if (Active* active = arrowEntity.GetComponent<Active>();
+			not active->isValue)
+		{
+			continue;
+		}
+
+		Arrow* arrow = arrowEntity.GetComponent<Arrow>();
+
+		for (const Entity& monsterEntity : mMonsters)
+		{
+			Animator* anim = monsterEntity.GetComponent<Animator>();
+			if (anim->clipState == &mArcherClips[uint32_t(Monster::eState::Attack)]
+				and anim->frameIndex == anim->clipState->GetLastFrameIndex() - 1)
+			{
+				anim->frameIndex = anim->clipState->GetLastFrameIndex() - 1;
+				anim->elapsedTime = 0.0f;
+
+				arrow->fireTimer += deltaTime;
+				if (arrow->fireTimer >= 0.3f)
+				{
+					arrow->isFire = false;
+					anim->frameIndex = 0;
+					arrow->fireTimer = 0.0f;
+				}
+			}
+		}
+
+		Transform* transform = arrowEntity.GetComponent<Transform>();
+		if (Math::GetVectorLength(transform->position - arrow->startPosition) >= 200.0f)
+		{
+			Active* active = arrowEntity.GetComponent<Active>();
+			active->isValue = false;
+
+			//DebugActive* debugActive = entity.GetComponent<DebugActive>();
+			//debugActive->isValue = false;
 		}
 	}
 
