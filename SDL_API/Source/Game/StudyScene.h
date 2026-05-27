@@ -39,7 +39,7 @@ private:
 	Entity mMainCamera{};
 	Entity mPlayer{};
 	std::array<Entity, 1> mMonsters{};
-	std::array<Entity, 3> mArrows{};
+	std::array<Entity, 20> mArrows{};
 
 	// 충돌 관련
 private:

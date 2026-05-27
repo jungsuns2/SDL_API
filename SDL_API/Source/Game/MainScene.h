@@ -106,9 +106,10 @@ private:
 	Entity mGun{};
 	Entity mBullet{};
 	Entity** mTiles = nullptr;
-	std::array<Entity, 6> mDeadParticle{};
 
+	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 20> mMonsters{};
+	std::array<Entity, 3> mArrows{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBigWhiteSkelClips{};

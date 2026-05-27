@@ -135,3 +135,13 @@ struct Effect : public Component
 	bool isDisabled = false;
 	float coolTimer{};
 };
+
+struct Arrow : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Arrow() : Component(&_ID) {}
+
+	bool isFire = false;
+	Point startPosition = { .x = 0.0f, .y = 0.0f };
+	float fireTimer = 0.0f;
+};

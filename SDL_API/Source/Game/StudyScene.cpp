@@ -178,7 +178,6 @@ void StudyScene::Initialize()
 
 	// Arrow
 	{
-		uint32_t index{};
 		for (Entity& entity : mArrows)
 		{
 			Transform transform{};
@@ -212,7 +211,6 @@ void StudyScene::Initialize()
 
 			GetEntityWorld()->AddEntity(&entity);
 		}
-		index = 0;
 	}
 }
 

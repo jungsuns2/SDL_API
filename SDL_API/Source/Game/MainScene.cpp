@@ -350,6 +350,92 @@ bool MainScene::Update(const float deltaTime)
 		monsterMove(SPEED, deltaTime);
 	}
 
+	// Archer 몬스터의 화살을 생성한다.
+	{
+		for (const Entity& monsterEntity : mMonsters)
+		{
+			Monster* monster = monsterEntity.GetComponent<Monster>();
+			if (monster->type != Monster::eType::Archer)
+			{
+				continue;
+			}
+
+			if (const Active* monsterActive = monsterEntity.GetComponent<Active>();
+				not monsterActive)
+			{
+				continue;
+			}
+
+			for (const Entity& arrowEntity : mArrows)
+			{
+				Animator* monsterAnim = monsterEntity.GetComponent<Animator>();
+				if (monsterAnim->clipState == &mArcherClips[uint32_t(Monster::eState::Attack)]
+					and monsterAnim->frameIndex == 7)
+				{
+					Arrow* arrow = arrowEntity.GetComponent<Arrow>();
+					if (not arrow->isFire)
+					{
+						const Point centerOffset = { .x = -0.4f, .y = 0.0f };
+						const float centerOffsetX = centerOffset.x * (mArrowTexture.GetWidth() - 1.0f);
+						constexpr float monsterOffsetX = 80.0f;
+
+						const Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
+						arrow->startPosition.x = monsterTransform->position.x
+							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterOffsetX;
+						arrow->startPosition.y = monsterTransform->position.y;
+
+						Transform* transform = arrowEntity.GetComponent<Transform>();
+						transform->position.x = monsterTransform->position.x
+							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterOffsetX;
+						transform->position.y = monsterTransform->position.y;
+
+						Direction* direction = arrowEntity.GetComponent<Direction>();
+						const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+						const Point diff = playerTransform->position - monsterTransform->position;
+						direction->value = Math::NormalizeVector(diff);
+						transform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+						float degree = std::atan2(diff.y, diff.x) * (180.0f / 3.141592f);
+						degree -= 90.0f;
+						transform->angle = -degree;
+
+						Active* arrowActive = arrowEntity.GetComponent<Active>();
+						arrowActive->isValue = true;
+
+						arrow->isFire = true;
+
+						//DebugActive* debugActive = entity.GetComponent<DebugActive>();
+						//debugActive->isValue = true;
+						break;
+					}
+				}
+				else
+				{
+					Arrow* arrow = arrowEntity.GetComponent<Arrow>();
+					arrow->isFire = false;
+				}
+			}
+		}
+	}
+
+	// Arrow 좌표를 업데이트한다.
+	{
+		for (const Entity& entity : mArrows)
+		{
+			Active* active = entity.GetComponent<Active>();
+			if (not active->isValue)
+			{
+				continue;
+			}
+
+			Direction* direction = entity.GetComponent<Direction>();
+			const Point velocity = direction->value * 100.0f;
+
+			Transform* transform = entity.GetComponent<Transform>();
+			transform->position = transform->position + velocity * deltaTime;
+		}
+	}
+
 	// 충돌을 업데이트한다.
 	{
 		for (const auto& monster : mMonsters)
@@ -796,6 +882,8 @@ void MainScene::initialize_Resource()
 
 			index = 0;
 		}
+
+		mArrowTexture.Initialize(GetHelper(), "Resource/Monster/Archer/Arrow/0.png");
 	}
 }
 
@@ -1007,7 +1095,7 @@ void MainScene::initialize_Entity()
 		mPlayer.AddComponent(collider);
 
 		BoxCollider boxCollider{};
-		boxCollider.size = { .width = float(mPlayerRunTextures[3].GetWidth()), .height = float(mPlayerRunTextures[3].GetHeight())};
+		boxCollider.size = { .width = float(mPlayerRunTextures[3].GetWidth()), .height = float(mPlayerRunTextures[3].GetHeight()) };
 		mPlayer.AddComponent(boxCollider);
 
 		DebugActive debugActive{};
@@ -1181,6 +1269,46 @@ void MainScene::initialize_Entity()
 		mArcherClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 	}
 
+	// Arrow
+	{
+		for (Entity& entity : mArrows)
+		{
+			Arrow arrow{};
+			entity.AddComponent(arrow);
+
+			Transform transform{};
+			transform.scale = { .width = 4.0f, .height = 4.0f };
+			transform.angle = 90.0f;
+			entity.AddComponent(transform);
+
+			Direction direction{};
+			entity.AddComponent(direction);
+
+			Active active{};
+			entity.AddComponent(active);
+
+			Image image{};
+			image.texture = &mArrowTexture;
+			entity.AddComponent(image);
+
+			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Arrow));
+			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
+			entity.AddComponent(collider);
+
+			BoxCollider boxCollider{};
+			boxCollider.size = { .width = float(mArrowTexture.GetWidth()), .height = float(mArrowTexture.GetHeight()) };
+			entity.AddComponent(boxCollider);
+
+			//DebugActive debugActive{};
+			//entity.AddComponent(debugActive);
+
+			DebugColor debugColor{};
+			entity.AddComponent(debugColor);
+
+			GetEntityWorld()->AddEntity(&entity);
+		}
+	}
+
 	// Dead Particle
 	{
 		constexpr float SIZE = 0.3f;
@@ -1231,7 +1359,7 @@ void MainScene::input()
 			DebugActive* debugActive = entity->GetComponent<DebugActive>();
 			debugActive->isValue = !debugActive->isValue;
 		}
-			
+
 	}
 }
 
@@ -1250,7 +1378,7 @@ void MainScene::playerState(const float deltaTime)
 		if (deadTimer >= 0.5f)
 		{
 			player->state = Player::eState::Dead;
-			
+
 			Active* leftHandActive = mPlayerLeftHand.GetComponent<Active>();
 			leftHandActive->isValue = false;
 
@@ -1537,7 +1665,7 @@ void MainScene::spawnMonster(Entity* entity, const Monster::eType type, const fl
 
 	case Monster::eType::Archer:
 		hp->max = 3;
-		monster->attackDistance = 160.0f;
+		monster->attackDistance = 300.0f;
 		monster->clips = mArcherClips.data();
 		break;
 
