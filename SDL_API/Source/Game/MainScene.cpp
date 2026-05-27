@@ -348,6 +348,8 @@ bool MainScene::Update(const float deltaTime)
 		// TODO: 몬스터 종류(archer, skel)마다 속도가 결정되도록 수정이 필요하다.
 		constexpr float SPEED = 35.0f;
 		monsterMove(SPEED, deltaTime);
+
+		monsterHpLabelMove(10.0f, 10.0f, 55.0f);
 	}
 
 	// Archer 몬스터의 화살을 생성한다.
@@ -627,7 +629,7 @@ void MainScene::Finalize()
 		delete[] mTiles;
 	}
 
-	mDeadParticleTexture.Finalize();
+	mRedRectTexture.Finalize();
 }
 
 void MainScene::initialize_Resource()
@@ -639,7 +641,7 @@ void MainScene::initialize_Resource()
 	mTileTextures[0].Initialize(GetHelper(), "Resource/Tile/0.png");
 	mTileTextures[1].Initialize(GetHelper(), "Resource/Tile/1.png");
 
-	mDeadParticleTexture.Initialize(GetHelper(), "Resource/RedRectangle.png");
+	mRedRectTexture.Initialize(GetHelper(), "Resource/RedRectangle.png");
 
 	// Player
 	{
@@ -1384,7 +1386,7 @@ void MainScene::initialize_Entity()
 			entity.AddComponent(transform);
 
 			Image image{};
-			image.texture = &mDeadParticleTexture;
+			image.texture = &mRedRectTexture;
 			entity.AddComponent(image);
 
 			Active active{};
@@ -1652,6 +1654,22 @@ void MainScene::initializeMonsters()
 
 		GetEntityWorld()->AddEntity(&entity);
 	}
+
+	for (Entity& entity : mMonsterHpLabels)
+	{
+		Transform transform{};
+		transform.scale.height = 0.2f;
+		entity.AddComponent(transform);
+
+		Image image{};
+		image.texture = &mRedRectTexture;
+		entity.AddComponent(image);
+
+		Active active{};
+		entity.AddComponent(active);
+
+		GetEntityWorld()->AddEntity(&entity);
+	}
 }
 
 void MainScene::spawnMonsterGroup(const MonsterGroup& group)
@@ -1738,6 +1756,14 @@ void MainScene::spawnMonster(Entity* entity, const Monster::eType type, const fl
 
 	hp->value = hp->max;
 	active->isValue = true;
+
+	for (Entity& hpLabel : mMonsterHpLabels)
+	{
+		const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
+
+		Transform* transform = entity->GetComponent<Transform>();
+		transform->scale.width = currentWidth;
+	}
 }
 
 void MainScene::updateMonsterStates(const float deltaTime)
@@ -1876,9 +1902,9 @@ void MainScene::monsterMove(const float maxSpeed, const float deltaTime)
 		{
 			continue;
 		}
-
-		Active* active = entity.GetComponent<Active>();
-		if (not active)
+		
+		if (Active* active = entity.GetComponent<Active>(); 
+			not active)
 		{
 			continue;
 		}
@@ -1903,6 +1929,38 @@ void MainScene::monsterMove(const float maxSpeed, const float deltaTime)
 			monsterTransform->position += velocity * deltaTime;
 			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 		}
+	}
+}
+
+void MainScene::monsterHpLabelMove(const float leftOffsetX, const float rightOffsetX, const float offsetY)
+{
+	for (uint32_t i = 0; i < mMonsters.size(); ++i)
+	{
+		const Entity& monsterEntity = mMonsters[i];
+		if (const Active* active = monsterEntity.GetComponent<Active>();
+			not active)
+		{
+			continue;
+		}
+
+		if (const Monster* monster = monsterEntity.GetComponent<Monster>();
+			monster->state != Monster::eState::Run
+			and monster->state != Monster::eState::Attack)
+		{
+			continue;
+		}
+
+		Entity& hpLabelEntity = mMonsterHpLabels[i];
+		Active* hpLabelActive = hpLabelEntity.GetComponent<Active>();
+		hpLabelActive->isValue = true;
+
+		Transform* hpLabelTransform = hpLabelEntity.GetComponent<Transform>();
+		const Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
+
+		hpLabelTransform->position.x = (monsterTransform->flip == SDL_FLIP_NONE) 
+			? monsterTransform->position.x - rightOffsetX 
+			: monsterTransform->position.x + leftOffsetX;
+		hpLabelTransform->position.y = monsterTransform->position.y - offsetY;
 	}
 }
 

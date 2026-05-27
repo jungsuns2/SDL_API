@@ -75,6 +75,7 @@ private:
 	void updateMonsterStates(const float deltaTime);
 	void monsterDeadParticle(const float deltaTime);
 	void monsterMove(const float maxSpeed, const float deltaTime);
+	void monsterHpLabelMove(const float leftOffsetX, const float rightOffsetX, const float offsetY);
 	void monsterSetClip();
 
 	void clampToTile(Transform* transform, const Range rangeX, const Range RangeY);
@@ -109,6 +110,7 @@ private:
 
 	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 20> mMonsters{};
+	std::array<Entity, 20> mMonsterHpLabels{};
 	std::array<Entity, 3> mArrows{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
@@ -142,7 +144,7 @@ private:
 
 	std::array<Texture, 2> mTileTextures{};
 
-	Texture mDeadParticleTexture{};
+	Texture mRedRectTexture{};
 
 private:
 	bool isCollisionEnter(const Entity& entity0, const Entity& entity1) const;
