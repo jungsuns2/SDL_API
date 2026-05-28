@@ -524,13 +524,13 @@ bool StudyScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entit
 
 	const Transform* transform0 = entity0.GetComponent<Transform>();
 	const BoxCollider* boxCollider0 = entity0.GetComponent<BoxCollider>();
-	const Rect rect0 = convertBoxColliderToWorldBox(*transform0, *boxCollider0);
+	const std::array<Point, 5> point0 = convertBoxColliderToWorldBox(*transform0, *boxCollider0);
 
 	const Transform* transform1 = entity1.GetComponent<Transform>();
 	const BoxCollider* boxCollider1 = entity1.GetComponent<BoxCollider>();
-	const Rect rect1 = convertBoxColliderToWorldBox(*transform1, *boxCollider1);
+	const std::array<Point, 5> point1 = convertBoxColliderToWorldBox(*transform1, *boxCollider1);
 
-	if (Collision::IsCollidedSqureWithSqure(rect0, rect1))
+	if (Collision::IsCollidedSqureWithSqure(point0, point1))
 	{
 		registerCollidedEntityPairs(entity0, entity1);
 		return true;
@@ -539,17 +539,57 @@ bool StudyScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entit
 	return false;
 }
 
-Rect StudyScene::convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const
+std::array<Point, 5> StudyScene::convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const
 {
 	const Point position = transform.position + boxCollider.offset;
 	const Scale boxHalfSize = transform.scale * boxCollider.size * 0.5f;
 
-	const Rect result
+	const Point localTL = { -boxHalfSize.width, -boxHalfSize.height };
+	const Point localTR = { boxHalfSize.width, -boxHalfSize.height };
+	const Point localBR = { boxHalfSize.width, boxHalfSize.height };
+	const Point localBL = { -boxHalfSize.width, boxHalfSize.height };
+
+	const Point rotateTL = Math::RotatePoint(localTL, -transform.angle);
+	const Point rotateTR = Math::RotatePoint(localTR, -transform.angle);
+	const Point rotateBR = Math::RotatePoint(localBR, -transform.angle);
+	const Point rotateBL = Math::RotatePoint(localBL, -transform.angle);
+
+	const std::array<Point, 5> result
 	{
-		.left = position.x - boxHalfSize.width,
-		.top = position.y + boxHalfSize.height,
-		.right = position.x + boxHalfSize.width,
-		.bottom = position.y - boxHalfSize.height,
+		// 왼쪽 위
+		Point
+		{
+			.x = position.x + rotateTL.x,
+			.y = position.y - rotateTL.y
+		},
+
+		// 오른쪽 위
+		Point
+		{
+			.x = position.x + rotateTR.x,
+			.y = position.y - rotateTR.y
+		},
+
+		// 오른쪽 아래
+		Point
+		{
+			.x = position.x + rotateBR.x,
+			.y = position.y - rotateBR.y
+		},
+
+		// 왼쪽 아래
+		Point
+		{
+			.x = position.x + rotateBL.x,
+			.y = position.y - rotateBL.y
+		},
+
+		// 0번째
+		Point
+		{
+			.x = position.x + rotateTL.x,
+			.y = position.y - rotateTL.y
+		},
 	};
 
 	return result;

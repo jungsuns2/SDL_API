@@ -425,9 +425,6 @@ bool MainScene::Update(const float deltaTime)
 						arrowActive->isValue = true;
 
 						arrow->isFire = true;
-
-						//DebugActive* debugActive = entity.GetComponent<DebugActive>();
-						//debugActive->isValue = true;
 						break;
 					}
 				}
@@ -440,9 +437,10 @@ bool MainScene::Update(const float deltaTime)
 		}
 	}
 
+	constexpr float DISTANCE = 300.0f;
+
 	for (const Entity& arrowEntity : mArrows)
-	{
-		
+	{	
 		if (Active* active = arrowEntity.GetComponent<Active>();
 			not active->isValue)
 		{
@@ -471,18 +469,20 @@ bool MainScene::Update(const float deltaTime)
 		}
 
 		Transform* transform = arrowEntity.GetComponent<Transform>();
-		if (Math::GetVectorLength(transform->position - arrow->startPosition) >= 200.0f)
+		if (Math::GetVectorLength(transform->position - arrow->startPosition) >= DISTANCE)
 		{
 			Active* active = arrowEntity.GetComponent<Active>();
 			active->isValue = false;
 
-			//DebugActive* debugActive = entity.GetComponent<DebugActive>();
-			//debugActive->isValue = false;
+			DebugActive* debugActive = arrowEntity.GetComponent<DebugActive>();
+			debugActive->isValue = false;
 		}
 	}
 
 	// Arrow 좌표를 업데이트한다.
 	{
+		constexpr float SPEED = 300.0f;
+
 		for (const Entity& entity : mArrows)
 		{
 			Active* active = entity.GetComponent<Active>();
@@ -492,7 +492,7 @@ bool MainScene::Update(const float deltaTime)
 			}
 
 			Direction* direction = entity.GetComponent<Direction>();
-			const Point velocity = direction->value * 100.0f;
+			const Point velocity = direction->value * SPEED;
 
 			Transform* transform = entity.GetComponent<Transform>();
 			transform->position = transform->position + velocity * deltaTime;
@@ -501,32 +501,52 @@ bool MainScene::Update(const float deltaTime)
 
 	// 충돌을 업데이트한다.
 	{
-		for (const auto& monster : mMonsters)
+		//for (const Entity& monster : mMonsters)
+		//{
+		//	if (not monster.GetComponent<Active>()->isValue)
+		//	{
+		//		continue;
+		//	}
+
+		//	if (isCollisionEnter(mPlayer, monster))
+		//	{
+		//		if (monster.GetComponent<Monster>()->state == Monster::eState::Run
+		//			or monster.GetComponent<Monster>()->state == Monster::eState::Attack)
+		//		{
+		//			Hp* playerHp = mPlayer.GetComponent<Hp>();
+		//			playerHp->value -= 1;
+
+		//			std::string name = "Hp: " + std::to_string(playerHp->value);
+		//			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+		//			playerLabel->text = name;
+		//		}
+		//	}
+		//	else if (isCollisionStay(mPlayer, monster))
+		//	{
+		//		if (monster.GetComponent<Monster>()->state == Monster::eState::Attack)
+		//		{
+		//			Knockback* knockback = mPlayer.GetComponent<Knockback>();
+		//			knockback->isValue = true;
+		//		}
+		//	}
+		//}
+
+		for (const Entity& arrow : mArrows)
 		{
-			if (not monster.GetComponent<Active>()->isValue)
+			if (Active* active = arrow.GetComponent<Active>();
+				not active->isValue)
 			{
 				continue;
 			}
 
-			if (isCollisionEnter(mPlayer, monster))
+			if (isCollisionEnter(mPlayer, arrow))
 			{
-				if (monster.GetComponent<Monster>()->state == Monster::eState::Run)
-				{
-					Hp* playerHp = mPlayer.GetComponent<Hp>();
-					playerHp->value -= 1;
+				Hp* playerHp = mPlayer.GetComponent<Hp>();
+				playerHp->value -= 1;
 
-					std::string name = "Hp: " + std::to_string(playerHp->value);
-					Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
-					playerLabel->text = name;
-				}
-			}
-			else if (isCollisionStay(mPlayer, monster))
-			{
-				if (monster.GetComponent<Monster>()->state == Monster::eState::Attack)
-				{
-					Knockback* knockback = mPlayer.GetComponent<Knockback>();
-					knockback->isValue = true;
-				}
+				std::string name = "Hp: " + std::to_string(playerHp->value);
+				Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+				playerLabel->text = name;
 			}
 		}
 
@@ -1153,7 +1173,7 @@ void MainScene::initialize_Entity()
 		Color color{};
 		mPlayer.AddComponent(color);
 
-		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
+		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Player));
 		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
 		mPlayer.AddComponent(collider);
 
@@ -1391,8 +1411,8 @@ void MainScene::initialize_Entity()
 			boxCollider.size = { .width = float(mArrowTexture.GetWidth()), .height = float(mArrowTexture.GetHeight()) };
 			entity.AddComponent(boxCollider);
 
-			//DebugActive debugActive{};
-			//entity.AddComponent(debugActive);
+			DebugActive debugActive{};
+			entity.AddComponent(debugActive);
 
 			DebugColor debugColor{};
 			entity.AddComponent(debugColor);
@@ -1443,7 +1463,6 @@ void MainScene::input()
 	{
 		for (Entity* entity : GetEntityWorld()->GetAllEntites())
 		{
-
 			if (not entity->HasComponent<DebugActive>())
 			{
 				continue;
@@ -2180,17 +2199,57 @@ void MainScene::registerCollidedEntityPairs(const Entity& entity0, const Entity&
 	}
 }
 
-Rect MainScene::convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const
+std::array<Point, 5> MainScene::convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const
 {
 	const Point position = transform.position + boxCollider.offset;
 	const Scale boxHalfSize = transform.scale * boxCollider.size * 0.5f;
 
-	const Rect result
+	const Point localTL = { -boxHalfSize.width, -boxHalfSize.height };
+	const Point localTR = { boxHalfSize.width, -boxHalfSize.height };
+	const Point localBR = { boxHalfSize.width, boxHalfSize.height };
+	const Point localBL = { -boxHalfSize.width, boxHalfSize.height };
+
+	const Point rotateTL = Math::RotatePoint(localTL, -transform.angle);
+	const Point rotateTR = Math::RotatePoint(localTR, -transform.angle);
+	const Point rotateBR = Math::RotatePoint(localBR, -transform.angle);
+	const Point rotateBL = Math::RotatePoint(localBL, -transform.angle);
+
+	const std::array<Point, 5> result
 	{
-		.left = position.x - boxHalfSize.width,
-		.top = position.y + boxHalfSize.height,
-		.right = position.x + boxHalfSize.width,
-		.bottom = position.y - boxHalfSize.height,
+		// 왼쪽 위
+		Point
+		{
+			.x = position.x + rotateTL.x,
+			.y = position.y - rotateTL.y
+		},
+
+		// 오른쪽 위
+		Point
+		{
+			.x = position.x + rotateTR.x,
+			.y = position.y - rotateTR.y
+		},
+
+		// 오른쪽 아래
+		Point
+		{
+			.x = position.x + rotateBR.x,
+			.y = position.y - rotateBR.y
+		},
+
+		// 왼쪽 아래
+		Point
+		{
+			.x = position.x + rotateBL.x,
+			.y = position.y - rotateBL.y
+		},
+
+		// 0번째
+		Point
+		{
+			.x = position.x + rotateTL.x,
+			.y = position.y - rotateTL.y
+		},
 	};
 
 	return result;
@@ -2241,13 +2300,13 @@ bool MainScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entity
 
 	const Transform* transform0 = entity0.GetComponent<Transform>();
 	const BoxCollider* boxCollider0 = entity0.GetComponent<BoxCollider>();
-	const Rect rect0 = convertBoxColliderToWorldBox(*transform0, *boxCollider0);
+	const std::array<Point, 5> point0 = convertBoxColliderToWorldBox(*transform0, *boxCollider0);
 
 	const Transform* transform1 = entity1.GetComponent<Transform>();
 	const BoxCollider* boxCollider1 = entity1.GetComponent<BoxCollider>();
-	const Rect rect1 = convertBoxColliderToWorldBox(*transform1, *boxCollider1);
+	const std::array<Point, 5> point1 = convertBoxColliderToWorldBox(*transform1, *boxCollider1);
 
-	if (Collision::IsCollidedSqureWithSqure(rect0, rect1))
+	if (Collision::IsCollidedSqureWithSqure(point0, point1))
 	{
 		registerCollidedEntityPairs(entity0, entity1);
 		return true;
@@ -2264,19 +2323,20 @@ bool MainScene::checkCollisionBoxCircle(const Entity& boxEntity, const Entity& c
 		return false;
 	}
 
+	// TODO: std::array<Point, 5>를 사용해서 수정하기
 	const Transform* boxTransform = boxEntity.GetComponent<Transform>();
 	const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
-	const Rect rect = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);
+	//const std::array<Point, 5> points = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);
 
 	const Transform* circleTransform = circleEntity.GetComponent<Transform>();
 	const CircleCollider* circleCollider = circleEntity.GetComponent<CircleCollider>();
 	const Circle circle = convertCircleColliderToWorldCircle(*circleTransform, *circleCollider);
 
-	if (Collision::IsCollidedSqureWithCircle(rect, circle))
-	{
-		registerCollidedEntityPairs(boxEntity, circleEntity);
-		return true;
-	}
+	//if (Collision::IsCollidedSqureWithCircle(rect, circle))
+	//{
+	//	registerCollidedEntityPairs(boxEntity, circleEntity);
+	//	return true;
+	//}
 
 	return false;
 }
@@ -2289,19 +2349,20 @@ bool MainScene::checkCollisionBoxLine(const Entity& boxEntity, const Entity& lin
 		return false;
 	}
 
-	const Transform* boxTransform = boxEntity.GetComponent<Transform>();
-	const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
-	const Rect rect = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);
+	// TODO: std::array<Point, 5>를 사용해서 수정하기
+	//const Transform* boxTransform = boxEntity.GetComponent<Transform>();
+	//const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
+	//const Rect rect = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);
 
-	const Transform* lineTransform = lineEntity.GetComponent<Transform>();
-	const LineCollider* lineCollider = lineEntity.GetComponent<LineCollider>();
-	const Line line = convertLineColliderToWorldLine(*lineTransform, *lineCollider);
+	//const Transform* lineTransform = lineEntity.GetComponent<Transform>();
+	//const LineCollider* lineCollider = lineEntity.GetComponent<LineCollider>();
+	//const Line line = convertLineColliderToWorldLine(*lineTransform, *lineCollider);
 
-	if (Collision::IsCollidedSqureWithLine(rect, line))
-	{
-		registerCollidedEntityPairs(boxEntity, lineEntity);
-		return true;
-	}
+	//if (Collision::IsCollidedSqureWithLine(rect, line))
+	//{
+	//	registerCollidedEntityPairs(boxEntity, lineEntity);
+	//	return true;
+	//}
 
 	return false;
 }

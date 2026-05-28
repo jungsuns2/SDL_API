@@ -113,7 +113,7 @@ private:
 	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 20> mMonsters{};
 	std::array<Entity, 20> mMonsterHpBar{};
-	std::array<Entity, 3> mArrows{};
+	std::array<Entity, 40> mArrows{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBigWhiteSkelClips{};
@@ -156,7 +156,7 @@ private:
 	std::pair<const Entity*, const Entity*> getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const;
 	void registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1);
 
-	Rect convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const;
+	std::array<Point, 5> convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const;
 	Circle convertCircleColliderToWorldCircle(const Transform& transform, const CircleCollider& circleCollider) const;
 	Line convertLineColliderToWorldLine(const Transform& transform, const LineCollider& lineCollider) const;
 

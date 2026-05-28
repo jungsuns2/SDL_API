@@ -3,7 +3,8 @@
 namespace Collision
 {
 	inline bool IsCollidedSqureWithPoint(const Rect rect, const Point point);
-	inline bool IsCollidedSqureWithSqure(const Rect lhs, const Rect rhs);
+	inline bool IsCollidedSqureWithPoint(const std::array<Point, 5> points, const Point point);
+	inline bool IsCollidedSqureWithSqure(const std::array<Point, 5> lhs, const std::array<Point, 5> rhs);
 	inline bool IsCollidedSqureWithLine(const Rect rect, const Line line);
 	inline bool IsCollidedSqureWithCircle(const Rect rect, const Circle& circle);
 	inline bool IsCollidedCircleWithPoint(const Circle& circle, const Point point);
@@ -19,14 +20,32 @@ namespace Collision
 		return result;
 	}
 
-	bool IsCollidedSqureWithSqure(const Rect lhs, const Rect rhs)
+	bool IsCollidedSqureWithPoint(const std::array<Point, 5>points, const Point point)
 	{
-		const bool result = IsCollidedSqureWithPoint(lhs, { .x = float(rhs.left), .y = float(rhs.top) })
-			or IsCollidedSqureWithPoint(lhs, { .x = float(rhs.left), .y = float(rhs.bottom) })
-			or IsCollidedSqureWithPoint(lhs, { .x = float(rhs.right), .y = float(rhs.top) })
-			or IsCollidedSqureWithPoint(lhs, { .x = float(rhs.right), .y = float(rhs.bottom) });
+		const float cp1 = Math::CrossProduct2D(points[0], points[1], point);
+		const float cp2 = Math::CrossProduct2D(points[1], points[2], point);
+		const float cp3 = Math::CrossProduct2D(points[2], points[3], point);
+		const float cp4 = Math::CrossProduct2D(points[3], points[4], point);
+		
+		const bool allPositive = (cp1 >= 0 and cp2 >= 0 and cp3 >= 0 and cp4 >= 0);
+		const bool allNegative = (cp1 <= 0 and cp2 <= 0 and cp3 <= 0 and cp4 <= 0);
 
-		return result;
+		return allPositive || allNegative;
+	}
+
+	bool IsCollidedSqureWithSqure(const std::array<Point, 5> lhs, const std::array<Point, 5> rhs)
+	{
+		const bool rhsInLhs = IsCollidedSqureWithPoint(lhs, rhs[0]) // 왼쪽 위
+			or IsCollidedSqureWithPoint(lhs, rhs[1]) // 오른쪽 위
+			or IsCollidedSqureWithPoint(lhs, rhs[2]) // 오른쪽 아래 
+			or IsCollidedSqureWithPoint(lhs, rhs[3]); // 왼쪽 아래
+
+		const bool lhsInRhs = IsCollidedSqureWithPoint(rhs, lhs[0]) 
+			or IsCollidedSqureWithPoint(rhs, lhs[1]) 
+			or IsCollidedSqureWithPoint(rhs, lhs[2]) 
+			or IsCollidedSqureWithPoint(rhs, lhs[3]);
+
+		return rhsInLhs or lhsInRhs;
 	}
 
 	bool IsCollidedSqureWithLine(const Rect rect, const Line line)
