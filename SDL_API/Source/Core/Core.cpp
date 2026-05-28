@@ -50,15 +50,15 @@ bool Core::Update(const float deltaTime)
 	}
 
 	const EntityWorld* entityWorld = mScene->GetEntityWorld();
-	Transform* cameraTransform = cameraSystem(entityWorld);
+	mCameraTransform = cameraSystem(entityWorld);
 
 	updateAnimator(entityWorld, deltaTime);
-	drawImages(entityWorld, cameraTransform);
+	drawImages(entityWorld);
 
-	colliderImageRenderingSystem(entityWorld, cameraTransform);
+	colliderImageRenderingSystem(entityWorld);
 
-	labelUIRenderingSystem(entityWorld, cameraTransform);
-	labelRenderingSystem(entityWorld, cameraTransform);
+	labelUIRenderingSystem(entityWorld);
+	labelRenderingSystem(entityWorld);
 
 	SDL_RenderPresent(mRenderer); // 화면에 출력한다.
 
@@ -68,6 +68,9 @@ bool Core::Update(const float deltaTime)
 void Core::Finalize()
 {
 	mScene->Finalize();
+
+	delete mCameraTransform;
+	mCameraTransform = nullptr;
 
 	mColliderTexture.Finalize();
 
@@ -166,11 +169,27 @@ Transform* Core::cameraSystem(const EntityWorld* entityWorld)
 	return cameraTransform;
 }
 
+Point Core::getCameraOffset() const
+{
+	const Point cameraCenter =
+	{
+		.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
+		.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
+	};
+
+	const Point result =
+	{
+		.x = cameraCenter.x - mCameraTransform->position.x,
+		.y = cameraCenter.y + mCameraTransform->position.y,
+	};
+
+	return result;
+}
+
 void Core::textureSystem(const TextureSystemDesc& desc)
 {
 	const Scale textureScale = desc.textureScale;
 	const Transform* textureTransform = desc.textureTransform;
-	const Transform* cameraTransform = desc.cameraTransform;
 	SDL_FRect* rect = desc.rect;
 	SDL_FPoint* angleCenter = desc.angleCenter;
 
@@ -191,20 +210,8 @@ void Core::textureSystem(const TextureSystemDesc& desc)
 		.y = center.y * (textureScale.height * textureTransform->scale.height)
 	};
 
-	const Point cameraCenter =
-	{
-		.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
-		.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
-	};
-
-	const Point cameraOffset =
-	{
-		.x = cameraCenter.x - cameraTransform->position.x,
-		.y = cameraCenter.y + cameraTransform->position.y,
-	};
-
-	rect->x = cameraOffset.x + textureTransform->position.x - offset.x;
-	rect->y = cameraOffset.y - textureTransform->position.y - offset.y;
+	rect->x = getCameraOffset().x + textureTransform->position.x - offset.x;
+	rect->y = getCameraOffset().y - textureTransform->position.y - offset.y;
 	rect->w = textureScale.width * textureTransform->scale.width;
 	rect->h = textureScale.height * textureTransform->scale.height;
 
@@ -216,7 +223,6 @@ void Core::drawSystem(const DrawSystemDesc& desc)
 {
 	const Scale textureScale = desc.textureScale;
 	Transform* transform = desc.transform;
-	Transform* cameraTransform = desc.cameraTransform;
 	SDL_FRect* rect = desc.rect;
 
 	const Point center =
@@ -231,28 +237,15 @@ void Core::drawSystem(const DrawSystemDesc& desc)
 		.y = center.y * (textureScale.height * transform->scale.height)
 	};
 
-	const Point cameraCenter =
-	{
-		.x = (Constant::Get().GetWidth() - 1.0f) * 0.5f,
-		.y = (Constant::Get().GetHeight() - 1.0f) * 0.5f,
-	};
-
-	const Point cameraOffset =
-	{
-		.x = cameraCenter.x - cameraTransform->position.x,
-		.y = cameraCenter.y + cameraTransform->position.y,
-	};
-
-	rect->x = cameraOffset.x + transform->position.x - offset.x;
-	rect->y = cameraOffset.y - transform->position.y - offset.y;
+	rect->x = getCameraOffset().x + transform->position.x - offset.x;
+	rect->y = getCameraOffset().y - transform->position.y - offset.y;
 	rect->w = textureScale.width * transform->scale.width;
 	rect->h = textureScale.height * transform->scale.height;
 }
 
-void Core::drawImages(const EntityWorld* entityWorld, const Transform* cameraTransform)
+void Core::drawImages(const EntityWorld* entityWorld)
 {
 	assert(entityWorld != nullptr);
-	assert(cameraTransform != nullptr);
 
 	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
@@ -285,7 +278,6 @@ void Core::drawImages(const EntityWorld* entityWorld, const Transform* cameraTra
 			{
 				.textureScale = {.width = float(texture->GetWidth()), .height = float(texture->GetHeight()) },
 				.textureTransform = transform,
-				.cameraTransform = cameraTransform,
 				.rect = &rect,
 				.angleCenter = &angleCenter
 			}
@@ -303,10 +295,9 @@ void Core::drawImages(const EntityWorld* entityWorld, const Transform* cameraTra
 	}
 }
 
-void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld)
 {
 	assert(entityWorld != nullptr);
-	assert(cameraTransform != nullptr);
 
 	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
@@ -326,30 +317,10 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld, Transfor
 
 		const Transform* transform = entity->GetComponent<Transform>();
 		const BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
-
-		SDL_FRect rect{};
-		SDL_FPoint angleCenter = { .x = 0.0f, .y = 0.0f };
-		
-		textureSystem
-		(
-			TextureSystemDesc
-			{
-				.textureScale = {.width = boxCollider->size.width, .height = boxCollider->size.height },
-				.textureTransform = transform,
-				.cameraTransform = cameraTransform,
-				.rect = &rect,
-				.angleCenter = &angleCenter
-			}
-		);
-
-		DebugColor* debugColor = entity->GetComponent<DebugColor>();
-		SDL_SetTextureColorMod(mColliderTexture.GetTexture(), debugColor->r, debugColor->g, debugColor->b);
-		SDL_SetTextureAlphaMod(mColliderTexture.GetTexture(), debugColor->a);
-		SDL_RenderCopyExF(mRenderer, mColliderTexture.GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
 	}
 }
 
-void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+void Core::labelRenderingSystem(const EntityWorld* entityWorld)
 {
 	assert(entityWorld != nullptr);
 
@@ -379,8 +350,8 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 
 		const Point cameraOffset =
 		{
-			.x = cameraCenter.x - cameraTransform->position.x,
-			.y = cameraCenter.y + cameraTransform->position.y,
+			.x = cameraCenter.x - mCameraTransform->position.x,
+			.y = cameraCenter.y + mCameraTransform->position.y,
 		};
 
 		Transform* transform = entity->GetComponent<Transform>();
@@ -422,7 +393,7 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld, Transform* camer
 	}
 }
 
-void Core::labelUIRenderingSystem(const EntityWorld* entityWorld, Transform* cameraTransform)
+void Core::labelUIRenderingSystem(const EntityWorld* entityWorld)
 {
 	assert(entityWorld != nullptr);
 
