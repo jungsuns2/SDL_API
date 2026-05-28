@@ -317,6 +317,61 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld)
 
 		const Transform* transform = entity->GetComponent<Transform>();
 		const BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
+
+		const Point position = transform->position + boxCollider->offset;
+		const Scale boxHalfSize = transform->scale * boxCollider->size * 0.5f;
+
+		const Point localTL = { -boxHalfSize.width, -boxHalfSize.height };
+		const Point localTR = { boxHalfSize.width, -boxHalfSize.height };
+		const Point localBR = { boxHalfSize.width, boxHalfSize.height };
+		const Point localBL = { -boxHalfSize.width, boxHalfSize.height };
+
+		const Point rotateTL = Math::RotatePoint(localTL, -transform->angle);
+		const Point rotateTR = Math::RotatePoint(localTR, -transform->angle);
+		const Point rotateBR = Math::RotatePoint(localBR, -transform->angle);
+		const Point rotateBL = Math::RotatePoint(localBL, -transform->angle);
+
+		const std::array<SDL_FPoint, 5> rotatePoints
+		{
+			// 왼쪽 위
+			SDL_FPoint
+			{
+				.x = getCameraOffset().x + position.x + rotateTL.x,
+				.y = getCameraOffset().y - position.y - rotateTL.y
+			},
+
+			// 오른쪽 위
+			SDL_FPoint
+			{
+				.x = getCameraOffset().x + position.x + rotateTR.x,
+				.y = getCameraOffset().y - position.y - rotateTR.y
+			},
+
+			// 오른쪽 아래
+			SDL_FPoint
+			{
+				.x = getCameraOffset().x + position.x + rotateBR.x,
+				.y = getCameraOffset().y - position.y - rotateBR.y
+			},
+
+			// 왼쪽 아래
+			SDL_FPoint
+			{
+				.x = getCameraOffset().x + position.x + rotateBL.x,
+				.y = getCameraOffset().y - position.y - rotateBL.y
+			},
+
+			// 0번째
+			SDL_FPoint
+			{
+				.x = getCameraOffset().x + position.x + rotateTL.x,
+				.y = getCameraOffset().y - position.y - rotateTL.y
+			},
+		};
+
+		const DebugColor* debugColor = entity->GetComponent<DebugColor>();
+		SDL_SetRenderDrawColor(mRenderer, debugColor->r, debugColor->g, debugColor->b, debugColor->a);
+		SDL_RenderDrawLinesF(mRenderer, rotatePoints.data(), 5);
 	}
 }
 

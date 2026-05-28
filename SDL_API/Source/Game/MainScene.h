@@ -44,6 +44,8 @@ public:
 		None,
 		Player,
 		Monster,
+		SwordSkill,
+		Bullet,
 		Arrow,
 		Wall,
 		Count

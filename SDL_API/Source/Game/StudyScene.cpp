@@ -203,8 +203,8 @@ void StudyScene::Initialize()
 			boxCollider.size = { .width = float(mArrowTexture.GetWidth()), .height = float(mArrowTexture.GetHeight()) };
 			entity.AddComponent(boxCollider);
 
-			//DebugActive debugActive{};
-			//entity.AddComponent(debugActive);
+			DebugActive debugActive{};
+			entity.AddComponent(debugActive);
 
 			DebugColor debugColor{};
 			entity.AddComponent(debugColor);
@@ -333,8 +333,8 @@ bool StudyScene::Update(const float deltaTime)
 						active->isValue = true;
 						isFire = true;
 
-						//DebugActive* debugActive = entity.GetComponent<DebugActive>();
-						//debugActive->isValue = true;
+						DebugActive* debugActive = entity.GetComponent<DebugActive>();
+						debugActive->isValue = true;
 						break;
 					}
 				}
@@ -375,8 +375,8 @@ bool StudyScene::Update(const float deltaTime)
 				Active* active = entity.GetComponent<Active>();
 				active->isValue = false;
 
-				//DebugActive* debugActive = entity.GetComponent<DebugActive>();
-				//debugActive->isValue = false;
+				DebugActive* debugActive = entity.GetComponent<DebugActive>();
+				debugActive->isValue = false;
 			}
 		}
 	}
@@ -403,22 +403,22 @@ bool StudyScene::Update(const float deltaTime)
 
 	// 충돌 업데이트한다.
 	{
-		for (const auto& monster : mMonsters)
-		{
-			if (isCollisionEnter(mPlayer, monster))
-			{
-				//if (monster.GetComponent<Monster>()->state == Monster::eState::Run)
-				{
-					printf("몬 - 플 충돌\n");
-				}
-			}
-			else if (isCollisionStay(mPlayer, monster))
-			{
-				//if (monster.GetComponent<Monster>()->state == Monster::eState::Attack)
-				{
-				}
-			}
-		}
+		//for (const auto& monster : mMonsters)
+		//{
+		//	if (isCollisionEnter(mPlayer, monster))
+		//	{
+		//		//if (monster.GetComponent<Monster>()->state == Monster::eState::Run)
+		//		{
+		//			printf("몬 - 플 충돌\n");
+		//		}
+		//	}
+		//	else if (isCollisionStay(mPlayer, monster))
+		//	{
+		//		//if (monster.GetComponent<Monster>()->state == Monster::eState::Attack)
+		//		{
+		//		}
+		//	}
+		//}
 
 		for (const auto& arrow : mArrows)
 		{

@@ -227,6 +227,9 @@ bool MainScene::Update(const float deltaTime)
 
 			if (length >= RANGE)
 			{
+				DebugActive* debugActive = mSwordSkill.GetComponent<DebugActive>();
+				debugActive->isValue = false;
+
 				Animator* effectAnim = mSwordSkill.GetComponent<Animator>();
 				effectAnim->frameIndex = 0;
 				effectAnim->elapsedTime = 0.0f;
@@ -1155,6 +1158,7 @@ void MainScene::initialize_Entity()
 		mPlayer.AddComponent(collider);
 
 		BoxCollider boxCollider{};
+		boxCollider.offset = { .x = 0.0f, .y = 32.0f };
 		boxCollider.size = { .width = float(mPlayerRunTextures[3].GetWidth()), .height = float(mPlayerRunTextures[3].GetHeight()) };
 		mPlayer.AddComponent(boxCollider);
 
@@ -1278,6 +1282,20 @@ void MainScene::initialize_Entity()
 		Color color{};
 		mSwordSkill.AddComponent(color);
 
+		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::SwordSkill));
+		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
+		mSwordSkill.AddComponent(collider);
+
+		BoxCollider boxCollider{};
+		boxCollider.size = { .width = float(mSwordSkillTextures[5].GetWidth()), .height = float(mSwordSkillTextures[5].GetHeight()) };
+		mSwordSkill.AddComponent(boxCollider);
+
+		DebugActive debugActive{};
+		mSwordSkill.AddComponent(debugActive);
+
+		DebugColor debugColor{};
+		mSwordSkill.AddComponent(debugColor);
+
 		GetEntityWorld()->AddEntity(&mSwordSkill);
 	}
 
@@ -1313,6 +1331,20 @@ void MainScene::initialize_Entity()
 		Color color{};
 		mBullet.AddComponent(color);
 
+		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Bullet));
+		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
+		mBullet.AddComponent(collider);
+
+		BoxCollider boxCollider{};
+		boxCollider.size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
+		mBullet.AddComponent(boxCollider);
+
+		DebugActive debugActive{};
+		mBullet.AddComponent(debugActive);
+
+		DebugColor debugColor{};
+		mBullet.AddComponent(debugColor);
+
 		GetEntityWorld()->AddEntity(&mBullet);
 	}
 
@@ -1337,7 +1369,7 @@ void MainScene::initialize_Entity()
 			entity.AddComponent(arrow);
 
 			Transform transform{};
-			transform.scale = { .width = 4.0f, .height = 4.0f };
+			transform.scale = { .width = 2.5f, .height = 2.5f };
 			transform.angle = 90.0f;
 			entity.AddComponent(transform);
 
@@ -1411,7 +1443,14 @@ void MainScene::input()
 	{
 		for (Entity* entity : GetEntityWorld()->GetAllEntites())
 		{
+
 			if (not entity->HasComponent<DebugActive>())
+			{
+				continue;
+			}
+
+			if (const Active* active = entity->GetComponent<Active>();
+				not active->isValue)
 			{
 				continue;
 			}
@@ -1419,7 +1458,6 @@ void MainScene::input()
 			DebugActive* debugActive = entity->GetComponent<DebugActive>();
 			debugActive->isValue = !debugActive->isValue;
 		}
-
 	}
 }
 
@@ -1743,6 +1781,7 @@ void MainScene::spawnMonster(Entity* entity, const eMonsterType type, const floa
 		hp->max = 3;
 		monster->attackDistance = 300.0f;
 		monster->clips = mArcherClips.data();
+		boxCollider->size = { .width = float(mArcherAttackTextures[7].GetWidth()), .height = float(mArcherAttackTextures[7].GetHeight()) };
 		break;
 
 	default:
