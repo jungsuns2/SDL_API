@@ -95,6 +95,12 @@ bool MainScene::Update(const float deltaTime)
 				active->isValue = false;
 			}
 
+			for (Entity& hpBar : mMonsterHpBar)
+			{
+				Active* active = hpBar.GetComponent<Active>();
+				active->isValue = false;
+			}
+
 			// 라벨 정보를 갱신한다.
 			{
 				Label* label = mStageLabel.GetComponent<Label>();
