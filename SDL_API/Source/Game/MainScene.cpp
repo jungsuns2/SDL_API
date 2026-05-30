@@ -174,11 +174,11 @@ bool MainScene::Update(const float deltaTime)
 		Transform* target = mPlayer.GetComponent<Transform>();
 		transform->position = target->position;
 
-		constexpr float OFFSET = 31.0f;
+		constexpr Point OFFSET = { .x = 24.0f, .y = 23.0f };
 		const Scale halfScreen =
 		{
-			.width = Constant::Get().GetHalfWidth() - OFFSET,
-			.height = Constant::Get().GetHalfHeight() - OFFSET,
+			.width = Constant::Get().GetHalfWidth() - OFFSET.x,
+			.height = Constant::Get().GetHalfHeight() - OFFSET.y,
 		};
 
 		clampToTile(transform, { .min = halfScreen.width, .max = halfScreen.width }, { .min = halfScreen.height, .max = halfScreen.height });
