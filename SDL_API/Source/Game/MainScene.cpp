@@ -355,145 +355,13 @@ bool MainScene::Update(const float deltaTime)
 		monsterHpBarMove(10.0f, 10.0f, 55.0f);
 	}
 
-	// Archer 몬스터의 화살을 생성한다.
+	// 원거리 몬스터의 공격을 초기화와 업데이트한다.
 	{
-		for (const Entity& monsterEntity : mMonsters)
-		{
-			Monster* monster = monsterEntity.GetComponent<Monster>();
-			if (monster->type != eMonsterType::Archer)
-			{
-				continue;
-			}
+		spawnRangedAttack(mArrows, eMonsterType::Archer, 7);
+		
+		rangedAttackState(mArrows);
 
-			if (const Active* monsterActive = monsterEntity.GetComponent<Active>();
-				not monsterActive)
-			{
-				continue;
-			}
-
-			const Animator* monsterAnim = monsterEntity.GetComponent<Animator>();
-			if (monsterAnim->clipState == &mArcherClips[uint32_t(Monster::eState::Attack)]
-				and monsterAnim->frameIndex == 7)
-			{
-				for (const Entity& arrowEntity : mArrows)
-				{
-					if (const Active* arrowActive = arrowEntity.GetComponent<Active>();
-						arrowActive->isValue)
-					{
-						continue;
-					}
-
-					Arrow* arrow = arrowEntity.GetComponent<Arrow>();
-					if (arrow->isFire)
-					{
-						continue;
-					}
-
-					if (not monster->isAttackOption)
-					{
-						monster->isAttackOption = true;
-						
-						Active* arrowActive = arrowEntity.GetComponent<Active>();
-						arrowActive->isValue = true;
-
-						arrow->isFire = true;
-
-						const Point centerOffset = { .x = -0.4f, .y = 0.0f };
-						const float centerOffsetX = centerOffset.x * (mArrowTexture.GetWidth() - 1.0f);
-						constexpr float monsterLeftOffsetX = 20.0f;
-						constexpr float monsterRightOffsetX = 80.0f;
-
-						const Transform* playerTransform = mPlayer.GetComponent<Transform>();
-						const Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
-						const Point diff = playerTransform->position - monsterTransform->position;
-
-						Direction* arrowDirection = arrowEntity.GetComponent<Direction>();
-						arrowDirection->value = Math::NormalizeVector(diff);
-
-						Transform* transform = arrowEntity.GetComponent<Transform>();
-						transform->flip = (arrowDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
-
-						float degree = std::atan2(diff.y, diff.x) * (180.0f / 3.141592f);
-						degree -= 90.0f;
-						transform->angle = -degree;
-
-						// Arrow Offset을 계산한다.
-						if (transform->flip == SDL_FLIP_NONE)
-						{
-							arrow->startPosition.x = monsterTransform->position.x
-								+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
-
-							transform->position.x = monsterTransform->position.x
-								+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
-						}
-						else
-						{
-							arrow->startPosition.x = monsterTransform->position.x
-								+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
-
-							transform->position.x = monsterTransform->position.x
-								+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
-						}
-
-						arrow->startPosition.y = monsterTransform->position.y;
-						transform->position.y = monsterTransform->position.y;
-
-						break;
-					}
-				}
-			}
-			else
-			{
-				monster->isAttackOption = false;
-			}
-
-		}
-	}
-
-	// Arrow delete
-	{
-		constexpr float DISTANCE = 300.0f;
-
-		for (const Entity& arrowEntity : mArrows)
-		{
-			if (Active* active = arrowEntity.GetComponent<Active>();
-				not active->isValue)
-			{
-				continue;
-			}
-
-			Arrow* arrow = arrowEntity.GetComponent<Arrow>();
-			Transform* transform = arrowEntity.GetComponent<Transform>();
-			if (Math::GetVectorLength(transform->position - arrow->startPosition) >= DISTANCE)
-			{
-				Active* active = arrowEntity.GetComponent<Active>();
-				active->isValue = false;
-				arrow->isFire = false;
-
-				DebugActive* debugActive = arrowEntity.GetComponent<DebugActive>();
-				debugActive->isValue = false;
-			}
-		}
-	}
-
-	// Arrow 좌표를 업데이트한다.
-	{
-		constexpr float SPEED = 300.0f;
-
-		for (const Entity& entity : mArrows)
-		{
-			Active* active = entity.GetComponent<Active>();
-			if (not active->isValue)
-			{
-				continue;
-			}
-
-			Direction* direction = entity.GetComponent<Direction>();
-			const Point velocity = direction->value * SPEED;
-
-			Transform* transform = entity.GetComponent<Transform>();
-			transform->position = transform->position + velocity * deltaTime;
-		}
+		rangedAttackMove(mArrows, 300.0f, deltaTime);
 	}
 
 	// 충돌을 업데이트한다.
@@ -552,7 +420,7 @@ bool MainScene::Update(const float deltaTime)
 				Active* active = arrowEntity.GetComponent<Active>();
 				active->isValue = false;
 
-				Arrow* arrow = arrowEntity.GetComponent<Arrow>();
+				RangedAttack* arrow = arrowEntity.GetComponent<RangedAttack>();
 				arrow->isFire = false;
 			}
 		}
@@ -1392,7 +1260,8 @@ void MainScene::initialize_Entity()
 	{
 		for (Entity& entity : mArrows)
 		{
-			Arrow arrow{};
+			RangedAttack arrow{};
+			arrow.distance = 300.0f;
 			entity.AddComponent(arrow);
 
 			Transform transform{};
@@ -2079,6 +1948,148 @@ void MainScene::monsterSetClip()
 			assert(false and "지원하지 않는 애니메이션입니다.");
 			break;
 		}
+	}
+}
+
+template<uint32_t T>
+void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const eMonsterType type, const uint32_t spawnFrameIndex)
+{
+	for (const Entity& monsterEntity : mMonsters)
+	{
+		Monster* monster = monsterEntity.GetComponent<Monster>();
+		if (monster->type != type)
+		{
+			continue;
+		}
+
+		if (const Active* monsterActive = monsterEntity.GetComponent<Active>();
+			not monsterActive)
+		{
+			continue;
+		}
+
+		const Animator* monsterAnim = monsterEntity.GetComponent<Animator>();
+		if (monsterAnim->clipState == &mArcherClips[uint32_t(Monster::eState::Attack)]
+			and monsterAnim->frameIndex == spawnFrameIndex)
+		{
+			for (const Entity& rangeEntity : entities)
+			{
+				Active* rangeActive = rangeEntity.GetComponent<Active>();
+				if (rangeActive->isValue)
+				{
+					continue;
+				}
+
+				RangedAttack* rangedAttack = rangeEntity.GetComponent<RangedAttack>();
+				if (rangedAttack->isFire)
+				{
+					continue;
+				}
+
+				if (not monster->isAttackOption)
+				{
+					monster->isAttackOption = true;
+					rangeActive->isValue = true;
+					rangedAttack->isFire = true;
+
+					const Point centerOffset = { .x = -0.4f, .y = 0.0f };
+					const float centerOffsetX = centerOffset.x * (mArrowTexture.GetWidth() - 1.0f);
+					constexpr float monsterLeftOffsetX = 20.0f;
+					constexpr float monsterRightOffsetX = 80.0f;
+
+					const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+					const Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
+					const Point diff = playerTransform->position - monsterTransform->position;
+
+					Direction* rangedDirection = rangeEntity.GetComponent<Direction>();
+					rangedDirection->value = Math::NormalizeVector(diff);
+
+					Transform* transform = rangeEntity.GetComponent<Transform>();
+					transform->flip = (rangedDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+					float degree = std::atan2(diff.y, diff.x) * (180.0f / 3.141592f);
+					degree -= 90.0f;
+					transform->angle = -degree;
+
+					// Arrow Offset을 계산한다.
+					if (transform->flip == SDL_FLIP_NONE)
+					{
+						rangedAttack->startPosition.x = monsterTransform->position.x
+							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
+
+						transform->position.x = monsterTransform->position.x
+							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
+					}
+					else
+					{
+						rangedAttack->startPosition.x = monsterTransform->position.x
+							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
+
+						transform->position.x = monsterTransform->position.x
+							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
+					}
+
+					rangedAttack->startPosition.y = monsterTransform->position.y;
+					transform->position.y = monsterTransform->position.y;
+
+					break;
+				}
+			}
+		}
+		else
+		{
+			monster->isAttackOption = false;
+		}
+	}
+}
+
+template<uint32_t T>
+void MainScene::rangedAttackState(const std::array<Entity, T>& entities)
+{
+	for (const Entity& entity : entities)
+	{
+		if (Active* active = entity.GetComponent<Active>();
+			not active->isValue)
+		{
+			continue;
+		}
+
+		RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
+		if (not rangedAttack->isFire)
+		{
+			continue;
+		}
+
+		Transform* transform = entity.GetComponent<Transform>();
+		if (Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
+		{
+			Active* active = entity.GetComponent<Active>();
+			active->isValue = false;
+
+			rangedAttack->isFire = false;
+
+			DebugActive* debugActive = entity.GetComponent<DebugActive>();
+			debugActive->isValue = false;
+		}
+	}
+}
+
+template<uint32_t T>
+void MainScene::rangedAttackMove(const std::array<Entity, T>& entities, const float speed, const float deltaTime)
+{
+	for (const Entity& entity : entities)
+	{
+		Active* active = entity.GetComponent<Active>();
+		if (not active->isValue)
+		{
+			continue;
+		}
+
+		Direction* direction = entity.GetComponent<Direction>();
+		const Point velocity = direction->value * speed;
+
+		Transform* transform = entity.GetComponent<Transform>();
+		transform->position = transform->position + velocity * deltaTime;
 	}
 }
 

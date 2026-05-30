@@ -131,12 +131,12 @@ struct Effect : public Component
 	float coolTimer{};
 };
 
-struct Arrow : public Component
+struct RangedAttack : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	Arrow() : Component(&_ID) {}
+	RangedAttack() : Component(&_ID) {}
 
+	float distance = 0.0f;
 	bool isFire = false;
 	Point startPosition = { .x = 0.0f, .y = 0.0f };
-	float fireTimer = 0.0f;
 };
