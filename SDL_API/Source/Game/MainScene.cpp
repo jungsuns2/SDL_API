@@ -387,6 +387,7 @@ bool MainScene::Update(const float deltaTime)
 
 	// 충돌을 업데이트한다.
 	{
+		// 몬스터와 플레이어
 		for (const Entity& monsterEntity : mMonsters)
 		{
 			if (not monsterEntity.GetComponent<Active>()->isValue)
@@ -419,6 +420,7 @@ bool MainScene::Update(const float deltaTime)
 			}
 		}
 
+		// 화살과 플레이어
 		for (const Entity& arrowEntity : mArrows)
 		{
 			if (Active* active = arrowEntity.GetComponent<Active>();
@@ -445,6 +447,9 @@ bool MainScene::Update(const float deltaTime)
 				arrow->isFire = false;
 			}
 		}
+
+		// 몬스터와 플레이어 칼 이펙트
+		swordSkillToMonsterCollision();
 
 		mPreviousCollidedEntityPairs = mCollidedEntityPairs;
 		mCollidedEntityPairs.clear();
@@ -1729,11 +1734,11 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	hp->value = hp->max;
 	active->isValue = true;
 
-	for (Entity& hpBar : mMonsterHpBar)
+	for (const Entity& hpBar : mMonsterHpBar)
 	{
 		const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
 
-		Transform* transform = entity->GetComponent<Transform>();
+		Transform* transform = hpBar.GetComponent<Transform>();
 		transform->scale.width = currentWidth;
 	}
 }
@@ -2112,6 +2117,32 @@ void MainScene::rangedAttackMove(const std::array<Entity, T>& entities, const fl
 
 		Transform* transform = entity.GetComponent<Transform>();
 		transform->position = transform->position + velocity * deltaTime;
+	}
+}
+
+void MainScene::swordSkillToMonsterCollision()
+{
+	for (Entity& monsterEntity : mMonsters)
+	{
+		if (Active* active = monsterEntity.GetComponent<Active>();
+			not active->isValue)
+		{
+			continue;
+		}
+
+		if (isCollisionEnter(mSwordSkill, monsterEntity))
+		{
+			Hp* hp = monsterEntity.GetComponent<Hp>();
+			hp->value -= 1;
+
+			for (const Entity& hpBar : mMonsterHpBar)
+			{
+				const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
+
+				Transform* transform = hpBar.GetComponent<Transform>();
+				transform->scale.width = currentWidth;
+			}
+		}
 	}
 }
 

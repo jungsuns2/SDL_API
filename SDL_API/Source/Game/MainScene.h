@@ -98,6 +98,8 @@ private:
 	template<uint32_t T>
 	void rangedAttackMove(const std::array<Entity, T>& entities, const float speed, const float deltaTime);
 
+	void swordSkillToMonsterCollision();
+
 	void clampToTile(Transform* transform, const Range rangeX, const Range RangeY);
 
 	Point getScreenMousePosition() const;
