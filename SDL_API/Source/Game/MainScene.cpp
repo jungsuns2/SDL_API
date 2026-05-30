@@ -101,6 +101,12 @@ bool MainScene::Update(const float deltaTime)
 				active->isValue = false;
 			}
 
+			for (Entity& arrow : mArrows)
+			{
+				Active* active = arrow.GetComponent<Active>();
+				active->isValue = false;
+			}
+
 			// 라벨 정보를 갱신한다.
 			{
 				Label* label = mStageLabel.GetComponent<Label>();
@@ -178,7 +184,7 @@ bool MainScene::Update(const float deltaTime)
 		clampToTile(transform, { .min = halfScreen.width, .max = halfScreen.width }, { .min = halfScreen.height, .max = halfScreen.height });
 	}
 
-	// 칼을 업데이트한다.
+	// 칼 이동을 업데이트한다.
 	{
 		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 
@@ -193,23 +199,26 @@ bool MainScene::Update(const float deltaTime)
 		swordTransform->position = Math::LerpVector(swordTransform->position, targetPosition, 0.16f);
 	}
 
-	// 칼의 이펙트를 업데이트한다.
+	// 칼 이펙트를 스폰한다.
 	{
-		Transform* effectTransform = mSwordSkill.GetComponent<Transform>();
-		Direction* effectDirection = mSwordSkill.GetComponent<Direction>();
-
-		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
-
 		Active* active = mSwordSkill.GetComponent<Active>();
-		Effect* effect = mSwordSkill.GetComponent<Effect>();
-		if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT)
+		if (Effect* effect = mSwordSkill.GetComponent<Effect>();
+			Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT)
 			and not active->isValue
 			and not effect->isDisabled)
 		{
 			active->isValue = true;
 
+			const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+
+			RangedAttack* rangedAttack = mSwordSkill.GetComponent<RangedAttack>();
+			rangedAttack->startPosition = playerTransform->position;
+
+			Transform* effectTransform = mSwordSkill.GetComponent<Transform>();
 			effectTransform->position = playerTransform->position;
+
 			const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
+			Direction* effectDirection = mSwordSkill.GetComponent<Direction>();
 			effectDirection->value = Math::NormalizeVector(mouseToPlayer);
 
 			float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
@@ -218,20 +227,26 @@ bool MainScene::Update(const float deltaTime)
 
 			effectTransform->flip = (effectDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 		}
+	}
 
+	// 칼 이펙트를 업데이트한다.
+	{
 		constexpr float SPEED = 900.0f;
-		Point velocity = effectDirection->value * SPEED;
-		effectTransform->position = effectTransform->position + velocity * deltaTime;
-
-		constexpr float LENGTH = 15.0f;
-		constexpr float RANGE = LENGTH * LENGTH;
 		constexpr float SWING_COOLTIME = 0.7f;
-		if (active->isValue)
-		{
-			const Point toEffect = effectTransform->position - playerTransform->position;
-			float length = Math::GetVectorLength(toEffect);
 
-			if (length >= RANGE)
+		Direction* direction = mSwordSkill.GetComponent<Direction>();
+		const Point velocity = direction->value * SPEED;
+
+		Transform* transform = mSwordSkill.GetComponent<Transform>();
+		transform->position = transform->position + velocity * deltaTime;
+
+		Effect* effect = mSwordSkill.GetComponent<Effect>();
+
+		if (Active* active = mSwordSkill.GetComponent<Active>(); 
+			active->isValue)
+		{			
+			if (const RangedAttack* rangedAttack = mSwordSkill.GetComponent<RangedAttack>();
+				Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
 			{
 				DebugActive* debugActive = mSwordSkill.GetComponent<DebugActive>();
 				debugActive->isValue = false;
@@ -1158,8 +1173,9 @@ void MainScene::initialize_Entity()
 		Effect effect{};
 		mSwordSkill.AddComponent(effect);
 
-		WeaponState state{};
-		mSwordSkill.AddComponent(state);
+		RangedAttack rangedAttack{};
+		rangedAttack.distance = 200.0f;
+		mSwordSkill.AddComponent(rangedAttack);
 
 		Direction direction{};
 		mSwordSkill.AddComponent(direction);
