@@ -1634,14 +1634,16 @@ void MainScene::initializeMonsters()
 
 void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 {
+	constexpr Point TILE_OFFSET = { .x = 30.0f, .y = 50.0f };
+
 	uint32_t monsterIndex = 0;
 
 	// TODO: Rect 멤버변수로 저장해서 처리하자.
 	const Point leftTopTilePosition = mTiles[0][0].GetComponent<Transform>()->position;
 	const Point rightBottomTilePosition = mTiles[mTileMaxCount - 1][mTileMaxCount - 1].GetComponent<Transform>()->position;
 
-	float groupX = getRandom(leftTopTilePosition.x + 30.0f, rightBottomTilePosition.x - 30.0f);
-	float groupY = getRandom(rightBottomTilePosition.y + 50.0f, leftTopTilePosition.y - 50.0f);
+	float groupX = getRandom(leftTopTilePosition.x + TILE_OFFSET.x, rightBottomTilePosition.x - TILE_OFFSET.x);
+	float groupY = getRandom(rightBottomTilePosition.y + TILE_OFFSET.y, leftTopTilePosition.y - TILE_OFFSET.y);
 
 	for (uint32_t i = 0; i < group.count; ++i)
 	{
