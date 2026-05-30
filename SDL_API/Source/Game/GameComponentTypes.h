@@ -38,7 +38,8 @@ struct Monster : public Component
 
 	Clip* clips = nullptr;
 	eState state{};
-	eMonsterType type{};
+	eMonsterType type = eMonsterType::None;
+	bool isAttackOption = false;
 	float length = 0.0f;
 	float attackDistance = 0.0f;
 	float spawnBlinkTimer = 0.0f;

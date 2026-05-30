@@ -34,6 +34,15 @@ struct GameWaveState
 	float labelShowElapsedTime;
 };
 
+struct SpawnMonsterDesc
+{
+	Entity* entity;
+	const eMonsterType type;
+	const bool isAttackOption;
+	const float x;
+	const float y;
+};
+
 class EntityWorld;
 
 class MainScene final : public Scene
@@ -73,7 +82,7 @@ private:
 
 	void initializeMonsters();
 	void spawnMonsterGroup(const MonsterGroup& group);
-	void spawnMonster(Entity* entity, const eMonsterType type, const float x, const float y);
+	void spawnMonster(const SpawnMonsterDesc& desc);
 	void updateMonsterStates(const float deltaTime);
 	void monsterDeadParticle(const float deltaTime);
 	void monsterMove(const float maxSpeed, const float deltaTime);

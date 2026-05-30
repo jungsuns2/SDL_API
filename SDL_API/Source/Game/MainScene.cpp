@@ -371,15 +371,33 @@ bool MainScene::Update(const float deltaTime)
 				continue;
 			}
 
-			for (const Entity& arrowEntity : mArrows)
+			const Animator* monsterAnim = monsterEntity.GetComponent<Animator>();
+			if (monsterAnim->clipState == &mArcherClips[uint32_t(Monster::eState::Attack)]
+				and monsterAnim->frameIndex == 7)
 			{
-				Animator* monsterAnim = monsterEntity.GetComponent<Animator>();
-				if (monsterAnim->clipState == &mArcherClips[uint32_t(Monster::eState::Attack)]
-					and monsterAnim->frameIndex == 7)
+				for (const Entity& arrowEntity : mArrows)
 				{
-					Arrow* arrow = arrowEntity.GetComponent<Arrow>();
-					if (not arrow->isFire)
+					if (const Active* arrowActive = arrowEntity.GetComponent<Active>();
+						arrowActive->isValue)
 					{
+						continue;
+					}
+
+					Arrow* arrow = arrowEntity.GetComponent<Arrow>();
+					if (arrow->isFire)
+					{
+						continue;
+					}
+
+					if (not monster->isAttackOption)
+					{
+						monster->isAttackOption = true;
+						
+						Active* arrowActive = arrowEntity.GetComponent<Active>();
+						arrowActive->isValue = true;
+
+						arrow->isFire = true;
+
 						const Point centerOffset = { .x = -0.4f, .y = 0.0f };
 						const float centerOffsetX = centerOffset.x * (mArrowTexture.GetWidth() - 1.0f);
 						constexpr float monsterLeftOffsetX = 20.0f;
@@ -391,10 +409,9 @@ bool MainScene::Update(const float deltaTime)
 
 						Direction* arrowDirection = arrowEntity.GetComponent<Direction>();
 						arrowDirection->value = Math::NormalizeVector(diff);
-						
+
 						Transform* transform = arrowEntity.GetComponent<Transform>();
 						transform->flip = (arrowDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
-
 
 						float degree = std::atan2(diff.y, diff.x) * (180.0f / 3.141592f);
 						degree -= 90.0f;
@@ -421,61 +438,41 @@ bool MainScene::Update(const float deltaTime)
 						arrow->startPosition.y = monsterTransform->position.y;
 						transform->position.y = monsterTransform->position.y;
 
-						Active* arrowActive = arrowEntity.GetComponent<Active>();
-						arrowActive->isValue = true;
-
-						arrow->isFire = true;
 						break;
 					}
 				}
-				else
-				{
-					Arrow* arrow = arrowEntity.GetComponent<Arrow>();
-					arrow->isFire = false;
-				}
 			}
+			else
+			{
+				monster->isAttackOption = false;
+			}
+
 		}
 	}
 
-	constexpr float DISTANCE = 300.0f;
+	// Arrow delete
+	{
+		constexpr float DISTANCE = 300.0f;
 
-	for (const Entity& arrowEntity : mArrows)
-	{	
-		if (Active* active = arrowEntity.GetComponent<Active>();
-			not active->isValue)
+		for (const Entity& arrowEntity : mArrows)
 		{
-			continue;
-		}
-
-		Arrow* arrow = arrowEntity.GetComponent<Arrow>();
-
-		for (const Entity& monsterEntity : mMonsters)
-		{
-			Animator* anim = monsterEntity.GetComponent<Animator>();
-			if (anim->clipState == &mArcherClips[uint32_t(Monster::eState::Attack)]
-				and anim->frameIndex == anim->clipState->GetLastFrameIndex() - 1)
+			if (Active* active = arrowEntity.GetComponent<Active>();
+				not active->isValue)
 			{
-				anim->frameIndex = anim->clipState->GetLastFrameIndex() - 1;
-				anim->elapsedTime = 0.0f;
-
-				arrow->fireTimer += deltaTime;
-				if (arrow->fireTimer >= 0.3f)
-				{
-					arrow->isFire = false;
-					anim->frameIndex = 0;
-					arrow->fireTimer = 0.0f;
-				}
+				continue;
 			}
-		}
 
-		Transform* transform = arrowEntity.GetComponent<Transform>();
-		if (Math::GetVectorLength(transform->position - arrow->startPosition) >= DISTANCE)
-		{
-			Active* active = arrowEntity.GetComponent<Active>();
-			active->isValue = false;
+			Arrow* arrow = arrowEntity.GetComponent<Arrow>();
+			Transform* transform = arrowEntity.GetComponent<Transform>();
+			if (Math::GetVectorLength(transform->position - arrow->startPosition) >= DISTANCE)
+			{
+				Active* active = arrowEntity.GetComponent<Active>();
+				active->isValue = false;
+				arrow->isFire = false;
 
-			DebugActive* debugActive = arrowEntity.GetComponent<DebugActive>();
-			debugActive->isValue = false;
+				DebugActive* debugActive = arrowEntity.GetComponent<DebugActive>();
+				debugActive->isValue = false;
+			}
 		}
 	}
 
@@ -501,45 +498,47 @@ bool MainScene::Update(const float deltaTime)
 
 	// 충돌을 업데이트한다.
 	{
-		//for (const Entity& monster : mMonsters)
-		//{
-		//	if (not monster.GetComponent<Active>()->isValue)
-		//	{
-		//		continue;
-		//	}
-
-		//	if (isCollisionEnter(mPlayer, monster))
-		//	{
-		//		if (monster.GetComponent<Monster>()->state == Monster::eState::Run
-		//			or monster.GetComponent<Monster>()->state == Monster::eState::Attack)
-		//		{
-		//			Hp* playerHp = mPlayer.GetComponent<Hp>();
-		//			playerHp->value -= 1;
-
-		//			std::string name = "Hp: " + std::to_string(playerHp->value);
-		//			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
-		//			playerLabel->text = name;
-		//		}
-		//	}
-		//	else if (isCollisionStay(mPlayer, monster))
-		//	{
-		//		if (monster.GetComponent<Monster>()->state == Monster::eState::Attack)
-		//		{
-		//			Knockback* knockback = mPlayer.GetComponent<Knockback>();
-		//			knockback->isValue = true;
-		//		}
-		//	}
-		//}
-
-		for (const Entity& arrow : mArrows)
+		for (const Entity& monsterEntity : mMonsters)
 		{
-			if (Active* active = arrow.GetComponent<Active>();
+			if (not monsterEntity.GetComponent<Active>()->isValue)
+			{
+				continue;
+			}
+
+			Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
+
+			if (isCollisionEnter(mPlayer, monsterEntity))
+			{
+				if (monsterState == Monster::eState::Run
+					or monsterState == Monster::eState::Attack)
+				{
+					Hp* playerHp = mPlayer.GetComponent<Hp>();
+					playerHp->value -= 1;
+
+					std::string name = "Hp: " + std::to_string(playerHp->value);
+					Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+					playerLabel->text = name;
+				}
+			}
+			else if (isCollisionStay(mPlayer, monsterEntity))
+			{
+				if (monsterState == Monster::eState::Attack)
+				{
+					Knockback* knockback = mPlayer.GetComponent<Knockback>();
+					knockback->isValue = true;
+				}
+			}
+		}
+
+		for (const Entity& arrowEntity : mArrows)
+		{
+			if (Active* active = arrowEntity.GetComponent<Active>();
 				not active->isValue)
 			{
 				continue;
 			}
 
-			if (isCollisionEnter(mPlayer, arrow))
+			if (isCollisionEnter(mPlayer, arrowEntity))
 			{
 				Hp* playerHp = mPlayer.GetComponent<Hp>();
 				playerHp->value -= 1;
@@ -547,6 +546,14 @@ bool MainScene::Update(const float deltaTime)
 				std::string name = "Hp: " + std::to_string(playerHp->value);
 				Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
 				playerLabel->text = name;
+			}
+			else if (isCollisionStay(mPlayer, arrowEntity))
+			{
+				Active* active = arrowEntity.GetComponent<Active>();
+				active->isValue = false;
+
+				Arrow* arrow = arrowEntity.GetComponent<Arrow>();
+				arrow->isFire = false;
 			}
 		}
 
@@ -1755,7 +1762,17 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 
 			const float monsterX = groupX + xInGroup;
 			const float monsterY = groupY + yInGroup;
-			spawnMonster(&monster, group.type, monsterX, monsterY);
+			spawnMonster
+			(
+				SpawnMonsterDesc
+				{
+					.entity = &monster,
+					.type = group.type,
+					.isAttackOption = group.isAttackOption,
+					.x = monsterX,
+					.y = monsterY
+				}
+			);
 
 			break;
 		}
@@ -1764,9 +1781,13 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 	}
 }
 
-void MainScene::spawnMonster(Entity* entity, const eMonsterType type, const float x, const float y)
+void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 {
-	assert(entity != nullptr);
+	Entity* entity = desc.entity;
+	const eMonsterType type = desc.type;
+	const bool isAttackOption = desc.isAttackOption;
+	const float x = desc.x;
+	const float y = desc.y;
 
 	Active* active = entity->GetComponent<Active>();
 	assert(not active->isValue && "이미 사용되고 있는 몬스터입니다.");
@@ -1804,9 +1825,11 @@ void MainScene::spawnMonster(Entity* entity, const eMonsterType type, const floa
 		break;
 
 	default:
-		assert(false && "지원하지 않는 몬스터 유형입니다.");
+		assert(false and "지원하지 않는 몬스터 유형입니다.");
 		break;
 	}
+
+	monster->isAttackOption = isAttackOption;
 
 	Animator* anim = entity->GetComponent<Animator>();
 	anim->frameIndex = 0;

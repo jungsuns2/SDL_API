@@ -12,6 +12,7 @@ struct MonsterGroup
 {
 	eMonsterType type;
 	uint32_t count;
+	bool isAttackOption;
 	Range rangeX;
 	Range rangeY;
 };
@@ -23,6 +24,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	{
 		.type = eMonsterType::BigWhite,
 		.count = 2,
+		.isAttackOption = false,
 		.rangeX = { .min = -100.0f, .max = 100.0f },
 		.rangeY = { .min = -100.0f, .max = 100.0f }
 	}, 
@@ -32,6 +34,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	{
 		.type = eMonsterType::BigWhite,
 		.count = 3, 
+		.isAttackOption = false,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 
@@ -41,7 +44,8 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::BigWhite,
-		.count = 4, 
+		.count = 4,
+		.isAttackOption = false,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
@@ -50,7 +54,8 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::Archer,
-		.count = 1, 
+		.count = 1,
+		.isAttackOption = true,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
@@ -60,6 +65,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	{
 		.type = eMonsterType::Archer,
 		.count = 2, 
+		.isAttackOption = true,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
@@ -69,6 +75,7 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	{
 		.type = eMonsterType::Archer,
 		.count = 3, 
+		.isAttackOption = true,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
@@ -77,7 +84,8 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::Archer,
-		.count = 4, 
+		.count = 4,
+		.isAttackOption = true,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
