@@ -303,9 +303,7 @@ bool MainScene::Update(const float deltaTime)
 			//monsterDeadParticle(deltaTime);
 		}
 
-		// TODO: 몬스터 종류(archer, skel)마다 속도가 결정되도록 수정이 필요하다.
-		constexpr float SPEED = 35.0f;
-		monsterMove(SPEED, deltaTime);
+		monsterMove(deltaTime);
 
 		monsterHpBarMove();
 	}
@@ -1743,6 +1741,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	{
 	case eMonsterType::BigWhite:
 		hp->max = 2;
+		monster->speed = 35.0f;
 		monster->attackDistance = 90.0f;
 		monster->clips = mBigWhiteSkelClips.data();
 		colliderState->idleSize = { .width = float(mBigWhiteSkelIdleTextures[2].GetWidth()), .height = float(mBigWhiteSkelIdleTextures[2].GetHeight()) };
@@ -1758,6 +1757,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 
 	case eMonsterType::Archer:
 		hp->max = 3;
+		monster->speed = 50.0f;
 		monster->attackDistance = 300.0f;
 		monster->clips = mArcherClips.data();
 		colliderState->idleSize = { .width = float(mArcherIdleTextures[1].GetWidth()), .height = float(mArcherIdleTextures[1].GetHeight()) };
@@ -1956,7 +1956,7 @@ void MainScene::monsterDeadParticle(const float deltaTime)
 	}
 }
 
-void MainScene::monsterMove(const float maxSpeed, const float deltaTime)
+void MainScene::monsterMove(const float deltaTime)
 {
 	for (Entity& entity : mMonsters)
 	{
@@ -1983,7 +1983,7 @@ void MainScene::monsterMove(const float maxSpeed, const float deltaTime)
 			Direction* direction = entity.GetComponent<Direction>();
 			direction->value = Math::NormalizeVector(difference);
 
-			const Point velocity = direction->value * maxSpeed;
+			const Point velocity = direction->value * monster->speed;
 
 			Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
 			playerKnockback->direction = direction->value;

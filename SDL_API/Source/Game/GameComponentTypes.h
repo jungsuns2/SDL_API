@@ -40,6 +40,7 @@ struct Monster : public Component
 	Clip* clips = nullptr;
 	eState state{};
 	eMonsterType type = eMonsterType::None;
+	float speed = 0.0f;
 	bool isAttackOption = false;
 	float length = 0.0f;
 	float attackDistance = 0.0f;

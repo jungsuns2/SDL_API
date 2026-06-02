@@ -90,7 +90,7 @@ private:
 	void spawnMonster(const SpawnMonsterDesc& desc);
 	void updateMonsterStates(const float deltaTime);
 	void monsterDeadParticle(const float deltaTime);
-	void monsterMove(const float maxSpeed, const float deltaTime);
+	void monsterMove(const float deltaTime);
 	void monsterHpBarMove();
 	void setDirectionOffset(Entity* setEntity, const Entity& entity0);
 	void monsterSetClip();
