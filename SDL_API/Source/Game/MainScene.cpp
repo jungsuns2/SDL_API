@@ -104,7 +104,7 @@ bool MainScene::Update(const float deltaTime)
 			for (Entity& entity : mMonsters)
 			{
 				Monster* monster = entity.GetComponent<Monster>();
-				monster->state = Monster::eState::Spawn;
+				monster->state = Monster::eState::Dead;
 
 				Active* active = entity.GetComponent<Active>();
 				active->isValue = false;
@@ -253,7 +253,7 @@ bool MainScene::Update(const float deltaTime)
 		constexpr float SPEED = 900.0f;
 		constexpr float SWING_COOLTIME = 0.7f;
 
-		Direction* direction = mSwordSkill.GetComponent<Direction>();
+		const Direction* direction = mSwordSkill.GetComponent<Direction>();
 		const Point velocity = direction->value * SPEED;
 
 		Transform* transform = mSwordSkill.GetComponent<Transform>();
@@ -1850,6 +1850,11 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			break;
 		}
 
+		case Monster::eState::Dead:
+		{
+			__noop;
+			break;
+		}
 		default:
 			assert(false and "지원하지 않는 애니메이션입니다.");
 			break;
@@ -1872,6 +1877,9 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 		hp->value = 0;
 		monsterActive->isValue = false;
+
+		Monster* monster = monsterEntity.GetComponent<Monster>();
+		monster->state = Monster::eState::Dead;
 
 		Active* hpBarActive = mMonsterHpBars[hp->hpBarIndex].GetComponent<Active>();
 		hpBarActive->isValue = false;
@@ -2051,6 +2059,10 @@ void MainScene::monsterSetClip()
 
 		case Monster::eState::Attack:
 			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Attack)]);
+			break;
+
+		case Monster::eState::Dead:
+			__noop;
 			break;
 
 		default:

@@ -30,6 +30,7 @@ struct Monster : public Component
 		Idle,
 		Run,
 		Attack,
+		Dead,
 		Count
 	};
 
