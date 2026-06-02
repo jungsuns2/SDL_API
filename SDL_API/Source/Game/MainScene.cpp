@@ -283,14 +283,13 @@ bool MainScene::Update(const float deltaTime)
 
 	// 충돌을 업데이트한다.
 	{
-		//playerToMonsterCollision();
+		playerToMonsterCollision();
 
 		//playerToArrowCollision();
 
 		// TODO: 충돌 시 Archer 몬스터 Collider 이상
 		swordSkillToMonsterCollision();
-
-		//bulletToMonsterCollision();
+		bulletToMonsterCollision();
 
 		mPreviousCollidedEntityPairs = mCollidedEntityPairs;
 		mCollidedEntityPairs.clear();
@@ -977,8 +976,6 @@ void MainScene::initialize_Entity()
 
 	// Sword
 	{
-		const float SIZE = 3.0f;
-
 		Sword sword{};
 		mSword.AddComponent(sword);
 
@@ -989,7 +986,7 @@ void MainScene::initialize_Entity()
 		mSword.AddComponent(direction);
 
 		Transform transform{};
-		transform.scale = { .width = SIZE, .height = SIZE };
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 		transform.center = { .x = 0.0f,.y = -0.33f };
 		mSword.AddComponent(transform);
 
@@ -1135,7 +1132,7 @@ void MainScene::initialize_Entity()
 			entity.AddComponent(arrow);
 
 			Transform transform{};
-			transform.scale = { .width = 2.5f, .height = 2.5f };
+			transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 			transform.angle = 90.0f;
 			entity.AddComponent(transform);
 
@@ -1269,7 +1266,7 @@ void MainScene::playerMove(const float deltaTime)
 	constexpr float ACC = 62.0f;
 
 	constexpr float KNOCKBACK_FORCE = 0.0f;
-	constexpr float KNOCKBACK_COOLTIMER = 0.7f;
+	constexpr float KNOCKBACK_COOLTIMER = 0.12f;
 
 	const int32_t moveX = Input::Get().GetKey(SDL_SCANCODE_D) - Input::Get().GetKey(SDL_SCANCODE_A);
 	const int32_t moveY = Input::Get().GetKey(SDL_SCANCODE_W) - Input::Get().GetKey(SDL_SCANCODE_S);
@@ -2252,7 +2249,8 @@ void MainScene::playerToMonsterCollision()
 {
 	for (const Entity& monsterEntity : mMonsters)
 	{
-		if (not monsterEntity.GetComponent<Active>()->isValue)
+		if (const Active* active = monsterEntity.GetComponent<Active>();
+			not active)
 		{
 			continue;
 		}
@@ -2285,8 +2283,8 @@ void MainScene::playerToArrowCollision()
 {
 	for (const Entity& arrowEntity : mArrows)
 	{
-		if (Active* active = arrowEntity.GetComponent<Active>();
-			not active->isValue)
+		if (const Active* active = arrowEntity.GetComponent<Active>();
+			not active)
 		{
 			continue;
 		}
@@ -2318,7 +2316,8 @@ void MainScene::swordSkillToMonsterCollision()
 {
 	for (Entity& monsterEntity : mMonsters)
 	{
-		if (not monsterEntity.GetComponent<Active>()->isValue)
+		if (const Active* active = monsterEntity.GetComponent<Active>();
+			not active)
 		{
 			continue;
 		}
@@ -2352,7 +2351,8 @@ void MainScene::bulletToMonsterCollision()
 {
 	for (Entity& monsterEntity : mMonsters)
 	{
-		if (not monsterEntity.GetComponent<Active>()->isValue)
+		if (const Active* active = monsterEntity.GetComponent<Active>();
+			not active)
 		{
 			continue;
 		}
