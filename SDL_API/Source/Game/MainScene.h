@@ -100,6 +100,11 @@ private:
 	void setDirectionOffset(Entity* setEntity, const Entity& entity0);
 	void monsterSetClip();
 
+	void playerToMonsterCollision();
+	void playerToArrowCollision();
+	void swordSkillToMonsterCollision();
+	void bulletToMonsterCollision();
+
 	template<uint32_t T>
 	void spawnRangedAttack(const std::array<Entity, T>& entities, const eMonsterType type, const uint32_t spawnFrameIndex);
 	
@@ -108,8 +113,6 @@ private:
 
 	template<uint32_t T>
 	void rangedAttackMove(const std::array<Entity, T>& entities, const float speed, const float deltaTime);
-
-	void swordSkillToMonsterCollision();
 
 	void clampToTile(Transform* transform, const Range rangeX, const Range RangeY);
 

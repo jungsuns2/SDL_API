@@ -283,73 +283,14 @@ bool MainScene::Update(const float deltaTime)
 
 	// 충돌을 업데이트한다.
 	{
-		// 몬스터와 플레이어
-		for (const Entity& monsterEntity : mMonsters)
-		{
-			if (not monsterEntity.GetComponent<Active>()->isValue)
-			{
-				continue;
-			}
+		//playerToMonsterCollision();
 
-			const Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
-			if (monsterState != Monster::eState::Run
-				and monsterState != Monster::eState::Attack)
-			{
-				continue;
-			}
+		//playerToArrowCollision();
 
-			if (isCollisionEnter(mPlayer, monsterEntity))
-			{
-				Hp* playerHp = mPlayer.GetComponent<Hp>();
-				playerHp->value -= 1;
-
-				std::string name = "Hp: " + std::to_string(playerHp->value);
-				Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
-				playerLabel->text = name;
-			}
-			else if (isCollisionStay(mPlayer, monsterEntity))
-			{
-				if (monsterState == Monster::eState::Attack)
-				{
-					Knockback* knockback = mPlayer.GetComponent<Knockback>();
-					knockback->isValue = true;
-				}
-			}
-		}
-
-		// 화살과 플레이어
-		for (const Entity& arrowEntity : mArrows)
-		{
-			if (Active* active = arrowEntity.GetComponent<Active>();
-				not active->isValue)
-			{
-				continue;
-			}
-
-			if (isCollisionEnter(mPlayer, arrowEntity))
-			{
-				Hp* playerHp = mPlayer.GetComponent<Hp>();
-				playerHp->value -= 1;
-
-				std::string name = "Hp: " + std::to_string(playerHp->value);
-				Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
-				playerLabel->text = name;
-			}
-			else if (isCollisionStay(mPlayer, arrowEntity))
-			{
-				Knockback* knockback = mPlayer.GetComponent<Knockback>();
-				knockback->isValue = true;
-
-				Active* active = arrowEntity.GetComponent<Active>();
-				active->isValue = false;
-
-				RangedAttack* arrow = arrowEntity.GetComponent<RangedAttack>();
-				arrow->isFire = false;
-			}
-		}
-
-		// 몬스터와 플레이어 칼 이펙트
+		// TODO: 충돌 시 Archer 몬스터 Collider 이상
 		swordSkillToMonsterCollision();
+
+		//bulletToMonsterCollision();
 
 		mPreviousCollidedEntityPairs = mCollidedEntityPairs;
 		mCollidedEntityPairs.clear();
@@ -2059,8 +2000,8 @@ void MainScene::monsterMove(const float deltaTime)
 
 			const Point velocity = direction->value * monster->speed;
 
-			Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
-			playerKnockback->direction = direction->value;
+			//Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
+			//playerKnockback->direction = direction->value;
 
 			clampToTile(monsterTransform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
 			monsterTransform->position += velocity * deltaTime;
@@ -2205,13 +2146,14 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 					const Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
 					const Point diff = playerTransform->position - monsterTransform->position;
 
+					const Direction* monsterDirection = monsterEntity.GetComponent<Direction>();
 					Direction* rangedDirection = rangeEntity.GetComponent<Direction>();
-					rangedDirection->value = Math::NormalizeVector(diff);
+					rangedDirection->value = monsterDirection->value;
 
 					Transform* transform = rangeEntity.GetComponent<Transform>();
 					transform->flip = (rangedDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 
-					float degree = std::atan2(diff.y, diff.x) * (180.0f / 3.141592f);
+					float degree = std::atan2(rangedDirection->value.y, rangedDirection->value.x) * (180.0f / 3.141592f);
 					degree -= 90.0f;
 					transform->angle = -degree;
 
@@ -2292,17 +2234,83 @@ void MainScene::rangedAttackMove(const std::array<Entity, T>& entities, const fl
 {
 	for (const Entity& entity : entities)
 	{
-		Active* active = entity.GetComponent<Active>();
-		if (not active->isValue)
+		if (Active* active = entity.GetComponent<Active>(); 
+			not active->isValue)
 		{
 			continue;
 		}
 
-		Direction* direction = entity.GetComponent<Direction>();
+		const Direction* direction = entity.GetComponent<Direction>();
 		const Point velocity = direction->value * speed;
 
 		Transform* transform = entity.GetComponent<Transform>();
 		transform->position = transform->position + velocity * deltaTime;
+	}
+}
+
+void MainScene::playerToMonsterCollision()
+{
+	for (const Entity& monsterEntity : mMonsters)
+	{
+		if (not monsterEntity.GetComponent<Active>()->isValue)
+		{
+			continue;
+		}
+
+		const Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
+		if (monsterState != Monster::eState::Run
+			and monsterState != Monster::eState::Attack)
+		{
+			continue;
+		}
+
+		if (isCollisionEnter(mPlayer, monsterEntity))
+		{
+			Hp* playerHp = mPlayer.GetComponent<Hp>();
+			playerHp->value -= 1;
+
+			std::string name = "Hp: " + std::to_string(playerHp->value);
+			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+			playerLabel->text = name;
+		}
+		else if (isCollisionStay(mPlayer, monsterEntity))
+		{
+			Knockback* knockback = mPlayer.GetComponent<Knockback>();
+			knockback->isValue = true;
+		}
+	}
+}
+
+void MainScene::playerToArrowCollision()
+{
+	for (const Entity& arrowEntity : mArrows)
+	{
+		if (Active* active = arrowEntity.GetComponent<Active>();
+			not active->isValue)
+		{
+			continue;
+		}
+
+		if (isCollisionEnter(mPlayer, arrowEntity))
+		{
+			Hp* playerHp = mPlayer.GetComponent<Hp>();
+			playerHp->value -= 1;
+
+			std::string name = "Hp: " + std::to_string(playerHp->value);
+			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+			playerLabel->text = name;
+		}
+		else if (isCollisionStay(mPlayer, arrowEntity))
+		{
+			Knockback* knockback = mPlayer.GetComponent<Knockback>();
+			knockback->isValue = true;
+
+			Active* active = arrowEntity.GetComponent<Active>();
+			active->isValue = false;
+
+			RangedAttack* arrow = arrowEntity.GetComponent<RangedAttack>();
+			arrow->isFire = false;
+		}
 	}
 }
 
@@ -2328,14 +2336,54 @@ void MainScene::swordSkillToMonsterCollision()
 			hp->value -= 1;
 			
 			const Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
-			Transform* transform = hpBarEntity.GetComponent<Transform>();
+			Transform* hpBarTransform = hpBarEntity.GetComponent<Transform>();
 			const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
-			transform->scale.width = currentWidth;
+			hpBarTransform->scale.width = currentWidth;
 		}
 		else if (isCollisionStay(mSwordSkill, monsterEntity))
 		{
 			Knockback* knockback = monsterEntity.GetComponent<Knockback>();
 			knockback->isValue = true;
+		}
+	}
+}
+
+void MainScene::bulletToMonsterCollision()
+{
+	for (Entity& monsterEntity : mMonsters)
+	{
+		if (not monsterEntity.GetComponent<Active>()->isValue)
+		{
+			continue;
+		}
+
+		const Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
+		if (monsterState != Monster::eState::Run
+			and monsterState != Monster::eState::Attack)
+		{
+			continue;
+		}
+
+		for (Entity& bulletEntity : mBullets)
+		{
+			if (isCollisionEnter(bulletEntity, monsterEntity))
+			{
+				Hp* hp = monsterEntity.GetComponent<Hp>();
+				hp->value -= 2;
+
+				const Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
+				Transform* transform = hpBarEntity.GetComponent<Transform>();
+				const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
+				transform->scale.width = currentWidth;
+
+				Active* bulletActive = bulletEntity.GetComponent<Active>();
+				bulletActive->isValue = false;
+			}
+			else if (isCollisionStay(bulletEntity, monsterEntity))
+			{
+				Knockback* knockback = monsterEntity.GetComponent<Knockback>();
+				knockback->isValue = true;
+			}
 		}
 	}
 }
