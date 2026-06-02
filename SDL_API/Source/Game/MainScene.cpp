@@ -204,62 +204,23 @@ bool MainScene::Update(const float deltaTime)
 
 	updateSwordSkill(deltaTime);
 
-	// 총을 업데이트한다.
-	{
-		setWeaponPosition
-		(
-			{
-				.weaponEntity = &mGun,
-				.dgreeOffset = 0.0f,
-				.flipX = SDL_FLIP_NONE,
-				.flipY = SDL_FLIP_VERTICAL
-			}
-		);
-	}
+	updateSwordSkillStates(deltaTime);
 
-	// 총알을 업데이트한다.
-	{
-		constexpr float FIRE_COOLTIME = 1.0f;
-		constexpr float LENGTH = 300.0f;
-		constexpr float SPEED = 1300.0f;
-
-		const Transform* gunTransform = mGun.GetComponent<Transform>();
-
-		Bullet* bullet = mBullet.GetComponent<Bullet>();
-		Transform* bulletTransform = mBullet.GetComponent<Transform>();
-		Direction* bulletDirection = mBullet.GetComponent<Direction>();
-		Animator* bulletAnim = mBullet.GetComponent<Animator>();
-		Active* active = mBullet.GetComponent<Active>();
-		WeaponState* bulletState = mBullet.GetComponent<WeaponState>();
-
-		bulletState->fireCoolTimer += deltaTime;
-		if (bulletState->fireCoolTimer >= FIRE_COOLTIME)
+	setWeaponPosition
+	(
 		{
-			bulletAnim->frameIndex = 0;
-			bulletAnim->elapsedTime = 0.0f;
-
-			active->isValue = true;
-			bulletTransform->position = gunTransform->position;
-
-			const Point difference = getScreenMousePosition() - gunTransform->position;
-			const float length = Math::GetVectorLength(difference);
-
-			bulletDirection->value = difference / length;
-			bulletState->fireCoolTimer = 0.0f;
+			.weaponEntity = &mGun,
+			.dgreeOffset = 0.0f,
+			.flipX = SDL_FLIP_NONE,
+			.flipY = SDL_FLIP_VERTICAL
 		}
+	);
 
-		Point velocity = bulletDirection->value * SPEED;
-		bulletTransform->position = bulletTransform->position + velocity * deltaTime;
+	spawnBullets(deltaTime);
 
-		const Point toBullet = bulletTransform->position - gunTransform->position;
-		const float distSq = Math::GetVectorLength(toBullet);
-		const float rangeSq = LENGTH * LENGTH;
+	updateBullets(deltaTime);
 
-		if (distSq >= rangeSq)
-		{
-			active->isValue = false;
-		}
-	}
+	updateBulletStates();
 
 	// 몬스터를 업데이트한다.
 	{
@@ -267,37 +228,40 @@ bool MainScene::Update(const float deltaTime)
 
 		// 충돌했을 때 애니메이션 처리
 		{
-			//	constexpr float DAMAGE_TIME = 0.3f;
-			//	static int32_t prevHp[10]{};
-			//	for (uint32_t i = 0; i < mMonsters.size(); ++i)
-			//	{
-			//		Entity entity = mMonsters[i];
-			//		Monster* monster = entity.GetComponent<Monster>();
-			//		DamageTimer* damage = entity.GetComponent<DamageTimer>();
-			//		Hp* hp = entity.GetComponent<Hp>();
-			//		prevHp[i] = hp->value;
+			constexpr float DAMAGE_TIME = 0.12f;
 
-			//		if (prevHp[i] != hp->value)
-			//		{
-			//			Color* color = entity.GetComponent<Color>();
-			//			color->r = 200;
-			//			color->g = 0;
-			//			color->b = 0;
+			for (Entity& entity : mMonsters)
+			{
+				if (Active* active = entity.GetComponent<Active>();
+					not active->isValue)
+				{
+					continue;
+				}
 
-			//			damage->damageTimer += deltaTime;
-			//			if (damage->damageTimer >= DAMAGE_TIME)
-			//			{
-			//				monster->state = Monster::eState::Run;
-			//				Color* color = entity.GetComponent<Color>();
-			//				color->r = 255;
-			//				color->g = 255;
-			//				color->b = 255;
+				if (Knockback* knockback = entity.GetComponent<Knockback>();
+					knockback->isValue)
+				{
+					Color* color = entity.GetComponent<Color>();
+					color->r = 200;
+					color->g = 0;
+					color->b = 0;
 
-			//				prevHp[i] = hp->value;
-			//				damage->damageTimer = 0.0f;
-			//			}
-			//		}
-			//	}
+					knockback->coolTimer += deltaTime;
+					if (knockback->coolTimer >= DAMAGE_TIME)
+					{
+						Monster* monster = entity.GetComponent<Monster>();
+						monster->state = Monster::eState::Run;
+
+						Color* color = entity.GetComponent<Color>();
+						color->r = 255;
+						color->g = 255;
+						color->b = 255;
+
+						knockback->isValue = false;
+						knockback->coolTimer = 0.0f;
+					}
+				}
+			}
 
 			// 몬스터 죽는 처리 및 파티클이 생성된다.
 			//monsterDeadParticle(deltaTime);
@@ -327,8 +291,9 @@ bool MainScene::Update(const float deltaTime)
 				continue;
 			}
 
-			Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
-			if (monsterState == Monster::eState::Spawn)
+			const Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
+			if (monsterState != Monster::eState::Run
+				and monsterState != Monster::eState::Attack)
 			{
 				continue;
 			}
@@ -372,6 +337,9 @@ bool MainScene::Update(const float deltaTime)
 			}
 			else if (isCollisionStay(mPlayer, arrowEntity))
 			{
+				Knockback* knockback = mPlayer.GetComponent<Knockback>();
+				knockback->isValue = true;
+
 				Active* active = arrowEntity.GetComponent<Active>();
 				active->isValue = false;
 
@@ -1155,51 +1123,53 @@ void MainScene::initialize_Entity()
 
 	// Bullet
 	{
-		const float SIZE = 2.0f;
+		for (Entity& entity : mBullets)
+		{
+			Bullet bullet{};
+			entity.AddComponent(bullet);
 
-		Bullet bullet{};
-		mBullet.AddComponent(bullet);
+			RangedAttack rangedAttack{};
+			rangedAttack.distance = 300.0f;
+			entity.AddComponent(rangedAttack);
 
-		WeaponState state{};
-		mBullet.AddComponent(state);
+			Direction direction{};
+			entity.AddComponent(direction);
 
-		Direction direction{};
-		mBullet.AddComponent(direction);
+			Transform transform{};
+			transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+			entity.AddComponent(transform);
 
-		Transform transform{};
-		transform.scale = { .width = SIZE, .height = SIZE };
-		mBullet.AddComponent(transform);
+			mBulletClip.SetLoop(true);
 
-		mBulletClip.SetLoop(true);
+			Image image{};
+			entity.AddComponent(image);
 
-		Image image{};
-		mBullet.AddComponent(image);
+			Animator animator{};
+			animator.clipState = &mBulletClip;
+			entity.AddComponent(animator);
 
-		Animator animator{};
-		animator.clipState = &mBulletClip;
-		mBullet.AddComponent(animator);
+			Active active{};
+			entity.AddComponent(active);
 
-		Active active{};
-		mBullet.AddComponent(active);
+			Color color{};
+			entity.AddComponent(color);
 
-		Color color{};
-		mBullet.AddComponent(color);
+			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Bullet));
+			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
+			entity.AddComponent(collider);
 
-		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Bullet));
-		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-		mBullet.AddComponent(collider);
+			BoxCollider boxCollider{};
+			boxCollider.size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
+			entity.AddComponent(boxCollider);
 
-		BoxCollider boxCollider{};
-		boxCollider.size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
-		mBullet.AddComponent(boxCollider);
+			DebugActive debugActive{};
+			entity.AddComponent(debugActive);
 
-		DebugActive debugActive{};
-		mBullet.AddComponent(debugActive);
+			DebugColor debugColor{};
+			entity.AddComponent(debugColor);
 
-		DebugColor debugColor{};
-		mBullet.AddComponent(debugColor);
-
-		GetEntityWorld()->AddEntity(&mBullet);
+			GetEntityWorld()->AddEntity(&entity);
+		}
 	}
 
 	// Monster
@@ -1549,16 +1519,28 @@ void MainScene::updateSwordSkill(const float deltaTime)
 	constexpr float SPEED = 900.0f;
 	constexpr float SWING_COOLTIME = 0.7f;
 
+	if (const Active* active = mSwordSkill.GetComponent<Active>();
+		not active->isValue)
+	{
+		return;
+	}
+
 	const Direction* direction = mSwordSkill.GetComponent<Direction>();
 	const Point velocity = direction->value * SPEED;
 
 	Transform* transform = mSwordSkill.GetComponent<Transform>();
 	transform->position = transform->position + velocity * deltaTime;
+}
 
+void MainScene::updateSwordSkillStates(const float deltaTime)
+{
+	constexpr float SWING_COOLTIME = 0.7f;
+
+	Transform* transform = mSwordSkill.GetComponent<Transform>();
 	Effect* effect = mSwordSkill.GetComponent<Effect>();
 
-	if (Active* active = mSwordSkill.GetComponent<Active>();
-		active->isValue)
+	Active* active = mSwordSkill.GetComponent<Active>();
+	if (active->isValue)
 	{
 		if (const RangedAttack* rangedAttack = mSwordSkill.GetComponent<RangedAttack>();
 			Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
@@ -1582,10 +1564,98 @@ void MainScene::updateSwordSkill(const float deltaTime)
 	}
 }
 
+void MainScene::spawnBullets(const float deltaTime)
+{
+	constexpr float FIRE_COOLTIME = 1.0f;
+	static float coolTimer;
+	const Transform* gunTransform = mGun.GetComponent<Transform>();
+
+	coolTimer += deltaTime;
+	for (Entity& entity : mBullets)
+	{
+		Active* active = entity.GetComponent<Active>();
+		if (active->isValue)
+		{
+			continue;
+		}
+
+		RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
+		if (rangedAttack->isFire)
+		{
+			continue;
+		}
+
+		if (coolTimer >= FIRE_COOLTIME)
+		{
+			active->isValue = true;
+			rangedAttack->isFire = true;
+
+			Animator* anim = entity.GetComponent<Animator>();
+			anim->frameIndex = 0;
+			anim->elapsedTime = 0.0f;
+
+			rangedAttack->startPosition = gunTransform->position;
+
+			Transform* transform = entity.GetComponent<Transform>();
+			transform->position = gunTransform->position;
+
+			const Point difference = getScreenMousePosition() - gunTransform->position;
+			Direction* direction = entity.GetComponent<Direction>();
+			direction->value = Math::NormalizeVector(difference);
+
+			coolTimer = 0.0f;
+			break;
+		}
+	}
+}
+
+void MainScene::updateBullets(const float deltaTime)
+{
+	constexpr float SPEED = 1300.0f;
+
+	for (Entity& entity : mBullets)
+	{
+		if (const Active* active = entity.GetComponent<Active>();
+			not active->isValue)
+		{
+			continue;
+		}
+
+		const Direction* direction = entity.GetComponent<Direction>();
+		const Point velocity = direction->value * SPEED;
+		Transform* transform = entity.GetComponent<Transform>();
+		transform->position = transform->position + velocity * deltaTime;
+	}
+}
+
+void MainScene::updateBulletStates()
+{
+	for (Entity& entity : mBullets)
+	{
+		if (const Active* active = entity.GetComponent<Active>();
+			not active->isValue)
+		{
+			continue;
+		}
+
+		RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
+		if (not rangedAttack->isFire)
+		{
+			continue;
+		}
+
+		Transform* transform = entity.GetComponent<Transform>();
+		if (Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
+		{
+			Active* active = entity.GetComponent<Active>();
+			active->isValue = false;
+			rangedAttack->isFire = false;
+		}
+	}
+}
+
 void MainScene::initializeMonsters()
 {
-	constexpr float SIZE = 0.7f;
-
 	for (Entity& entity : mMonsters)
 	{
 		Monster monster{};
@@ -1631,6 +1701,9 @@ void MainScene::initializeMonsters()
 
 		DebugColor debugColor{};
 		entity.AddComponent(debugColor);
+
+		Knockback knockback{};
+		entity.AddComponent(knockback);
 
 		GetEntityWorld()->AddEntity(&entity);
 	}
@@ -1764,6 +1837,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		colliderState->runSize = { .width = float(mArcherRunTextures[1].GetWidth()), .height = float(mArcherRunTextures[1].GetHeight()) };
 		colliderState->attackSize = { .width = float(mArcherAttackTextures[7].GetWidth()), .height = float(mArcherAttackTextures[7].GetHeight()) };
 		boxCollider->size = colliderState->runSize;
+		boxCollider->offset = { .x = 0.0f, .y = 0.0f };
 		hpBarOffset->value = { .x = 10.0f, .y = -55.0f };
 		break;
 
@@ -1893,67 +1967,67 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 void MainScene::monsterDeadParticle(const float deltaTime)
 {
-	for (Entity& entity : mMonsters)
-	{
-		if (entity.GetComponent<Active>()->isValue)
-		{
-			continue;
-		}
+	//for (Entity& entity : mMonsters)
+	//{
+	//	if (entity.GetComponent<Active>()->isValue)
+	//	{
+	//		continue;
+	//	}
 
-		Hp* hp = entity.GetComponent<Hp>();
-		if (hp->value > 0.0f)
-		{
-			continue;
-		}
+	//	Hp* hp = entity.GetComponent<Hp>();
+	//	if (hp->value > 0.0f)
+	//	{
+	//		continue;
+	//	}
 
-		Monster* monster = entity.GetComponent<Monster>();
-		Transform* monsterTransform = entity.GetComponent<Transform>();
+	//	Monster* monster = entity.GetComponent<Monster>();
+	//	Transform* monsterTransform = entity.GetComponent<Transform>();
 
-		for (Entity& deadParticle : mDeadParticle)
-		{
-			Particle* particle = deadParticle.GetComponent<Particle>();
-			Direction* direction = deadParticle.GetComponent<Direction>();
-			Point& dir = direction->value;
+	//	for (Entity& deadParticle : mDeadParticle)
+	//	{
+	//		Particle* particle = deadParticle.GetComponent<Particle>();
+	//		Direction* direction = deadParticle.GetComponent<Direction>();
+	//		Point& dir = direction->value;
 
-			dir = getScreenMousePosition() - monsterTransform->position;
-			dir = Math::NormalizeVector(dir);
-			dir = Math::RotatePoint(dir, getRandom(-60.0f, 60.0f));
+	//		dir = getScreenMousePosition() - monsterTransform->position;
+	//		dir = Math::NormalizeVector(dir);
+	//		dir = Math::RotatePoint(dir, getRandom(-60.0f, 60.0f));
 
-			Transform* transform = deadParticle.GetComponent<Transform>();
-			transform->position = monsterTransform->position;
+	//		Transform* transform = deadParticle.GetComponent<Transform>();
+	//		transform->position = monsterTransform->position;
 
-			Active* active = entity.GetComponent<Active>();
-			active->isValue = true;
-		}
+	//		Active* active = entity.GetComponent<Active>();
+	//		active->isValue = true;
+	//	}
 
-		Active* monsterActive = entity.GetComponent<Active>();
-		monsterActive->isValue = false;
-	}
+	//	Active* monsterActive = entity.GetComponent<Active>();
+	//	monsterActive->isValue = false;
+	//}
 
-	for (Entity& entity : mDeadParticle)
-	{
-		Active* active = entity.GetComponent<Active>();
-		if (not active)
-		{
-			continue;
-		}
+	//for (Entity& entity : mDeadParticle)
+	//{
+	//	Active* active = entity.GetComponent<Active>();
+	//	if (not active)
+	//	{
+	//		continue;
+	//	}
 
-		DamageTimer* damage = entity.GetComponent<DamageTimer>();
-		damage->deadTimer -= deltaTime;
+	//	DamageTimer* damage = entity.GetComponent<DamageTimer>();
+	//	damage->deadTimer -= deltaTime;
 
-		if (damage->deadTimer <= 0.0f)
-		{
-			active->isValue = false;
-			continue;
-		}
+	//	if (damage->deadTimer <= 0.0f)
+	//	{
+	//		active->isValue = false;
+	//		continue;
+	//	}
 
-		Transform* transform = entity.GetComponent<Transform>();
-		Particle* particle = entity.GetComponent<Particle>();
-		Direction* direction = entity.GetComponent<Direction>();
+	//	Transform* transform = entity.GetComponent<Transform>();
+	//	Particle* particle = entity.GetComponent<Particle>();
+	//	Direction* direction = entity.GetComponent<Direction>();
 
-		constexpr float SPPED = 3.0f;
-		transform->position += direction->value * SPPED * deltaTime;
-	}
+	//	constexpr float SPPED = 3.0f;
+	//	transform->position += direction->value * SPPED * deltaTime;
+	//}
 }
 
 void MainScene::monsterMove(const float deltaTime)
@@ -2236,14 +2310,14 @@ void MainScene::swordSkillToMonsterCollision()
 {
 	for (Entity& monsterEntity : mMonsters)
 	{
-		if (Active* active = monsterEntity.GetComponent<Active>();
-			not active->isValue)
+		if (not monsterEntity.GetComponent<Active>()->isValue)
 		{
 			continue;
 		}
 
-		Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
-		if (monsterState == Monster::eState::Spawn)
+		const Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
+		if (monsterState != Monster::eState::Run
+			and monsterState != Monster::eState::Attack)
 		{
 			continue;
 		}
@@ -2254,23 +2328,15 @@ void MainScene::swordSkillToMonsterCollision()
 			hp->value -= 1;
 			
 			const Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
-
-			if (Active* active = hpBarEntity.GetComponent<Active>();
-				not active->isValue)
-			{
-				continue;
-			}
-
 			Transform* transform = hpBarEntity.GetComponent<Transform>();
 			const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
 			transform->scale.width = currentWidth;
 		}
 		else if (isCollisionStay(mSwordSkill, monsterEntity))
 		{
-			Active* skillActive = mSwordSkill.GetComponent<Active>();
-			skillActive->isValue = false;
+			Knockback* knockback = monsterEntity.GetComponent<Knockback>();
+			knockback->isValue = true;
 		}
-
 	}
 }
 

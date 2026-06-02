@@ -84,6 +84,11 @@ private:
 
 	void spawnSwordSkill();
 	void updateSwordSkill(const float deltaTime);
+	void updateSwordSkillStates(const float deltaTime);
+
+	void spawnBullets(const float deltaTime);
+	void updateBullets(const float deltaTime);
+	void updateBulletStates();
 
 	void initializeMonsters();
 	void spawnMonsterGroup(const MonsterGroup& group);
@@ -133,7 +138,7 @@ private:
 	Entity mSword{};
 	Entity mSwordSkill{};
 	Entity mGun{};
-	Entity mBullet{};
+	std::array<Entity, 20> mBullets{};
 	Entity** mTiles = nullptr;
 
 	std::array<Entity, 6> mDeadParticle{};
