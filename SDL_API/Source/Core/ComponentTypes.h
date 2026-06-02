@@ -165,14 +165,6 @@ struct LineCollider final : public Component
 	Scale scale{};
 };
 
-struct IsCollider final : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	IsCollider() : Component(&_ID) {}
-
-	bool isValue = false;
-};
-
 struct Offset final : public Component
 {
 	static constexpr uint32_t _ID = 0;

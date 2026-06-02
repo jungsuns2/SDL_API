@@ -59,6 +59,18 @@ bool MainScene::Update(const float deltaTime)
 					continue;
 				}
 
+				if (entity0->HasComponent<Active>()
+					or entity1->HasComponent<Active>())
+				{
+					const Active* active0 = entity0->GetComponent<Active>();
+					const Active* active1 = entity1->GetComponent<Active>();
+					if (not active0->isValue
+						or not active1->isValue)
+					{
+						continue;
+					}
+				}
+
 				{
 					checkCollisionBoxBox(*entity0, *entity1)
 						/*or checkCollisionBoxCircle(*entity0, *entity1)
@@ -207,6 +219,10 @@ bool MainScene::Update(const float deltaTime)
 			and not active->isValue
 			and not effect->isDisabled)
 		{
+			Animator* effectAnim = mSwordSkill.GetComponent<Animator>();
+			effectAnim->frameIndex = 0;
+			effectAnim->elapsedTime = 0.0f;
+
 			active->isValue = true;
 
 			const Transform* playerTransform = mPlayer.GetComponent<Transform>();
@@ -248,9 +264,6 @@ bool MainScene::Update(const float deltaTime)
 			if (const RangedAttack* rangedAttack = mSwordSkill.GetComponent<RangedAttack>();
 				Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
 			{
-				DebugActive* debugActive = mSwordSkill.GetComponent<DebugActive>();
-				debugActive->isValue = false;
-
 				Animator* effectAnim = mSwordSkill.GetComponent<Animator>();
 				effectAnim->frameIndex = 0;
 				effectAnim->elapsedTime = 0.0f;
@@ -1362,6 +1375,7 @@ void MainScene::input()
 		mIsUpdate = false;
 	}
 
+#if defined(_DEBUG)
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
 	{
 		for (Entity* entity : GetEntityWorld()->GetAllEntites())
@@ -1371,16 +1385,11 @@ void MainScene::input()
 				continue;
 			}
 
-			if (const Active* active = entity->GetComponent<Active>();
-				not active->isValue)
-			{
-				continue;
-			}
-
 			DebugActive* debugActive = entity->GetComponent<DebugActive>();
 			debugActive->isValue = !debugActive->isValue;
 		}
 	}
+#endif
 }
 
 void MainScene::playerState(const float deltaTime)
@@ -1655,13 +1664,7 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 
 		for (__noop; monsterIndex < mMonsters.size(); ++monsterIndex)
 		{
-			Entity& monsterEntity = mMonsters[monsterIndex];
-			Entity& hpBarEntity = mMonsterHpBars[monsterIndex];
-			Hp* hp = monsterEntity.GetComponent<Hp>();
-
-			// TODO: 수정하기
-			hp->hpBarIndex = monsterIndex;
-
+			Entity& monsterEntity = mMonsters[monsterIndex];			
 			if (monsterEntity.GetComponent<Active>()->isValue)
 			{
 				continue;
@@ -1673,8 +1676,7 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 			(
 				SpawnMonsterDesc
 				{
-					.entity = &monsterEntity,
-					.hpBarEntity = &hpBarEntity,
+					.index = monsterIndex,
 					.type = group.type,
 					.isAttackOption = group.isAttackOption,
 					.x = monsterX,
@@ -1691,33 +1693,36 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 
 void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 {
-	Entity* entity = desc.entity;
-	Entity* hpBarEntity = desc.hpBarEntity;
+	const uint32_t index = desc.index;
 	const eMonsterType type = desc.type;
 	const bool isAttackOption = desc.isAttackOption;
 	const float x = desc.x;
 	const float y = desc.y;
 
-	Active* active = entity->GetComponent<Active>();
+	Entity& monsterEntity = mMonsters[index];
+	Entity& hpBarEntity = mMonsterHpBars[index];
+
+	Active* active = monsterEntity.GetComponent<Active>();
 	assert(not active->isValue && "이미 사용되고 있는 몬스터입니다.");
 
 	constexpr float SIZE = 0.7f;
 
-	Monster* monster = entity->GetComponent<Monster>();
+	Monster* monster = monsterEntity.GetComponent<Monster>();
 	monster->type = type;
 	monster->state = Monster::eState::Spawn;
 
-	Transform* transform = entity->GetComponent<Transform>();
+	Transform* transform = monsterEntity.GetComponent<Transform>();
 	transform->position = { .x = x, .y = y };
 	transform->scale = { .width = SIZE, .height = SIZE };
 
-	DamageTimer* damageTimer = entity->GetComponent<DamageTimer>();
+	DamageTimer* damageTimer = monsterEntity.GetComponent<DamageTimer>();
 	damageTimer->deadTimer = 0.0f;
 
-	Hp* hp = entity->GetComponent<Hp>();
-	BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
+	Hp* hp = monsterEntity.GetComponent<Hp>();
+	hp->hpBarIndex = index;
 
-	Offset* hpBarOffset = hpBarEntity->GetComponent<Offset>();
+	BoxCollider* boxCollider = monsterEntity.GetComponent<BoxCollider>();
+	Offset* hpBarOffset = hpBarEntity.GetComponent<Offset>();
 
 	switch (monster->type)
 	{
@@ -1748,14 +1753,14 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 
 	monster->isAttackOption = isAttackOption;
 
-	Animator* anim = entity->GetComponent<Animator>();
+	Animator* anim = monsterEntity.GetComponent<Animator>();
 	anim->frameIndex = 0;
 	anim->elapsedTime = 0.0f;
 
 	hp->value = hp->max;
 	active->isValue = true;
 
-	Transform* hpBartransform = hpBarEntity->GetComponent<Transform>();
+	Transform* hpBartransform = hpBarEntity.GetComponent<Transform>();
 	const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
 	hpBartransform->scale = { .width = currentWidth, .height = 0.2f };
 }
@@ -2175,7 +2180,7 @@ void MainScene::swordSkillToMonsterCollision()
 			Hp* hp = monsterEntity.GetComponent<Hp>();
 			hp->value -= 1;
 			
-			Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
+			const Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
 
 			if (Active* active = hpBarEntity.GetComponent<Active>();
 				not active->isValue)
@@ -2187,6 +2192,12 @@ void MainScene::swordSkillToMonsterCollision()
 			const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
 			transform->scale.width = currentWidth;
 		}
+		else if (isCollisionStay(mSwordSkill, monsterEntity))
+		{
+			Active* skillActive = mSwordSkill.GetComponent<Active>();
+			skillActive->isValue = false;
+		}
+
 	}
 }
 

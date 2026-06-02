@@ -55,7 +55,9 @@ bool Core::Update(const float deltaTime)
 	updateAnimator(entityWorld, deltaTime);
 	drawImages(entityWorld);
 
+#if defined(_DEBUG)
 	colliderImageRenderingSystem(entityWorld);
+#endif
 
 	labelUIRenderingSystem(entityWorld);
 	labelRenderingSystem(entityWorld);
@@ -307,6 +309,15 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld)
 			or not entity->HasComponent<DebugColor>())
 		{
 			continue;
+		}
+
+		if (entity->HasComponent<Active>())
+		{
+			if (const Active* active = entity->GetComponent<Active>();
+				not active->isValue)
+			{
+				continue;
+			}
 		}
 
 		if (const DebugActive* active = entity->GetComponent<DebugActive>();

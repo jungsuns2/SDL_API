@@ -36,8 +36,7 @@ struct GameWaveState
 
 struct SpawnMonsterDesc
 {
-	Entity* entity;
-	Entity* hpBarEntity;
+	const uint32_t index;
 	const eMonsterType type;
 	const bool isAttackOption;
 	const float x;
