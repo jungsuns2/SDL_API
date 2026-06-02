@@ -409,19 +409,19 @@ bool MainScene::Update(const float deltaTime)
 			}
 
 			Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
+			if (monsterState == Monster::eState::Spawn)
+			{
+				continue;
+			}
 
 			if (isCollisionEnter(mPlayer, monsterEntity))
 			{
-				if (monsterState == Monster::eState::Run
-					or monsterState == Monster::eState::Attack)
-				{
-					Hp* playerHp = mPlayer.GetComponent<Hp>();
-					playerHp->value -= 1;
+				Hp* playerHp = mPlayer.GetComponent<Hp>();
+				playerHp->value -= 1;
 
-					std::string name = "Hp: " + std::to_string(playerHp->value);
-					Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
-					playerLabel->text = name;
-				}
+				std::string name = "Hp: " + std::to_string(playerHp->value);
+				Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+				playerLabel->text = name;
 			}
 			else if (isCollisionStay(mPlayer, monsterEntity))
 			{
@@ -1616,6 +1616,9 @@ void MainScene::initializeMonsters()
 		BoxCollider boxCollider{};
 		entity.AddComponent(boxCollider);
 
+		ColliderState colliderState{};
+		entity.AddComponent(colliderState);
+
 		DebugActive debugActive{};
 		entity.AddComponent(debugActive);
 
@@ -1722,6 +1725,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	hp->hpBarIndex = index;
 
 	BoxCollider* boxCollider = monsterEntity.GetComponent<BoxCollider>();
+	ColliderState* colliderState = monsterEntity.GetComponent<ColliderState>();
 	Offset* hpBarOffset = hpBarEntity.GetComponent<Offset>();
 
 	switch (monster->type)
@@ -1730,7 +1734,14 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		hp->max = 2;
 		monster->attackDistance = 90.0f;
 		monster->clips = mBigWhiteSkelClips.data();
-		boxCollider->size = { .width = float(mBigWhiteSkelAttackTextures[10].GetWidth()), .height = float(mBigWhiteSkelAttackTextures[10].GetHeight()) };
+		colliderState->idleSize = { .width = float(mBigWhiteSkelIdleTextures[2].GetWidth()), .height = float(mBigWhiteSkelIdleTextures[2].GetHeight()) };
+		colliderState->runSize = { .width = float(mBigWhiteSkelRunTextures[2].GetWidth()), .height = float(mBigWhiteSkelRunTextures[2].GetHeight()) };
+		colliderState->attackSize = { .width = 60.0f, .height = 40.0f };
+		colliderState->idleOffset = { .x = 0.0f, .y = 45.0f };
+		colliderState->runOffset = { .x = 0.0f, .y = 45.0f };
+		colliderState->attackOffset = { .x = 60.0f, .y = 45.0f };
+		boxCollider->size = colliderState->runSize;
+		boxCollider->offset = colliderState->runOffset;
 		hpBarOffset->left = 0.0f;
 		hpBarOffset->right = 0.0f;
 		hpBarOffset->y = 20.0f;
@@ -1740,7 +1751,10 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		hp->max = 3;
 		monster->attackDistance = 300.0f;
 		monster->clips = mArcherClips.data();
-		boxCollider->size = { .width = float(mArcherAttackTextures[7].GetWidth()), .height = float(mArcherAttackTextures[7].GetHeight()) };
+		colliderState->idleSize = { .width = float(mArcherIdleTextures[1].GetWidth()), .height = float(mArcherIdleTextures[1].GetHeight()) };
+		colliderState->runSize = { .width = float(mArcherRunTextures[1].GetWidth()), .height = float(mArcherRunTextures[1].GetHeight()) };
+		colliderState->attackSize = { .width = float(mArcherAttackTextures[7].GetWidth()), .height = float(mArcherAttackTextures[7].GetHeight()) };
+		boxCollider->size = colliderState->runSize;
 		hpBarOffset->left = 10.0f;
 		hpBarOffset->right = 10.0f;
 		hpBarOffset->y = 55.0f;
@@ -1779,10 +1793,15 @@ void MainScene::updateMonsterStates(const float deltaTime)
 		Active* active = entity.GetComponent<Active>();
 		const Animator& anim = *entity.GetComponent<Animator>();
 
+		BoxCollider* boxCollider = entity.GetComponent<BoxCollider>();
+		const ColliderState* colliderState = entity.GetComponent<ColliderState>();
+
 		switch (monster->state)
 		{
 		case Monster::eState::Spawn:
 		{
+			boxCollider->size = { .width = 0.0f, .height = 0.0f };
+
 			monster->spawnBlinkTimer += deltaTime;
 			if (monster->spawnBlinkTimer >= 0.5f)
 			{
@@ -1797,6 +1816,9 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 		case Monster::eState::Attack:
 		{
+			boxCollider->size = colliderState->attackSize;
+			boxCollider->offset = colliderState->attackOffset;
+
 			const Clip& attackClip = monster->clips[uint32_t(Monster::eState::Attack)];
 			if (anim.clipState == &attackClip
 				and anim.frameIndex >= attackClip.GetLastFrameIndex() - 1)
@@ -1812,6 +1834,9 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 		case Monster::eState::Run:
 		{
+			boxCollider->size = colliderState->runSize;
+			boxCollider->offset = colliderState->runOffset;
+
 			if (monster->length <= monster->attackDistance)
 			{
 				monster->state = Monster::eState::Attack;
@@ -1931,18 +1956,18 @@ void MainScene::monsterMove(const float maxSpeed, const float deltaTime)
 
 		Transform* monsterTransform = entity.GetComponent<Transform>();
 		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
-		Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
 
-		const Point monsterPosition = monsterTransform->position;
-		const Point playerPosition = playerTransform->position;
-		const Point difference = playerPosition - monsterPosition;
+		const Point difference = playerTransform->position - monsterTransform->position;
 		monster->length = Math::GetVectorLength(difference);
 
-		Direction* direction = entity.GetComponent<Direction>();
 		if (monster->state == Monster::eState::Run)
 		{
+			Direction* direction = entity.GetComponent<Direction>();
 			direction->value = Math::NormalizeVector(difference);
-			Point velocity = direction->value * maxSpeed;
+
+			const Point velocity = direction->value * maxSpeed;
+
+			Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
 			playerKnockback->direction = direction->value;
 
 			clampToTile(monsterTransform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
@@ -2041,8 +2066,12 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 		}
 
 		const Animator* monsterAnim = monsterEntity.GetComponent<Animator>();
-		if (monsterAnim->clipState == &mArcherClips[uint32_t(Monster::eState::Attack)]
-			and monsterAnim->frameIndex == spawnFrameIndex)
+		if (monsterAnim->clipState != &mArcherClips[uint32_t(Monster::eState::Attack)])
+		{
+			continue;
+		}
+			
+		if (monsterAnim->frameIndex == spawnFrameIndex)
 		{
 			for (const Entity& rangeEntity : entities)
 			{
@@ -2108,6 +2137,18 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 				}
 			}
 		}
+		else if (monsterAnim->frameIndex >= monsterAnim->clipState->GetLastFrameIndex() - 1)
+		{
+			Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
+			const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+
+			const Point difference = playerTransform->position - monsterTransform->position;
+			Direction* direction = monsterEntity.GetComponent<Direction>();
+			direction->value = Math::NormalizeVector(difference);
+			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+			monster->isAttackOption = false;
+		}
 		else
 		{
 			monster->isAttackOption = false;
@@ -2171,6 +2212,12 @@ void MainScene::swordSkillToMonsterCollision()
 	{
 		if (Active* active = monsterEntity.GetComponent<Active>();
 			not active->isValue)
+		{
+			continue;
+		}
+
+		Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
+		if (monsterState == Monster::eState::Spawn)
 		{
 			continue;
 		}
