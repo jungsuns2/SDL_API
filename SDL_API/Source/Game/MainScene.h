@@ -37,6 +37,7 @@ struct GameWaveState
 struct SpawnMonsterDesc
 {
 	Entity* entity;
+	Entity* hpBarEntity;
 	const eMonsterType type;
 	const bool isAttackOption;
 	const float x;
@@ -86,7 +87,7 @@ private:
 	void updateMonsterStates(const float deltaTime);
 	void monsterDeadParticle(const float deltaTime);
 	void monsterMove(const float maxSpeed, const float deltaTime);
-	void monsterHpBarMove(const float leftOffsetX, const float rightOffsetX, const float offsetY);
+	void monsterHpBarMove();
 	void monsterSetClip();
 
 	template<uint32_t T>
@@ -132,7 +133,7 @@ private:
 
 	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 20> mMonsters{};
-	std::array<Entity, 20> mMonsterHpBar{};
+	std::array<Entity, 20> mMonsterHpBars{};
 	std::array<Entity, 40> mArrows{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};

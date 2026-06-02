@@ -95,7 +95,7 @@ bool MainScene::Update(const float deltaTime)
 				active->isValue = false;
 			}
 
-			for (Entity& hpBar : mMonsterHpBar)
+			for (Entity& hpBar : mMonsterHpBars)
 			{
 				Active* active = hpBar.GetComponent<Active>();
 				active->isValue = false;
@@ -373,7 +373,7 @@ bool MainScene::Update(const float deltaTime)
 		constexpr float SPEED = 35.0f;
 		monsterMove(SPEED, deltaTime);
 
-		monsterHpBarMove(10.0f, 10.0f, 55.0f);
+		monsterHpBarMove();
 	}
 
 	// 원거리 몬스터의 공격을 초기화와 업데이트한다.
@@ -1590,6 +1590,7 @@ void MainScene::initializeMonsters()
 		DamageTimer damageTimer{};
 		entity.AddComponent(damageTimer);
 
+		// 체력바
 		Hp hp{};
 		entity.AddComponent(hp);
 
@@ -1615,11 +1616,13 @@ void MainScene::initializeMonsters()
 		GetEntityWorld()->AddEntity(&entity);
 	}
 
-	for (Entity& entity : mMonsterHpBar)
+	for (Entity& entity : mMonsterHpBars)
 	{
 		Transform transform{};
-		transform.scale.height = 0.2f;
 		entity.AddComponent(transform);
+
+		Offset offset{};
+		entity.AddComponent(offset);
 
 		Image image{};
 		image.texture = &mRedRectTexture;
@@ -1652,8 +1655,14 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 
 		for (__noop; monsterIndex < mMonsters.size(); ++monsterIndex)
 		{
-			Entity& monster = mMonsters[monsterIndex];
-			if (monster.GetComponent<Active>()->isValue)
+			Entity& monsterEntity = mMonsters[monsterIndex];
+			Entity& hpBarEntity = mMonsterHpBars[monsterIndex];
+			Hp* hp = monsterEntity.GetComponent<Hp>();
+
+			// TODO: 수정하기
+			hp->hpBarIndex = monsterIndex;
+
+			if (monsterEntity.GetComponent<Active>()->isValue)
 			{
 				continue;
 			}
@@ -1664,7 +1673,8 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 			(
 				SpawnMonsterDesc
 				{
-					.entity = &monster,
+					.entity = &monsterEntity,
+					.hpBarEntity = &hpBarEntity,
 					.type = group.type,
 					.isAttackOption = group.isAttackOption,
 					.x = monsterX,
@@ -1682,6 +1692,7 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 {
 	Entity* entity = desc.entity;
+	Entity* hpBarEntity = desc.hpBarEntity;
 	const eMonsterType type = desc.type;
 	const bool isAttackOption = desc.isAttackOption;
 	const float x = desc.x;
@@ -1706,6 +1717,8 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	Hp* hp = entity->GetComponent<Hp>();
 	BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
 
+	Offset* hpBarOffset = hpBarEntity->GetComponent<Offset>();
+
 	switch (monster->type)
 	{
 	case eMonsterType::BigWhite:
@@ -1713,6 +1726,9 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		monster->attackDistance = 90.0f;
 		monster->clips = mBigWhiteSkelClips.data();
 		boxCollider->size = { .width = float(mBigWhiteSkelAttackTextures[10].GetWidth()), .height = float(mBigWhiteSkelAttackTextures[10].GetHeight()) };
+		hpBarOffset->left = 0.0f;
+		hpBarOffset->right = 0.0f;
+		hpBarOffset->y = 20.0f;
 		break;
 
 	case eMonsterType::Archer:
@@ -1720,6 +1736,9 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		monster->attackDistance = 300.0f;
 		monster->clips = mArcherClips.data();
 		boxCollider->size = { .width = float(mArcherAttackTextures[7].GetWidth()), .height = float(mArcherAttackTextures[7].GetHeight()) };
+		hpBarOffset->left = 10.0f;
+		hpBarOffset->right = 10.0f;
+		hpBarOffset->y = 55.0f;
 		break;
 
 	default:
@@ -1736,13 +1755,9 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	hp->value = hp->max;
 	active->isValue = true;
 
-	for (const Entity& hpBar : mMonsterHpBar)
-	{
-		const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
-
-		Transform* transform = hpBar.GetComponent<Transform>();
-		transform->scale.width = currentWidth;
-	}
+	Transform* hpBartransform = hpBarEntity->GetComponent<Transform>();
+	const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
+	hpBartransform->scale = { .width = currentWidth, .height = 0.2f };
 }
 
 void MainScene::updateMonsterStates(const float deltaTime)
@@ -1804,6 +1819,27 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			assert(false and "지원하지 않는 애니메이션입니다.");
 			break;
 		}
+	}
+
+	for (Entity& monsterEntity : mMonsters)
+	{
+		Active* monsterActive = monsterEntity.GetComponent<Active>();
+		if (not monsterActive)
+		{
+			continue;
+		}
+
+		Hp* hp = monsterEntity.GetComponent<Hp>();
+		if (hp->value > 0)
+		{
+			continue;
+		}
+
+		hp->value = 0;
+		monsterActive->isValue = false;
+
+		Active* hpBarActive = mMonsterHpBars[hp->hpBarIndex].GetComponent<Active>();
+		hpBarActive->isValue = false;
 	}
 }
 
@@ -1911,11 +1947,10 @@ void MainScene::monsterMove(const float maxSpeed, const float deltaTime)
 	}
 }
 
-void MainScene::monsterHpBarMove(const float leftOffsetX, const float rightOffsetX, const float offsetY)
+void MainScene::monsterHpBarMove()
 {
-	for (uint32_t i = 0; i < mMonsters.size(); ++i)
+	for (const Entity& monsterEntity : mMonsters)
 	{
-		const Entity& monsterEntity = mMonsters[i];
 		if (const Active* active = monsterEntity.GetComponent<Active>();
 			not active)
 		{
@@ -1929,17 +1964,20 @@ void MainScene::monsterHpBarMove(const float leftOffsetX, const float rightOffse
 			continue;
 		}
 
-		Entity& hpBarEntity = mMonsterHpBar[i];
+		Hp* hp = monsterEntity.GetComponent<Hp>();
+		Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
+
 		Active* hpBarActive = hpBarEntity.GetComponent<Active>();
 		hpBarActive->isValue = true;
 
 		Transform* hpBarTransform = hpBarEntity.GetComponent<Transform>();
 		const Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
 
+		Offset* offset = hpBarEntity.GetComponent<Offset>();
 		hpBarTransform->position.x = (monsterTransform->flip == SDL_FLIP_NONE) 
-			? monsterTransform->position.x - rightOffsetX 
-			: monsterTransform->position.x + leftOffsetX;
-		hpBarTransform->position.y = monsterTransform->position.y - offsetY;
+			? monsterTransform->position.x - offset->right
+			: monsterTransform->position.x + offset->left;
+		hpBarTransform->position.y = monsterTransform->position.y - offset->y;
 	}
 }
 
@@ -2040,7 +2078,7 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 					degree -= 90.0f;
 					transform->angle = -degree;
 
-					// Arrow Offset을 계산한다.
+					// Offset을 계산한다.
 					if (transform->flip == SDL_FLIP_NONE)
 					{
 						rangedAttack->startPosition.x = monsterTransform->position.x
@@ -2136,14 +2174,18 @@ void MainScene::swordSkillToMonsterCollision()
 		{
 			Hp* hp = monsterEntity.GetComponent<Hp>();
 			hp->value -= 1;
+			
+			Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
 
-			for (const Entity& hpBar : mMonsterHpBar)
+			if (Active* active = hpBarEntity.GetComponent<Active>();
+				not active->isValue)
 			{
-				const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
-
-				Transform* transform = hpBar.GetComponent<Transform>();
-				transform->scale.width = currentWidth;
+				continue;
 			}
+
+			Transform* transform = hpBarEntity.GetComponent<Transform>();
+			const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
+			transform->scale.width = currentWidth;
 		}
 	}
 }

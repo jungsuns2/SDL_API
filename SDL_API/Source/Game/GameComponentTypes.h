@@ -99,8 +99,9 @@ struct Hp : public Component
 	static constexpr uint32_t _ID = 0;
 	Hp() : Component(&_ID) {}
 
-	uint32_t max{};
-	int32_t value{};
+	uint32_t max = 0;
+	int32_t value = 0;
+	uint32_t hpBarIndex = 0;
 };
 
 struct WeaponState : public Component

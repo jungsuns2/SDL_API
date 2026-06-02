@@ -172,3 +172,13 @@ struct IsCollider final : public Component
 
 	bool isValue = false;
 };
+
+struct Offset final : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Offset() : Component(&_ID) {}
+
+	float left = 0.0f;
+	float right = 0.0f;
+	float y = 0.0f;
+};
