@@ -76,9 +76,14 @@ private:
 	void initialize_Entity();
 
 	void input();
+	void updateCamera();
+
 	void playerState(const float deltaTime);
 	void playerMove(const float deltaTime);
 	void playerSetClip();
+
+	void spawnSwordSkill();
+	void updateSwordSkill(const float deltaTime);
 
 	void initializeMonsters();
 	void spawnMonsterGroup(const MonsterGroup& group);
