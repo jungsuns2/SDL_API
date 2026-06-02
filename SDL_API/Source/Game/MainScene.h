@@ -87,6 +87,7 @@ private:
 	void monsterDeadParticle(const float deltaTime);
 	void monsterMove(const float maxSpeed, const float deltaTime);
 	void monsterHpBarMove();
+	void setDirectionOffset(Entity* setEntity, const Entity& entity0);
 	void monsterSetClip();
 
 	template<uint32_t T>

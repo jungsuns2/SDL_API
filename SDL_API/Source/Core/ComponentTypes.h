@@ -170,7 +170,5 @@ struct Offset final : public Component
 	static constexpr uint32_t _ID = 0;
 	Offset() : Component(&_ID) {}
 
-	float left = 0.0f;
-	float right = 0.0f;
-	float y = 0.0f;
+	Point value = { .x = 0.0f, .y = 0.0f };
 };
