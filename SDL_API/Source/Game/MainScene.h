@@ -16,24 +16,6 @@ struct BoxCollider;
 struct CircleCollider;
 struct LineCollider;
 
-struct SetWeaponDesc
-{
-	Entity* weaponEntity;
-	const float dgreeOffset;
-	const SDL_RendererFlip flipX;
-	const SDL_RendererFlip flipY;
-};
-
-struct GameWaveState
-{
-	uint32_t index;
-	uint32_t groupIndex;
-
-	float waveTimer; // 현재 웨이브에서 흐른 시간.
-	float remainingMonsterGroupSpawnTime;
-	float labelShowElapsedTime;
-};
-
 struct SpawnMonsterDesc
 {
 	const uint32_t index;
@@ -41,6 +23,24 @@ struct SpawnMonsterDesc
 	const bool isAttackOption;
 	const float x;
 	const float y;
+};
+
+struct GameWaveState
+{
+	uint32_t index;
+	uint32_t groupIndex;
+
+	float waveTimer; // 현재 웨이브에서 흐른 시간
+	float remainingMonsterGroupSpawnTime;
+	float labelShowElapsedTime;
+};
+
+struct BulletState
+{
+	uint32_t maxCount;
+	uint32_t count;
+	float fireTimer;
+	float reloadTimer;
 };
 
 class EntityWorld;
@@ -88,7 +88,7 @@ private:
 
 	void spawnBullets(const float deltaTime);
 	void updateBullets(const float deltaTime);
-	void updateBulletStates();
+	void updateBulletStates(const float deltaTime);
 
 	void initializeMonsters();
 	void spawnMonsterGroup(const MonsterGroup& group);
@@ -117,7 +117,7 @@ private:
 	void clampToTile(Transform* transform, const Range rangeX, const Range RangeY);
 
 	Point getScreenMousePosition() const;
-	void setWeaponPosition(const SetWeaponDesc& desc);
+	void setWeaponPosition(Entity* entity);
 
 	float getRandom(const float min, const float max);
 
@@ -125,6 +125,7 @@ private:
 	bool mIsUpdate = true;
 	uint32_t mTileMaxCount{};
 	float mTilePositionOffset{};
+	BulletState mBulletState{};
 
 	GameWaveState mGameWaveState{};
 
@@ -134,6 +135,8 @@ private:
 	Entity mMainCamera{};
 	Entity mWaveTimerLebel{};
 	Entity mStageLabel{};
+	Entity mBulletLabel{};
+
 	Entity mPlayer{};
 	Entity mUIPlayerHp{};
 	Entity mPlayerLeftHand{};
@@ -141,7 +144,7 @@ private:
 	Entity mSword{};
 	Entity mSwordSkill{};
 	Entity mGun{};
-	std::array<Entity, 20> mBullets{};
+	std::array<Entity, 10> mBullets{};
 	Entity** mTiles = nullptr;
 
 	std::array<Entity, 6> mDeadParticle{};

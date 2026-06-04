@@ -100,7 +100,7 @@ bool MainScene::Update(const float deltaTime)
 			mGameWaveState.remainingMonsterGroupSpawnTime = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
 			mGameWaveState.labelShowElapsedTime = 0.0f;
 
-			// 다음 웨이브를 위해 몬스터와 연관된 것들을 초기화한다.
+			// 다음 웨이브를 위해 값을 초기화한다.
 			for (Entity& entity : mMonsters)
 			{
 				Monster* monster = entity.GetComponent<Monster>();
@@ -120,6 +120,12 @@ bool MainScene::Update(const float deltaTime)
 			{
 				Active* active = entity.GetComponent<Active>();
 				active->isValue = false;
+			}
+
+			// 플레이어 총알을 갱신한다.
+			{
+				Label* label = mBulletLabel.GetComponent<Label>();
+				label->text = std::to_string(mBulletState.count) + "/" + std::to_string(mBulletState.maxCount);
 			}
 
 			// 라벨 정보를 갱신한다.
@@ -200,27 +206,15 @@ bool MainScene::Update(const float deltaTime)
 		swordTransform->position = Math::LerpVector(swordTransform->position, targetPosition, 0.16f);
 	}
 
+	setWeaponPosition(&mGun);
+
 	spawnSwordSkill();
-
 	updateSwordSkill(deltaTime);
-
 	updateSwordSkillStates(deltaTime);
 
-	setWeaponPosition
-	(
-		{
-			.weaponEntity = &mGun,
-			.dgreeOffset = 0.0f,
-			.flipX = SDL_FLIP_NONE,
-			.flipY = SDL_FLIP_VERTICAL
-		}
-	);
-
 	spawnBullets(deltaTime);
-
 	updateBullets(deltaTime);
-
-	updateBulletStates();
+	updateBulletStates(deltaTime);
 
 	// 몬스터를 업데이트한다.
 	{
@@ -825,6 +819,27 @@ void MainScene::initialize_Entity()
 
 			GetEntityWorld()->AddEntity(&mStageLabel);
 		}
+
+		// Bullet Count
+		{
+			UI ui{};
+			mBulletLabel.AddComponent(ui);
+
+			Label label{};
+			label.font = &mUIFont;
+			label.text = " ";
+			mBulletLabel.AddComponent(label);
+
+			Transform transform{};
+			transform.position = { .x = float(Constant::Get().GetWidth()) - 140.0f, .y = float(Constant::Get().GetHeight()) - 60.0f };
+			mBulletLabel.AddComponent(transform);
+
+			Active active{};
+			active.isValue = true;
+			mBulletLabel.AddComponent(active);
+
+			GetEntityWorld()->AddEntity(&mBulletLabel);
+		}
 	}
 
 	// Gun
@@ -1108,6 +1123,17 @@ void MainScene::initialize_Entity()
 
 			GetEntityWorld()->AddEntity(&entity);
 		}
+
+		mBulletState =
+		{
+			.maxCount = 30,
+			.count = mBulletState.maxCount,
+			.fireTimer = 0.0f,
+			.reloadTimer = 0.0f
+		};
+
+		Label* label = mBulletLabel.GetComponent<Label>();
+		label->text = std::to_string(mBulletState.maxCount) + "/" + std::to_string(mBulletState.maxCount);
 	}
 
 	// Monster
@@ -1504,11 +1530,15 @@ void MainScene::updateSwordSkillStates(const float deltaTime)
 
 void MainScene::spawnBullets(const float deltaTime)
 {
-	constexpr float FIRE_COOLTIME = 1.0f;
-	static float coolTimer;
+	constexpr float FIRE_TIME = 0.8f;
 	const Transform* gunTransform = mGun.GetComponent<Transform>();
 
-	coolTimer += deltaTime;
+	if (mBulletState.count <= 0)
+	{
+		return;
+	}
+
+	mBulletState.fireTimer += deltaTime;
 	for (Entity& entity : mBullets)
 	{
 		Active* active = entity.GetComponent<Active>();
@@ -1523,7 +1553,7 @@ void MainScene::spawnBullets(const float deltaTime)
 			continue;
 		}
 
-		if (coolTimer >= FIRE_COOLTIME)
+		if (mBulletState.fireTimer >= FIRE_TIME)
 		{
 			active->isValue = true;
 			rangedAttack->isFire = true;
@@ -1541,7 +1571,13 @@ void MainScene::spawnBullets(const float deltaTime)
 			Direction* direction = entity.GetComponent<Direction>();
 			direction->value = Math::NormalizeVector(difference);
 
-			coolTimer = 0.0f;
+			--mBulletState.count;
+
+			Label* label = mBulletLabel.GetComponent<Label>();
+			const std::string strLabel = (mBulletState.count < 10) ? "0" + std::to_string(mBulletState.count) : std::to_string(mBulletState.count);
+			label->text = strLabel + "/" + std::to_string(mBulletState.maxCount);
+
+			mBulletState.fireTimer = 0.0f;
 			break;
 		}
 	}
@@ -1566,8 +1602,20 @@ void MainScene::updateBullets(const float deltaTime)
 	}
 }
 
-void MainScene::updateBulletStates()
+void MainScene::updateBulletStates(const float deltaTime)
 {
+	constexpr float RELOAD_TIME = 1.2f;
+
+	if (mBulletState.count <= 0)
+	{
+		mBulletState.reloadTimer += deltaTime;
+		if (mBulletState.reloadTimer >= RELOAD_TIME)
+		{
+			mBulletState.count = mBulletState.maxCount;
+			mBulletState.reloadTimer = 0.0f;
+		}
+	}
+
 	for (Entity& entity : mBullets)
 	{
 		if (const Active* active = entity.GetComponent<Active>();
@@ -2422,19 +2470,16 @@ Point MainScene::getScreenMousePosition() const
 	return screenPosition;
 }
 
-void MainScene::setWeaponPosition(const SetWeaponDesc& desc)
+void MainScene::setWeaponPosition(Entity* entity)
 {
-	Entity* weaponEntity = desc.weaponEntity;
-	const float dgreeOffset = desc.dgreeOffset;
-	const SDL_RendererFlip flipX = desc.flipX;
-	const SDL_RendererFlip flipY = desc.flipY;
+	assert(entity != nullptr);
 
-	Transform* transform = weaponEntity->GetComponent<Transform>();
-	Direction* direction = weaponEntity->GetComponent<Direction>();
+	Transform* transform = entity->GetComponent<Transform>();
+	Direction* direction = entity->GetComponent<Direction>();
 
 	const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 	const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
-	float degree = dgreeOffset + std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
+	float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
 
 	transform->position = playerTransform->position;
 	transform->flip = playerTransform->flip;

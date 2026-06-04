@@ -32,7 +32,6 @@ struct Label final : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	Label() : Component(&_ID) {}
-
 	~Label()
 	{
 		if (texture != nullptr)
