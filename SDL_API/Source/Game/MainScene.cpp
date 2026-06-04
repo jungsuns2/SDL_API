@@ -191,22 +191,8 @@ bool MainScene::Update(const float deltaTime)
 
 	updateCamera();
 
-	// 칼 이동을 업데이트한다.
-	{
-		const Transform* playerTransform = mPlayer.GetComponent<Transform>();
-
-		const Point offset =
-		{
-			.x = (playerTransform->flip == SDL_FLIP_NONE) ? -60.0f : 60.0f,
-			.y = 80.0f
-		};
-		const Point targetPosition = offset + playerTransform->position;
-
-		Transform* swordTransform = mSword.GetComponent<Transform>();
-		swordTransform->position = Math::LerpVector(swordTransform->position, targetPosition, 0.16f);
-	}
-
-	setWeaponPosition(&mGun);
+	updateSword();
+	updateGun();
 
 	spawnSwordSkill();
 	updateSwordSkill(deltaTime);
@@ -2470,12 +2456,10 @@ Point MainScene::getScreenMousePosition() const
 	return screenPosition;
 }
 
-void MainScene::setWeaponPosition(Entity* entity)
+void MainScene::updateGun()
 {
-	assert(entity != nullptr);
-
-	Transform* transform = entity->GetComponent<Transform>();
-	Direction* direction = entity->GetComponent<Direction>();
+	Transform* transform = mGun.GetComponent<Transform>();
+	Direction* direction = mGun.GetComponent<Direction>();
 
 	const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 	const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
@@ -2506,6 +2490,21 @@ void MainScene::setWeaponPosition(Entity* entity)
 
 	const float length = Math::GetVectorLength(mouseToPlayer);
 	direction->value = mouseToPlayer / length;
+}
+
+void MainScene::updateSword()
+{
+	const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+
+	const Point offset =
+	{
+		.x = (playerTransform->flip == SDL_FLIP_NONE) ? -60.0f : 60.0f,
+		.y = 80.0f
+	};
+	const Point targetPosition = offset + playerTransform->position;
+
+	Transform* swordTransform = mSword.GetComponent<Transform>();
+	swordTransform->position = Math::LerpVector(swordTransform->position, targetPosition, 0.16f);
 }
 
 float MainScene::getRandom(const float min, const float max)

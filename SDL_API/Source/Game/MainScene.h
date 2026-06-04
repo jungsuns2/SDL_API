@@ -82,6 +82,9 @@ private:
 	void playerMove(const float deltaTime);
 	void playerSetClip();
 
+	void updateGun();
+	void updateSword();
+
 	void spawnSwordSkill();
 	void updateSwordSkill(const float deltaTime);
 	void updateSwordSkillStates(const float deltaTime);
@@ -117,7 +120,6 @@ private:
 	void clampToTile(Transform* transform, const Range rangeX, const Range RangeY);
 
 	Point getScreenMousePosition() const;
-	void setWeaponPosition(Entity* entity);
 
 	float getRandom(const float min, const float max);
 
