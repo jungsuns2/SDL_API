@@ -6,8 +6,8 @@ namespace Collision
 	inline bool IsCollidedQuadWithPoint(const Quad& quad, const Point point);
 	inline bool IsCollidedRectWithRect(const Rect lhs, const Rect rhs);
 	inline bool IsCollidedSqureWithSqure(const Quad& lhs, const Quad& rhs);
-	inline bool IsCollidedSqureWithLine(const Rect rect, const Line line);
-	inline bool IsCollidedSqureWithCircle(const Rect rect, const Circle& circle);
+	inline bool IsCollidedRectWithLine(const Rect rect, const Line line);
+	inline bool IsCollidedRectWithCircle(const Rect rect, const Circle& circle);
 	inline bool IsCollidedCircleWithPoint(const Circle& circle, const Point point);
 	inline bool IsCollidedCircleWithLine(const Circle& circle, const Line line);
 	inline bool IsCollidedCircleWithCircle(const Circle lhs, const Circle rhs);
@@ -59,7 +59,7 @@ namespace Collision
 		return lhsToRhs or rhsToLhs;
 	}
 
-	bool IsCollidedSqureWithLine(const Rect rect, const Line line)
+	bool IsCollidedRectWithLine(const Rect rect, const Line line)
 	{
 		const Line leftLine =
 		{
@@ -93,7 +93,7 @@ namespace Collision
 		return result;
 	}
 
-	bool IsCollidedSqureWithCircle(const Rect rect, const Circle& circle)
+	bool IsCollidedRectWithCircle(const Rect rect, const Circle& circle)
 	{
 		Line leftLine =
 		{
