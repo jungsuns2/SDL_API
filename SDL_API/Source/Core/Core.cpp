@@ -332,57 +332,58 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld)
 		const Point position = transform->position + boxCollider->offset;
 		const Scale boxHalfSize = transform->scale * boxCollider->size * 0.5f;
 
-		const Point localTL = { -boxHalfSize.width, -boxHalfSize.height };
-		const Point localTR = { boxHalfSize.width, -boxHalfSize.height };
-		const Point localBR = { boxHalfSize.width, boxHalfSize.height };
-		const Point localBL = { -boxHalfSize.width, boxHalfSize.height };
-
-		const Point rotateTL = Math::RotatePoint(localTL, -transform->angle);
-		const Point rotateTR = Math::RotatePoint(localTR, -transform->angle);
-		const Point rotateBR = Math::RotatePoint(localBR, -transform->angle);
-		const Point rotateBL = Math::RotatePoint(localBL, -transform->angle);
-
-		const std::array<SDL_FPoint, 5> rotatePoints
+		const Quad local =
 		{
-			// 왼쪽 위
-			SDL_FPoint
-			{
-				.x = getCameraOffset().x + position.x + rotateTL.x,
-				.y = getCameraOffset().y - position.y - rotateTL.y
-			},
+			.leftTop = { -boxHalfSize.width, -boxHalfSize.height },
+			.rightTop = { boxHalfSize.width, -boxHalfSize.height },
+			.leftBottom = { -boxHalfSize.width, boxHalfSize.height },
+			.rightBottom = { boxHalfSize.width, boxHalfSize.height }
+		};
 
-			// 오른쪽 위
-			SDL_FPoint
-			{
-				.x = getCameraOffset().x + position.x + rotateTR.x,
-				.y = getCameraOffset().y - position.y - rotateTR.y
-			},
+		const Quad rotate =
+		{
+			.leftTop = Math::RotatePoint(local.leftTop, -transform->angle),
+			.rightTop = Math::RotatePoint(local.rightTop, -transform->angle),
+			.leftBottom = Math::RotatePoint(local.leftBottom, -transform->angle),
+			.rightBottom = Math::RotatePoint(local.rightBottom, -transform->angle)
+		};
 
-			// 오른쪽 아래
+		const std::array<SDL_FPoint, 5> result
+		{ 
 			SDL_FPoint
 			{
-				.x = getCameraOffset().x + position.x + rotateBR.x,
-				.y = getCameraOffset().y - position.y - rotateBR.y
+				.x = getCameraOffset().x + position.x + rotate.leftTop.x,
+				.y = getCameraOffset().y - position.y - rotate.leftTop.y
 			},
-
-			// 왼쪽 아래
+			
 			SDL_FPoint
 			{
-				.x = getCameraOffset().x + position.x + rotateBL.x,
-				.y = getCameraOffset().y - position.y - rotateBL.y
+				.x = getCameraOffset().x + position.x + rotate.rightTop.x,
+				.y = getCameraOffset().y - position.y - rotate.rightTop.y
 			},
-
-			// 0번째
+			
 			SDL_FPoint
 			{
-				.x = getCameraOffset().x + position.x + rotateTL.x,
-				.y = getCameraOffset().y - position.y - rotateTL.y
+				.x = getCameraOffset().x + position.x + rotate.rightBottom.x,
+				.y = getCameraOffset().y - position.y - rotate.rightBottom.y
 			},
+			
+			SDL_FPoint
+			{
+				.x = getCameraOffset().x + position.x + rotate.leftBottom.x,
+				.y = getCameraOffset().y - position.y - rotate.leftBottom.y
+			},
+			
+			SDL_FPoint
+			{
+				.x = getCameraOffset().x + position.x + rotate.leftTop.x,
+				.y = getCameraOffset().y - position.y - rotate.leftTop.y
+			}
 		};
 
 		const DebugColor* debugColor = entity->GetComponent<DebugColor>();
 		SDL_SetRenderDrawColor(mRenderer, debugColor->r, debugColor->g, debugColor->b, debugColor->a);
-		SDL_RenderDrawLinesF(mRenderer, rotatePoints.data(), rotatePoints.size());
+		SDL_RenderDrawLinesF(mRenderer, result.data(), result.size());
 	}
 }
 
