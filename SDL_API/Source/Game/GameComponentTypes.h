@@ -106,15 +106,6 @@ struct Hp : public Component
 	uint32_t hpBarIndex = 0;
 };
 
-struct WeaponState : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	WeaponState() : Component(&_ID) {}
-
-	bool isFire = false;  
-	float fireCoolTimer{};
-};
-
 struct Knockback : public Component
 {
 	static constexpr uint32_t _ID = 0;
@@ -131,7 +122,7 @@ struct Effect : public Component
 	Effect() : Component(&_ID) {}
 
 	bool isDisabled = false;
-	float coolTimer{};
+	float coolTime{};
 };
 
 struct RangedAttack : public Component

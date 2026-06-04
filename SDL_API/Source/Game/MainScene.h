@@ -83,7 +83,9 @@ private:
 	void playerSetClip();
 
 	void updateGun();
+
 	void updateSword();
+	void updateSwordStates(const float deltaTime);
 
 	void spawnSwordSkill();
 	void updateSwordSkill(const float deltaTime);

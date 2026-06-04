@@ -192,6 +192,8 @@ bool MainScene::Update(const float deltaTime)
 	updateCamera();
 
 	updateSword();
+	updateSwordStates(deltaTime);
+
 	updateGun();
 
 	spawnSwordSkill();
@@ -980,9 +982,6 @@ void MainScene::initialize_Entity()
 		Sword sword{};
 		mSword.AddComponent(sword);
 
-		WeaponState state{};
-		mSword.AddComponent(state);
-
 		Direction direction{};
 		mSword.AddComponent(direction);
 
@@ -1486,12 +1485,12 @@ void MainScene::updateSwordSkillStates(const float deltaTime)
 {
 	constexpr float SWING_COOLTIME = 0.7f;
 
-	Transform* transform = mSwordSkill.GetComponent<Transform>();
 	Effect* effect = mSwordSkill.GetComponent<Effect>();
-
 	Active* active = mSwordSkill.GetComponent<Active>();
+
 	if (active->isValue)
 	{
+		Transform* transform = mSwordSkill.GetComponent<Transform>();
 		if (const RangedAttack* rangedAttack = mSwordSkill.GetComponent<RangedAttack>();
 			Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
 		{
@@ -1501,15 +1500,17 @@ void MainScene::updateSwordSkillStates(const float deltaTime)
 
 			active->isValue = false;
 			effect->isDisabled = true;
+
+			effect->coolTime = SWING_COOLTIME;
 		}
 	}
 	else
 	{
-		effect->coolTimer += deltaTime;
-		if (effect->coolTimer >= SWING_COOLTIME)
+		effect->coolTime -= deltaTime;
+		if (effect->coolTime <= 0.0f)
 		{
 			effect->isDisabled = false;
-			effect->coolTimer = 0.0f;
+			effect->coolTime = SWING_COOLTIME;
 		}
 	}
 }
@@ -1584,7 +1585,7 @@ void MainScene::updateBullets(const float deltaTime)
 		const Direction* direction = entity.GetComponent<Direction>();
 		const Point velocity = direction->value * SPEED;
 		Transform* transform = entity.GetComponent<Transform>();
-		transform->position = transform->position + velocity * deltaTime;
+		transform->position += velocity * deltaTime;
 	}
 }
 
@@ -2494,6 +2495,12 @@ void MainScene::updateGun()
 
 void MainScene::updateSword()
 {
+	if (const Active* active = mSwordSkill.GetComponent<Active>();
+		active->isValue)
+	{
+		return;
+	}
+
 	const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 
 	const Point offset =
@@ -2503,8 +2510,32 @@ void MainScene::updateSword()
 	};
 	const Point targetPosition = offset + playerTransform->position;
 
-	Transform* swordTransform = mSword.GetComponent<Transform>();
-	swordTransform->position = Math::LerpVector(swordTransform->position, targetPosition, 0.16f);
+	Transform* transform = mSword.GetComponent<Transform>();
+	transform->position = Math::LerpVector(transform->position, targetPosition, 0.16f);
+	transform->angle = 0.0f;
+}
+
+void MainScene::updateSwordStates(const float deltaTime)
+{
+	constexpr float ANGLE_OFFSET = 90.0f;
+	constexpr float END_SWING_TIME = 1.0f;
+
+	if (const Active* active = mSwordSkill.GetComponent<Active>();
+		not active->isValue)
+	{
+		return;
+	}
+
+	const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+	const Transform* skillTransform = mSwordSkill.GetComponent<Transform>();
+
+	const Direction* skillDirection = mSwordSkill.GetComponent<Direction>();
+	const Point velocity = skillDirection->value * 20.0f;
+
+	Transform* transform = mSword.GetComponent<Transform>();
+	transform->angle = skillTransform->angle;	
+	transform->position = skillTransform->position + velocity * deltaTime;
+	transform->flip = (skillDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 }
 
 float MainScene::getRandom(const float min, const float max)
