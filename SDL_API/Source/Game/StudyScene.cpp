@@ -524,13 +524,13 @@ bool StudyScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entit
 
 	const Transform* transform0 = entity0.GetComponent<Transform>();
 	const BoxCollider* boxCollider0 = entity0.GetComponent<BoxCollider>();
-	const std::array<Point, 5> point0 = convertBoxColliderToWorldBox(*transform0, *boxCollider0);
+	const Quad quad0 = convertBoxColliderToWorldBox(*transform0, *boxCollider0);
 
 	const Transform* transform1 = entity1.GetComponent<Transform>();
 	const BoxCollider* boxCollider1 = entity1.GetComponent<BoxCollider>();
-	const std::array<Point, 5> point1 = convertBoxColliderToWorldBox(*transform1, *boxCollider1);
+	const Quad quad1 = convertBoxColliderToWorldBox(*transform1, *boxCollider1);
 
-	if (Collision::IsCollidedSqureWithSqure(point0, point1))
+	if (Collision::IsCollidedSqureWithSqure(quad0, quad1))
 	{
 		registerCollidedEntityPairs(entity0, entity1);
 		return true;
@@ -539,57 +539,33 @@ bool StudyScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entit
 	return false;
 }
 
-std::array<Point, 5> StudyScene::convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const
+Quad StudyScene::convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const
 {
 	const Point position = transform.position + boxCollider.offset;
 	const Scale boxHalfSize = transform.scale * boxCollider.size * 0.5f;
 
-	const Point localTL = { -boxHalfSize.width, -boxHalfSize.height };
-	const Point localTR = { boxHalfSize.width, -boxHalfSize.height };
-	const Point localBR = { boxHalfSize.width, boxHalfSize.height };
-	const Point localBL = { -boxHalfSize.width, boxHalfSize.height };
-
-	const Point rotateTL = Math::RotatePoint(localTL, -transform.angle);
-	const Point rotateTR = Math::RotatePoint(localTR, -transform.angle);
-	const Point rotateBR = Math::RotatePoint(localBR, -transform.angle);
-	const Point rotateBL = Math::RotatePoint(localBL, -transform.angle);
-
-	const std::array<Point, 5> result
+	const Quad local =
 	{
-		// 왼쪽 위
-		Point
-		{
-			.x = position.x + rotateTL.x,
-			.y = position.y - rotateTL.y
-		},
+		.leftTop = { -boxHalfSize.width, -boxHalfSize.height },
+		.rightTop = { boxHalfSize.width, -boxHalfSize.height },
+		.leftBottom = { -boxHalfSize.width, boxHalfSize.height },
+		.rightBottom = { boxHalfSize.width, boxHalfSize.height }
+	};
 
-		// 오른쪽 위
-		Point
-		{
-			.x = position.x + rotateTR.x,
-			.y = position.y - rotateTR.y
-		},
+	const Quad rotate =
+	{
+		.leftTop = Math::RotatePoint(local.leftTop, -transform.angle),
+		.rightTop = Math::RotatePoint(local.rightTop, -transform.angle),
+		.leftBottom = Math::RotatePoint(local.leftBottom, -transform.angle),
+		.rightBottom = Math::RotatePoint(local.rightBottom, -transform.angle)
+	};
 
-		// 오른쪽 아래
-		Point
-		{
-			.x = position.x + rotateBR.x,
-			.y = position.y - rotateBR.y
-		},
-
-		// 왼쪽 아래
-		Point
-		{
-			.x = position.x + rotateBL.x,
-			.y = position.y - rotateBL.y
-		},
-
-		// 0번째
-		Point
-		{
-			.x = position.x + rotateTL.x,
-			.y = position.y - rotateTL.y
-		},
+	const Quad result
+	{
+		.leftTop = {.x = position.x + rotate.leftTop.x, .y = position.y - rotate.leftTop.y },
+		.rightTop = {.x = position.x + rotate.rightTop.x, .y = position.y - rotate.rightTop.y },
+		.leftBottom = {.x = position.x + rotate.leftBottom.x, .y = position.y - rotate.leftBottom.y },
+		.rightBottom = {.x = position.x + rotate.rightBottom.x, .y = position.y - rotate.rightBottom.y }
 	};
 
 	return result;

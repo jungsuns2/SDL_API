@@ -190,7 +190,7 @@ private:
 	std::pair<const Entity*, const Entity*> getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const;
 	void registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1);
 
-	std::array<Point, 5> convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const;
+	Quad convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const;
 	Circle convertCircleColliderToWorldCircle(const Transform& transform, const CircleCollider& circleCollider) const;
 	Line convertLineColliderToWorldLine(const Transform& transform, const LineCollider& lineCollider) const;
 

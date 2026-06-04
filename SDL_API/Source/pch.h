@@ -111,6 +111,14 @@ struct Circle
 	float radius;
 };
 
+struct Quad
+{
+	Point leftTop;
+	Point rightTop;
+	Point leftBottom;
+	Point rightBottom;
+};
+
 namespace Math
 {
 	inline float GetVectorLength(const Point vector)

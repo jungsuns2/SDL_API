@@ -382,7 +382,7 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld)
 
 		const DebugColor* debugColor = entity->GetComponent<DebugColor>();
 		SDL_SetRenderDrawColor(mRenderer, debugColor->r, debugColor->g, debugColor->b, debugColor->a);
-		SDL_RenderDrawLinesF(mRenderer, rotatePoints.data(), 5);
+		SDL_RenderDrawLinesF(mRenderer, rotatePoints.data(), rotatePoints.size());
 	}
 }
 
