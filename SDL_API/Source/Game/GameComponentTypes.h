@@ -163,3 +163,15 @@ struct Damage : public Component
 
 	uint32_t value = 0;
 };
+
+struct Dash : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Dash() : Component(&_ID) {}
+
+	uint32_t count = 0;
+	uint32_t maxCount = 0;
+	float moveSpeed = 0.0f;
+	float isActive = false;
+	float timer = 0.0f;
+};

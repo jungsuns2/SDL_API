@@ -903,6 +903,11 @@ void MainScene::initialize_Entity()
 		hp.value = hp.max;
 		mPlayer.AddComponent(hp);
 
+		Dash dash{};
+		dash.maxCount = 5;
+		dash.count = dash.maxCount;
+		mPlayer.AddComponent(dash);
+
 		Knockback knockback{};
 		mPlayer.AddComponent(knockback);
 
@@ -1324,30 +1329,75 @@ void MainScene::playerMove(const float deltaTime)
 	Player* player = mPlayer.GetComponent<Player>();
 	player->length = Math::GetVectorLength(moveVelocity);
 
-	Point moveDirection = Math::NormalizeVector(moveVelocity);
-	float velocity = fmin(Math::GetVectorLength(moveVelocity), MAX_SPEED);
+	const Point moveDirection = Math::NormalizeVector(moveVelocity);
+	const float velocity = fmin(Math::GetVectorLength(moveVelocity), MAX_SPEED);
 	moveVelocity = moveDirection * velocity;
 
-	Knockback* knockback = mPlayer.GetComponent<Knockback>();
-	Color* color = mPlayer.GetComponent<Color>();
-
-	if (knockback->isValue)
+	// Dash
 	{
-		color->r = 200;
-		color->g = 0;
-		color->b = 0;
+		constexpr float MAX_DASH_SPEED = 800.0f;
+		constexpr float DASH_ACC = 30.0f;
 
-		moveVelocity += knockback->direction * KNOCKBACK_FORCE;
+		Dash* dash = mPlayer.GetComponent<Dash>();
 
-		knockback->coolTimer += deltaTime;
-		if (knockback->coolTimer >= KNOCKBACK_COOLTIMER)
+		if (Input::Get().GetKeyDown(SDL_SCANCODE_SPACE))
 		{
-			color->r = 255;
-			color->g = 255;
-			color->b = 255;
+			if (dash->count > 0)
+			{
+				--dash->count;
+				dash->isActive = true;
+			}
+		}
 
-			knockback->isValue = false;
-			knockback->coolTimer = 0.0f;
+		if (dash->isActive)
+		{
+			dash->moveSpeed = std::min(dash->moveSpeed + DASH_ACC, MAX_DASH_SPEED);
+			const Point velocity = moveDirection * dash->moveSpeed * deltaTime;
+
+			if (dash->moveSpeed >= MAX_DASH_SPEED)
+			{
+				dash->moveSpeed = 0.0f;
+				dash->isActive = false;
+			}
+
+			Transform* transform = mPlayer.GetComponent<Transform>();
+			transform->position += velocity;
+		}
+
+		if (dash->count < dash->maxCount)
+		{
+			dash->timer += deltaTime;
+			if (dash->timer >= 2.0f)
+			{
+				++dash->count;
+				dash->timer = 0.0f;
+			}
+		}
+	}
+
+	// Knockback
+	{
+		Knockback* knockback = mPlayer.GetComponent<Knockback>();
+		Color* color = mPlayer.GetComponent<Color>();
+
+		if (knockback->isValue)
+		{
+			color->r = 200;
+			color->g = 0;
+			color->b = 0;
+
+			moveVelocity += knockback->direction * KNOCKBACK_FORCE;
+
+			knockback->coolTimer += deltaTime;
+			if (knockback->coolTimer >= KNOCKBACK_COOLTIMER)
+			{
+				color->r = 255;
+				color->g = 255;
+				color->b = 255;
+
+				knockback->isValue = false;
+				knockback->coolTimer = 0.0f;
+			}
 		}
 	}
 
