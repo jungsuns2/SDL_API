@@ -140,11 +140,18 @@ struct ColliderState : public Component
 	static constexpr uint32_t _ID = 0;
 	ColliderState() : Component(&_ID) {}
 
-	Scale idleSize = { .width = 0.0f, .height = 0.0f };
 	Scale runSize = { .width = 0.0f, .height = 0.0f };
 	Scale attackSize = { .width = 0.0f, .height = 0.0f };
 
-	Point idleOffset = { .x = 0.0f, .y = 0.0f };
 	Point runOffset = { .x = 0.0f, .y = 0.0f };
 	Point attackOffset = { .x = 0.0f, .y = 0.0f };
+
+	uint32_t isAttack = false;
+	uint32_t attackIndex = 0;
+};
+
+struct MonsterAttack : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	MonsterAttack() : Component(&_ID) {}
 };

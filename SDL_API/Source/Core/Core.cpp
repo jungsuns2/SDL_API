@@ -304,7 +304,7 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld)
 	for (const Entity* entity : entityWorld->GetAllEntites())
 	{
 		if (not entity->HasComponent<Transform>()
-			or not entity->HasComponent<Image>()
+			or not entity->HasComponent<CollisionDetector>()
 			or not entity->HasComponent<DebugActive>()
 			or not entity->HasComponent<DebugColor>())
 		{

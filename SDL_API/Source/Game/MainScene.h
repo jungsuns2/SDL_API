@@ -105,6 +105,10 @@ private:
 	void setDirectionOffset(Entity* setEntity, const Entity& entity0);
 	void monsterSetClip();
 
+	void initializeAttackCollider();
+	void attackCollision();
+	void removeAttackCollider();
+
 	void playerToMonsterCollision();
 	void playerToArrowCollision();
 	void swordSkillToMonsterCollision();
@@ -137,24 +141,30 @@ private:
 	Font mHpFont{};
 
 	Entity mMainCamera{};
+
 	Entity mWaveTimerLebel{};
 	Entity mStageLabel{};
 	Entity mBulletLabel{};
+
+	Entity** mTiles = nullptr;
 
 	Entity mPlayer{};
 	Entity mUIPlayerHp{};
 	Entity mPlayerLeftHand{};
 	Entity mPlayerRightHand{};
+
 	Entity mSword{};
 	Entity mSwordSkill{};
+
 	Entity mGun{};
 	std::array<Entity, 10> mBullets{};
-	Entity** mTiles = nullptr;
 
-	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 20> mMonsters{};
 	std::array<Entity, 20> mMonsterHpBars{};
+	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 40> mArrows{};
+	std::array<Entity, 10> mMonsterAttacks{};
+
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBigWhiteSkelClips{};

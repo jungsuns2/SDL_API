@@ -26,9 +26,9 @@ void EntityWorld::Remove(Entity* entity)
 		if (removeEntity == entity)
 		{
 			std::swap(removeEntity, mEntites.back());
+			mEntites.pop_back();
 			delete removeEntity;
 			removeEntity = nullptr;
-			mEntites.pop_back();
 
 			return;
 		}
