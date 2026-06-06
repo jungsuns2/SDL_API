@@ -155,3 +155,11 @@ struct MonsterAttack : public Component
 	static constexpr uint32_t _ID = 0;
 	MonsterAttack() : Component(&_ID) {}
 };
+
+struct Damage : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Damage() : Component(&_ID) {}
+
+	uint32_t value = 0;
+};

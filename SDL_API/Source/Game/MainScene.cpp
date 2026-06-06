@@ -16,35 +16,6 @@ void MainScene::Initialize()
 
 	initialize_Entity();
 
-	for (uint32_t i = 0; i < 5; ++i)
-	{
-		Entity& attackEntity = mMonsterAttacks[i];
-
-		MonsterAttack attack{};
-		attackEntity.AddComponent(attack);
-
-		Transform transform{};
-		attackEntity.AddComponent(transform);
-
-		Active active{};
-		attackEntity.AddComponent(active);
-
-		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
-		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
-		attackEntity.AddComponent(collider);
-
-		BoxCollider boxCollider{};
-		attackEntity.AddComponent(boxCollider);
-
-		DebugActive debugActive{};
-		attackEntity.AddComponent(debugActive);
-
-		DebugColor debugColor{};
-		attackEntity.AddComponent(debugColor);
-
-		GetEntityWorld()->AddEntity(&attackEntity);
-	}
-
 	// 현재 웨이브 상태를 초기화한다.
 	mGameWaveState.remainingMonsterGroupSpawnTime = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
 
@@ -291,9 +262,9 @@ bool MainScene::Update(const float deltaTime)
 		attackCollision();
 		removeAttackCollider();
 
-		//playerToMonsterCollision();
+		playerToMonsterCollision();
 		playerToMonsterAttackCollision();
-		//playerToArrowCollision();
+		playerToArrowCollision();
 
 		//swordSkillToMonsterCollision();
 		//bulletToMonsterCollision();
@@ -1182,6 +1153,10 @@ void MainScene::initialize_Entity()
 			image.texture = &mArrowTexture;
 			entity.AddComponent(image);
 
+			Damage damage{};
+			damage.value = 2;
+			entity.AddComponent(damage);
+
 			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Arrow));
 			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
 			entity.AddComponent(collider);
@@ -1674,9 +1649,11 @@ void MainScene::initializeMonsters()
 		DamageTimer damageTimer{};
 		entity.AddComponent(damageTimer);
 
-		// 체력바
 		Hp hp{};
 		entity.AddComponent(hp);
+
+		Damage damage{};
+		entity.AddComponent(damage);
 
 		Active active{};
 		entity.AddComponent(active);
@@ -1722,6 +1699,38 @@ void MainScene::initializeMonsters()
 		entity.AddComponent(active);
 
 		GetEntityWorld()->AddEntity(&entity);
+	}
+
+	for (uint32_t i = 0; i < 5; ++i)
+	{
+		Entity& attackEntity = mMonsterAttacks[i];
+
+		MonsterAttack attack{};
+		attackEntity.AddComponent(attack);
+
+		Transform transform{};
+		attackEntity.AddComponent(transform);
+
+		Damage damage{};
+		attackEntity.AddComponent(damage);
+
+		Active active{};
+		attackEntity.AddComponent(active);
+
+		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
+		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
+		attackEntity.AddComponent(collider);
+
+		BoxCollider boxCollider{};
+		attackEntity.AddComponent(boxCollider);
+
+		DebugActive debugActive{};
+		attackEntity.AddComponent(debugActive);
+
+		DebugColor debugColor{};
+		attackEntity.AddComponent(debugColor);
+
+		GetEntityWorld()->AddEntity(&attackEntity);
 	}
 }
 
@@ -1808,17 +1817,20 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	ColliderState* colliderState = monsterEntity.GetComponent<ColliderState>();
 	Offset* hpBarOffset = hpBarEntity.GetComponent<Offset>();
 
+	Damage* damage = monsterEntity.GetComponent<Damage>();
+
 	switch (monster->type)
 	{
 	case eMonsterType::BigWhite:
 		hp->max = 2;
+		damage->value = 1;
 		monster->speed = 35.0f;
 		monster->attackDistance = 90.0f;
 		monster->clips = mBigWhiteSkelClips.data();
 		colliderState->runSize = { .width = 10.0f, .height = 30.0f };
-		colliderState->attackSize = { .width = 30.0f, .height = 40.0f };
+		colliderState->attackSize = { .width = 30.0f, .height = 60.0f };
 		colliderState->runOffset = { .x = 0.0f, .y = 45.0f };
-		colliderState->attackOffset = { .x = 90.0f, .y = 45.0f };
+		colliderState->attackOffset = { .x = 70.0f, .y = 45.0f };
 		colliderState->isAttack = true;
 		colliderState->attackIndex = 5;
 		boxCollider->size = colliderState->runSize;
@@ -1828,6 +1840,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 
 	case eMonsterType::Archer:
 		hp->max = 3;
+		damage->value = 2;
 		monster->speed = 50.0f;
 		monster->attackDistance = 300.0f;
 		monster->clips = mArcherClips.data();
@@ -2176,6 +2189,9 @@ void MainScene::initializeAttackCollider()
 				MonsterAttack attack{};
 				attackEntity.AddComponent(attack);
 
+				Damage damage{};
+				attackEntity.AddComponent(damage);
+
 				Transform transform{};
 				attackEntity.AddComponent(transform);
 
@@ -2249,6 +2265,11 @@ void MainScene::attackCollision()
 			Transform* transform = attackEntity.GetComponent<Transform>();
 			transform->position = monsterTransform->position;
 			transform->scale = monsterTransform->scale;
+
+			const Damage* damage = entity.GetComponent<Damage>();
+			Damage* AttackDamage = attackEntity.GetComponent<Damage>();
+			AttackDamage->value = damage->value;
+
 			break;
 		}
 	}
@@ -2471,7 +2492,8 @@ void MainScene::playerToMonsterCollision()
 		if (isCollisionEnter(mPlayer, monsterEntity))
 		{
 			Hp* playerHp = mPlayer.GetComponent<Hp>();
-			playerHp->value -= 1;
+			const Damage* damage = monsterEntity.GetComponent<Damage>();
+			playerHp->value -= damage->value;
 
 			std::string name = "Hp: " + std::to_string(playerHp->value);
 			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
@@ -2503,7 +2525,8 @@ void MainScene::playerToMonsterAttackCollision()
 		if (isCollisionEnter(mPlayer, attack))
 		{
 			Hp* playerHp = mPlayer.GetComponent<Hp>();
-			playerHp->value -= 1;
+			const Damage* damage = attack.GetComponent<Damage>();
+			playerHp->value -= damage->value;
 
 			std::string name = "Hp: " + std::to_string(playerHp->value);
 			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
@@ -2530,7 +2553,8 @@ void MainScene::playerToArrowCollision()
 		if (isCollisionEnter(mPlayer, arrowEntity))
 		{
 			Hp* playerHp = mPlayer.GetComponent<Hp>();
-			playerHp->value -= 1;
+			const Damage* damage = arrowEntity.GetComponent<Damage>();
+			playerHp->value -= damage->value;
 
 			std::string name = "Hp: " + std::to_string(playerHp->value);
 			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
