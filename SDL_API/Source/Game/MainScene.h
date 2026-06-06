@@ -110,6 +110,7 @@ private:
 	void removeAttackCollider();
 
 	void playerToMonsterCollision();
+	void playerToMonsterAttackCollision();
 	void playerToArrowCollision();
 	void swordSkillToMonsterCollision();
 	void bulletToMonsterCollision();

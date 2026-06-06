@@ -291,7 +291,8 @@ bool MainScene::Update(const float deltaTime)
 		attackCollision();
 		removeAttackCollider();
 
-		playerToMonsterCollision();
+		//playerToMonsterCollision();
+		playerToMonsterAttackCollision();
 		//playerToArrowCollision();
 
 		//swordSkillToMonsterCollision();
@@ -2477,6 +2478,38 @@ void MainScene::playerToMonsterCollision()
 			playerLabel->text = name;
 		}
 		else if (isCollisionStay(mPlayer, monsterEntity))
+		{
+			Knockback* knockback = mPlayer.GetComponent<Knockback>();
+			knockback->isValue = true;
+		}
+	}
+}
+
+void MainScene::playerToMonsterAttackCollision()
+{
+	for (const Entity& attack : mMonsterAttacks)
+	{
+		if (not attack.HasComponent<MonsterAttack>())
+		{
+			return;
+		}
+
+		if (const Active* active = attack.GetComponent<Active>();
+			not active)
+		{
+			continue;
+		}
+
+		if (isCollisionEnter(mPlayer, attack))
+		{
+			Hp* playerHp = mPlayer.GetComponent<Hp>();
+			playerHp->value -= 1;
+
+			std::string name = "Hp: " + std::to_string(playerHp->value);
+			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+			playerLabel->text = name;
+		}
+		else if (isCollisionStay(mPlayer, attack))
 		{
 			Knockback* knockback = mPlayer.GetComponent<Knockback>();
 			knockback->isValue = true;
