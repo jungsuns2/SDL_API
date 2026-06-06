@@ -153,6 +153,7 @@ private:
 	Entity mUIPlayerHp{};
 	Entity mPlayerLeftHand{};
 	Entity mPlayerRightHand{};
+	std::array<Entity, 5> mPlayerShadows{};
 
 	Entity mSword{};
 	Entity mSwordSkill{};
@@ -177,6 +178,7 @@ private:
 
 	std::array<Texture, 5> mPlayerIdleTextures{};
 	std::array<Texture, 6> mPlayerRunTextures{};
+	Texture mPlayerShadowTexture{};
 	Texture mPlayerHandTexture{};
 	Texture mPlayerDeadTexture{};
 

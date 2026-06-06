@@ -30,6 +30,14 @@ struct Point
 		return *this;
 	}
 
+	Point& operator+=(const float other)
+	{
+		x += other;		
+		y += other;
+
+		return *this;
+	}
+
 	Point operator-(const Point& other) const
 	{
 		return { .x = x - other.x, .y = y - other.y };

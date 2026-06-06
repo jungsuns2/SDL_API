@@ -295,6 +295,7 @@ void MainScene::Finalize()
 			texture.Finalize();
 		}
 
+		mPlayerShadowTexture.Finalize();
 		mPlayerHandTexture.Finalize();
 		mPlayerDeadTexture.Finalize();
 	}
@@ -437,6 +438,7 @@ void MainScene::initialize_Resource()
 			mPlayerClips[uint32_t(Player::eState::Run)].AddClip(frame);
 		}
 
+		mPlayerShadowTexture.Initialize(GetHelper(), "Resource/Char/Alice/Dash/0.png");
 		mPlayerHandTexture.Initialize(GetHelper(), "Resource/Char/Alice/Hand/0.png");
 
 		mPlayerDeadTexture.Initialize(GetHelper(), "Resource/Char/Alice/Dead/0.png");
@@ -853,6 +855,31 @@ void MainScene::initialize_Entity()
 		mGun.AddComponent(color);
 
 		GetEntityWorld()->AddEntity(&mGun);
+	}
+
+	// Dash Shadow
+	{
+		for (Entity& entity : mPlayerShadows)
+		{
+			Shadow shadow{};
+			entity.AddComponent(shadow);
+
+			Transform transform{};
+			transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+			entity.AddComponent(transform);
+
+			Image image{};
+			image.texture = &mPlayerShadowTexture;
+			entity.AddComponent(image);
+
+			Active active{};
+			entity.AddComponent(active);
+
+			Color color{};
+			entity.AddComponent(color);
+
+			GetEntityWorld()->AddEntity(&entity);
+		}
 	}
 
 	// Player Left Hand
@@ -1372,6 +1399,39 @@ void MainScene::playerMove(const float deltaTime)
 				++dash->count;
 				dash->timer = 0.0f;
 			}
+		}
+	}
+
+	// Dash Shadow
+	{
+		constexpr Point OFFSET = { .x = 0.0f, .y = 30.0f };
+		constexpr Point INTERVAL_POSITION = { .x = 15.0f, .y = 15.0f };
+
+		for (uint32_t i = 0; i < mPlayerShadows.size(); ++i)
+		{
+			Entity& entity = mPlayerShadows[i];
+			Active* active = entity.GetComponent<Active>();
+
+			if (const Dash* dash = mPlayer.GetComponent<Dash>();
+				not dash->isActive)
+			{
+				active->isValue = false;
+				continue;
+			}
+
+			active->isValue = true;
+
+			const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+			const Shadow* shadow = entity.GetComponent<Shadow>();
+			const Point dashDirection = { .x = -moveDirection.x, .y = -moveDirection.y };
+
+			Transform* transform = entity.GetComponent<Transform>();
+			transform->position = playerTransform->position + OFFSET;
+			transform->position += dashDirection * INTERVAL_POSITION * (i + 1);
+			transform->flip = (moveDirection.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+			Color* color = entity.GetComponent<Color>();
+			color->a = 255 * 0.3f * (mPlayerShadows.size() - i);
 		}
 	}
 

@@ -175,3 +175,9 @@ struct Dash : public Component
 	float isActive = false;
 	float timer = 0.0f;
 };
+
+struct Shadow : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Shadow() : Component(&_ID) {}
+};
