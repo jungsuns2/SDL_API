@@ -40,11 +40,13 @@ struct Monster : public Component
 	Clip* clips = nullptr;
 	eState state{};
 	eMonsterType type = eMonsterType::None;
+	eAttackType attackType = eAttackType::None;
+	bool isAttack = false;
 	float speed = 0.0f;
-	bool isAttackOption = false;
 	float length = 0.0f;
 	float attackDistance = 0.0f;
 	float spawnBlinkTimer = 0.0f;
+	float idleTimer = 0.0f;
 };
 
 struct Sword : public Component
@@ -131,7 +133,7 @@ struct RangedAttack : public Component
 	RangedAttack() : Component(&_ID) {}
 
 	float distance = 0.0f;
-	bool isFire = false;
+	bool isFiring = false;
 	Point startPosition = { .x = 0.0f, .y = 0.0f };
 };
 
@@ -150,10 +152,10 @@ struct ColliderState : public Component
 	uint32_t attackIndex = 0;
 };
 
-struct MonsterAttack : public Component
+struct MonsterAttackCollider : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	MonsterAttack() : Component(&_ID) {}
+	MonsterAttackCollider() : Component(&_ID) {}
 };
 
 struct Damage : public Component

@@ -20,7 +20,6 @@ struct SpawnMonsterDesc
 {
 	const uint32_t index;
 	const eMonsterType type;
-	const bool isAttackOption;
 	const float x;
 	const float y;
 };
@@ -171,6 +170,7 @@ private:
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBigWhiteSkelClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mArcherClips{};
+	std::array<Clip, uint32_t(Monster::eState::Count)> mSkelDogClips{};
 
 	Clip mSwordClip{};
 	Clip mSwordSkillClip{};
@@ -183,6 +183,7 @@ private:
 	Texture mPlayerDeadTexture{};
 
 	std::array<Texture, 2> mSpwanTextures{};
+
 	std::array<Texture, 5> mBigWhiteSkelIdleTextures{};
 	std::array<Texture, 6> mBigWhiteSkelRunTextures{};
 	std::array<Texture, 12> mBigWhiteSkelAttackTextures{};
@@ -191,6 +192,9 @@ private:
 	std::array<Texture, 3> mArcherIdleTextures{};
 	std::array<Texture, 3> mArcherRunTextures{};
 	std::array<Texture, 13> mArcherAttackTextures{};
+
+	std::array<Texture, 5> mSkelDogIdleTextures{};
+	std::array<Texture, 7> mSkelDogRunTextures{};
 
 	std::array<Texture, 12> mSwordTextures{};
 	std::array<Texture, 8> mSwordSkillTextures{};

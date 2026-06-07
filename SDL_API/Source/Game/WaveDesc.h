@@ -16,7 +16,7 @@ constexpr std::array<WaveDesc, 20> WAVES =
 	WaveDesc
 	{
 		.elapsedTime = 20.0f,
-		.monsterGroupIndicies = { 0, 3, 0, 3, 0, 3, 0, 3, 0, 3 },
+		.monsterGroupIndicies = { 8, 8, 8, 8, 8, 8, 8, 8, 8 },
 		.monsterGroupCount = 10,
 		.monsterGroupSpawnIntervalTime = 3.0f
 	},

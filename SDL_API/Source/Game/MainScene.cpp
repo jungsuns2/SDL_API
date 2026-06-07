@@ -338,6 +338,16 @@ void MainScene::Finalize()
 		{
 			texture.Finalize();
 		}
+
+		for (Texture& texture : mSkelDogIdleTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mSkelDogRunTextures)
+		{
+			texture.Finalize();
+		}
 	}
 
 	for (Texture& texture : mSwordTextures)
@@ -688,6 +698,63 @@ void MainScene::initialize_Resource()
 		}
 
 		mArrowTexture.Initialize(GetHelper(), "Resource/Monster/Archer/Arrow/0.png");
+	}
+
+	// Skel
+	{
+		// Spwan
+		{
+			for (Texture& texture : mSpwanTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Spawn/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.06f
+				};
+
+				mSkelDogClips[uint32_t(Monster::eState::Spawn)].AddClip(frame);
+			}
+
+			index = 0;
+		}
+
+		// Idle
+		{
+			for (Texture& texture : mSkelDogIdleTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/SkelDog/Idle/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mSkelDogClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
+			}
+
+			index = 0;
+		}
+
+		// Run
+		{
+			for (Texture& texture : mSkelDogRunTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/SkelDog/Run/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mSkelDogClips[uint32_t(Monster::eState::Run)].AddClip(frame);
+			}
+
+			index = 0;
+		}
 	}
 }
 
@@ -1160,6 +1227,11 @@ void MainScene::initialize_Entity()
 		mArcherClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
+
+		mSkelDogClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
+		mSkelDogClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
+		mSkelDogClips[uint32_t(Monster::eState::Run)].SetLoop(true);
+		mSkelDogClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 	}
 
 	// Arrow
@@ -1427,11 +1499,11 @@ void MainScene::playerMove(const float deltaTime)
 
 			Transform* transform = entity.GetComponent<Transform>();
 			transform->position = playerTransform->position + OFFSET;
-			transform->position += dashDirection * INTERVAL_POSITION * (i + 1);
+			transform->position += dashDirection * INTERVAL_POSITION * float(i + 1);
 			transform->flip = (moveDirection.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 
 			Color* color = entity.GetComponent<Color>();
-			color->a = 255 * 0.3f * (mPlayerShadows.size() - i);
+			color->a = 255 * Uint8(0.3f) * Uint8(mPlayerShadows.size() - i);
 		}
 	}
 
@@ -1645,7 +1717,7 @@ void MainScene::spawnBullets(const float deltaTime)
 		}
 
 		RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
-		if (rangedAttack->isFire)
+		if (rangedAttack->isFiring)
 		{
 			continue;
 		}
@@ -1653,7 +1725,7 @@ void MainScene::spawnBullets(const float deltaTime)
 		if (mBulletState.fireTimer >= FIRE_TIME)
 		{
 			active->isValue = true;
-			rangedAttack->isFire = true;
+			rangedAttack->isFiring = true;
 
 			Animator* anim = entity.GetComponent<Animator>();
 			anim->frameIndex = 0;
@@ -1722,7 +1794,7 @@ void MainScene::updateBulletStates(const float deltaTime)
 		}
 
 		RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
-		if (not rangedAttack->isFire)
+		if (not rangedAttack->isFiring)
 		{
 			continue;
 		}
@@ -1732,7 +1804,7 @@ void MainScene::updateBulletStates(const float deltaTime)
 		{
 			Active* active = entity.GetComponent<Active>();
 			active->isValue = false;
-			rangedAttack->isFire = false;
+			rangedAttack->isFiring = false;
 		}
 	}
 }
@@ -1815,7 +1887,7 @@ void MainScene::initializeMonsters()
 	{
 		Entity& attackEntity = mMonsterAttacks[i];
 
-		MonsterAttack attack{};
+		MonsterAttackCollider attack{};
 		attackEntity.AddComponent(attack);
 
 		Transform transform{};
@@ -1878,7 +1950,6 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 				{
 					.index = monsterIndex,
 					.type = group.type,
-					.isAttackOption = group.isAttackOption,
 					.x = monsterX,
 					.y = monsterY
 				}
@@ -1897,7 +1968,6 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 
 	const uint32_t index = desc.index;
 	const eMonsterType type = desc.type;
-	const bool isAttackOption = desc.isAttackOption;
 	const float x = desc.x;
 	const float y = desc.y;
 
@@ -1934,6 +2004,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	case eMonsterType::BigWhite:
 		hp->max = 2;
 		damage->value = 1;
+		monster->attackType = eAttackType::Melee;
 		monster->speed = 35.0f;
 		monster->attackDistance = 90.0f;
 		monster->clips = mBigWhiteSkelClips.data();
@@ -1951,6 +2022,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	case eMonsterType::Archer:
 		hp->max = 3;
 		damage->value = 2;
+		monster->attackType = eAttackType::Range;
 		monster->speed = 50.0f;
 		monster->attackDistance = 300.0f;
 		monster->clips = mArcherClips.data();
@@ -1965,12 +2037,28 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		hpBarOffset->value = { .x = 10.0f, .y = -55.0f };
 		break;
 
+	case eMonsterType::SkelDog:
+		hp->max = 1;
+		damage->value = 1;
+		monster->attackType = eAttackType::Melee;
+		monster->speed = 60.0f;
+		monster->attackDistance = 10.0f;
+		monster->clips = mSkelDogClips.data();
+		colliderState->runSize = { .width = 15.0f, .height = 15.0f };
+		colliderState->attackSize = { .width = 15.0f, .height = 15.0f };
+		colliderState->runOffset = { .x = 0.0f, .y = -5.0f };
+		colliderState->attackOffset = { .x = 0.0f, .y = -5.0f };
+		colliderState->isAttack = true;
+		colliderState->attackIndex = 5;
+		boxCollider->size = colliderState->runSize;
+		boxCollider->offset = colliderState->runOffset;
+		hpBarOffset->value = { .x = 0.0f, .y = -40.0f };
+		break;
+
 	default:
 		assert(false and "지원하지 않는 몬스터 유형입니다.");
 		break;
 	}
-
-	monster->isAttackOption = isAttackOption;
 
 	Animator* anim = monsterEntity.GetComponent<Animator>();
 	anim->frameIndex = 0;
@@ -2019,6 +2107,21 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			break;
 		}
 
+		case Monster::eState::Idle:
+		{
+			boxCollider->size = colliderState->runSize;
+			boxCollider->offset = colliderState->runOffset;
+
+			monster->idleTimer += deltaTime;
+			if (monster->idleTimer >= 2.0f)
+			{
+				monster->state = Monster::eState::Run;
+				monster->idleTimer = 0.0f;
+			}
+
+			break;
+		}
+
 		case Monster::eState::Attack:
 		{
 			const Clip& attackClip = monster->clips[uint32_t(Monster::eState::Attack)];
@@ -2043,6 +2146,18 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			if (monster->length <= monster->attackDistance)
 			{
 				monster->state = Monster::eState::Attack;
+			}
+
+			if (monster->type != eMonsterType::SkelDog)
+			{
+				break;
+			}
+
+			monster->idleTimer += deltaTime;
+			if (monster->idleTimer >= 2.0f)
+			{
+				monster->state = Monster::eState::Idle;
+				monster->idleTimer = 0.0f;
 			}
 
 			break;
@@ -2200,7 +2315,8 @@ void MainScene::monsterHpBarMove()
 
 		if (const Monster* monster = monsterEntity.GetComponent<Monster>();
 			monster->state != Monster::eState::Run
-			and monster->state != Monster::eState::Attack)
+			and monster->state != Monster::eState::Attack
+			and monster->state != Monster::eState::Idle)
 		{
 			continue;
 		}
@@ -2238,8 +2354,9 @@ void MainScene::monsterSetClip()
 			continue;
 		}
 
-		Monster* monster = entity.GetComponent<Monster>();
 		Animator* animator = entity.GetComponent<Animator>();
+		Monster* monster = entity.GetComponent<Monster>();
+
 		switch (monster->state)
 		{
 		case Monster::eState::Spawn:
@@ -2247,8 +2364,7 @@ void MainScene::monsterSetClip()
 			break;
 
 		case Monster::eState::Idle:
-			__noop;
-			//animator->SetClip(&monster->clips[uint32_t(Monster::eState::Idle)]);
+			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Idle)]);
 			break;
 
 		case Monster::eState::Run:
@@ -2256,8 +2372,18 @@ void MainScene::monsterSetClip()
 			break;
 
 		case Monster::eState::Attack:
-			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Attack)]);
+		{
+			if (monster->clips[uint32_t(Monster::eState::Attack)].GetLastFrameIndex() <= 0)
+			{
+				monster->state = Monster::eState::Run;
+			}
+			else
+			{
+				animator->SetClip(&monster->clips[uint32_t(Monster::eState::Attack)]);
+			}
+
 			break;
+		}
 
 		case Monster::eState::Dead:
 			__noop;
@@ -2296,7 +2422,7 @@ void MainScene::initializeAttackCollider()
 		{
 			for (Entity& attackEntity : mMonsterAttacks)
 			{
-				MonsterAttack attack{};
+				MonsterAttackCollider attack{};
 				attackEntity.AddComponent(attack);
 
 				Damage damage{};
@@ -2411,7 +2537,7 @@ void MainScene::removeAttackCollider()
 		{
 			for (Entity& attackEntity : mMonsterAttacks)
 			{
-				if (not attackEntity.HasComponent<MonsterAttack>())
+				if (not attackEntity.HasComponent<MonsterAttackCollider>())
 				{
 					continue;
 				}
@@ -2433,6 +2559,11 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 	{
 		Monster* monster = monsterEntity.GetComponent<Monster>();
 		if (monster->type != type)
+		{
+			continue;
+		}
+
+		if (monster->attackType != eAttackType::Range)
 		{
 			continue;
 		}
@@ -2460,16 +2591,16 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 				}
 
 				RangedAttack* rangedAttack = rangeEntity.GetComponent<RangedAttack>();
-				if (rangedAttack->isFire)
+				if (rangedAttack->isFiring)
 				{
 					continue;
 				}
 
-				if (not monster->isAttackOption)
+				if (not monster->isAttack)
 				{
-					monster->isAttackOption = true;
+					monster->isAttack = true;
 					rangeActive->isValue = true;
-					rangedAttack->isFire = true;
+					rangedAttack->isFiring = true;
 
 					const Point centerOffset = { .x = -0.4f, .y = 0.0f };
 					const float centerOffsetX = centerOffset.x * (mArrowTexture.GetWidth() - 1.0f);
@@ -2526,11 +2657,11 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 			direction->value = Math::NormalizeVector(difference);
 			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 
-			monster->isAttackOption = false;
+			monster->isAttack = false;
 		}
 		else
 		{
-			monster->isAttackOption = false;
+			monster->isAttack = false;
 		}
 	}
 }
@@ -2547,7 +2678,7 @@ void MainScene::rangedAttackState(const std::array<Entity, T>& entities)
 		}
 
 		RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
-		if (not rangedAttack->isFire)
+		if (not rangedAttack->isFiring)
 		{
 			continue;
 		}
@@ -2558,7 +2689,7 @@ void MainScene::rangedAttackState(const std::array<Entity, T>& entities)
 			Active* active = entity.GetComponent<Active>();
 			active->isValue = false;
 
-			rangedAttack->isFire = false;
+			rangedAttack->isFiring = false;
 		}
 	}
 }
@@ -2621,7 +2752,7 @@ void MainScene::playerToMonsterAttackCollision()
 {
 	for (const Entity& attack : mMonsterAttacks)
 	{
-		if (not attack.HasComponent<MonsterAttack>())
+		if (not attack.HasComponent<MonsterAttackCollider>())
 		{
 			return;
 		}
@@ -2679,7 +2810,7 @@ void MainScene::playerToArrowCollision()
 			active->isValue = false;
 
 			RangedAttack* arrow = arrowEntity.GetComponent<RangedAttack>();
-			arrow->isFire = false;
+			arrow->isFiring = false;
 		}
 	}
 }

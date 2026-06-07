@@ -5,26 +5,35 @@ enum class eMonsterType
 	None,
 	BigWhite,
 	Archer,
+	SkelDog,
+	Count
+};
+
+enum class eAttackType
+{
+	None,
+	Melee,
+	Range,
 	Count
 };
 
 struct MonsterGroup
 {
 	eMonsterType type;
+	eAttackType attackType;
 	uint32_t count;
-	bool isAttackOption;
 	Range rangeX;
 	Range rangeY;
 };
 
-constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
+constexpr std::array<MonsterGroup, 10> MONSTER_GROUPS =
 {
 	// 0
 	MonsterGroup
 	{
 		.type = eMonsterType::BigWhite,
+		.attackType = eAttackType::Melee,
 		.count = 2,
-		.isAttackOption = false,
 		.rangeX = { .min = -100.0f, .max = 100.0f },
 		.rangeY = { .min = -100.0f, .max = 100.0f }
 	}, 
@@ -33,8 +42,8 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::BigWhite,
+		.attackType = eAttackType::Melee,
 		.count = 3, 
-		.isAttackOption = false,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 
@@ -44,8 +53,8 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::BigWhite,
+		.attackType = eAttackType::Melee,
 		.count = 4,
-		.isAttackOption = false,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
@@ -54,8 +63,8 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::Archer,
+		.attackType = eAttackType::Range,
 		.count = 1,
-		.isAttackOption = true,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
@@ -64,8 +73,8 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::Archer,
+		.attackType = eAttackType::Range,
 		.count = 2, 
-		.isAttackOption = true,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
@@ -74,8 +83,8 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::Archer,
+		.attackType = eAttackType::Range,
 		.count = 3, 
-		.isAttackOption = true,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
@@ -84,8 +93,38 @@ constexpr std::array<MonsterGroup, 7> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::Archer,
+		.attackType = eAttackType::Range,
 		.count = 4,
-		.isAttackOption = true,
+		.rangeX = {.min = -100.0f, .max = 100.0f },
+		.rangeY = {.min = -100.0f, .max = 100.0f }
+	}, 
+
+	// 7
+	MonsterGroup
+	{
+		.type = eMonsterType::SkelDog,
+		.attackType = eAttackType::Melee,
+		.count = 1,
+		.rangeX = {.min = -100.0f, .max = 100.0f },
+		.rangeY = {.min = -100.0f, .max = 100.0f }
+	}, 
+
+	// 8
+	MonsterGroup
+	{
+		.type = eMonsterType::SkelDog,
+		.attackType = eAttackType::Melee,
+		.count = 2,
+		.rangeX = {.min = -100.0f, .max = 100.0f },
+		.rangeY = {.min = -100.0f, .max = 100.0f }
+	}, 
+
+	// 9
+	MonsterGroup
+	{
+		.type = eMonsterType::SkelDog,
+		.attackType = eAttackType::Melee,
+		.count = 3,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
