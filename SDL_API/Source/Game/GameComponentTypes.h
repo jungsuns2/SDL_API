@@ -174,12 +174,16 @@ struct Dash : public Component
 	uint32_t count = 0;
 	uint32_t maxCount = 0;
 	float moveSpeed = 0.0f;
-	float isActive = false;
-	float timer = 0.0f;
+	bool isValue = false;
+	bool isShadow = false;
+	float countTimer = 0.0f;
+	float shadowTimer = 0.0f;
 };
 
 struct Shadow : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	Shadow() : Component(&_ID) {}
+
+	float timer = 0.0f;
 };

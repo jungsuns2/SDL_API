@@ -152,7 +152,7 @@ private:
 	Entity mUIPlayerHp{};
 	Entity mPlayerLeftHand{};
 	Entity mPlayerRightHand{};
-	std::array<Entity, 5> mPlayerShadows{};
+	std::array<Entity, 10> mPlayerShadows{};
 
 	Entity mSword{};
 	Entity mSwordSkill{};
