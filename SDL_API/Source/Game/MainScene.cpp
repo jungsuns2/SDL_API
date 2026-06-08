@@ -533,97 +533,75 @@ void MainScene::initialize_Resource()
 
 		index = 0;
 
-		constexpr Point IDLE_OFFSETS[] =
-		{
-			{.x = 0.07f, .y = -0.5f },
-			{.x = 0.07f, .y = -0.5f },
-			{.x = 0.07f, .y = -0.5f },
-			{.x = 0.07f, .y = -0.5f },
-			{.x = 0.07f, .y = -0.5f },
-		};
-		assert(std::size(IDLE_OFFSETS) == mBigWhiteSkelIdleTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
-
-		// Idle
-		for (Texture& texture : mBigWhiteSkelIdleTextures)
-		{
-			texture.Initialize(GetHelper(), "Resource/Monster/BigWhiteSekl/Idle/" + std::to_string(index) + ".png");
-
-			Clip::Frame frame =
-			{
-				.texture = &texture,
-				.durationTime = 0.12f,
-				.center = IDLE_OFFSETS[index]
-			};
-
-			mBigWhiteSkelClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
-			++index;
-		}
-
-		index = 0;
-
-		constexpr Point RUN_OFFSETS[] =
-		{
-			{.x = 0.07f, .y = -0.5f },
-			{.x = 0.07f, .y = -0.5f },
-			{.x = 0.07f, .y = -0.5f },
-			{.x = 0.07f, .y = -0.5f },
-			{.x = 0.07f, .y = -0.5f },
-			{.x = 0.07f, .y = -0.5f },
-		};
-		assert(std::size(RUN_OFFSETS) == mBigWhiteSkelRunTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
-
 		// Run
-		for (Texture& texture : mBigWhiteSkelRunTextures)
 		{
-			texture.Initialize(GetHelper(), "Resource/Monster/BigWhiteSekl/Run/" + std::to_string(index) + ".png");
-
-			Clip::Frame frame =
+			constexpr Point RUN_OFFSETS[] =
 			{
-				.texture = &texture,
-				.durationTime = 0.14f,
-				.center = RUN_OFFSETS[index]
+				{.x = 0.07f, .y = -0.5f },
+				{.x = 0.07f, .y = -0.5f },
+				{.x = 0.07f, .y = -0.5f },
+				{.x = 0.07f, .y = -0.5f },
+				{.x = 0.07f, .y = -0.5f },
+				{.x = 0.07f, .y = -0.5f },
 			};
 
-			mBigWhiteSkelClips[uint32_t(Monster::eState::Run)].AddClip(frame);
-			++index;
+			assert(std::size(RUN_OFFSETS) == mBigWhiteSkelRunTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
+
+			for (Texture& texture : mBigWhiteSkelRunTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/BigWhiteSekl/Run/" + std::to_string(index) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.14f,
+					.center = RUN_OFFSETS[index]
+				};
+
+				mBigWhiteSkelClips[uint32_t(Monster::eState::Run)].AddClip(frame);
+				++index;
+			}
+
+			index = 0;
 		}
-
-		index = 0;
-
-		constexpr Point ATTACK_OFFSETS[] =
-		{
-			{.x = 0.13f, .y = -0.5f },
-			{.x = 0.08f, .y = -0.5f },
-			{.x = -0.24f,.y = -0.5f },
-			{.x = -0.34f,.y = -0.5f },
-			{.x = -0.34f,.y = -0.5f },
-			{.x = -0.35f,.y = -0.5f },
-			{.x = -0.30f,.y = -0.5f },
-			{.x = -0.28f,.y = -0.5f },
-			{.x = -0.28f,.y = -0.5f },
-			{.x = -0.16f,.y = -0.5f },
-			{.x = -0.14f,.y = -0.5f },
-			{.x = 0.11f, .y = -0.5f }
-		};
-		assert(std::size(ATTACK_OFFSETS) == mBigWhiteSkelAttackTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
 
 		// Attack
-		for (Texture& texture : mBigWhiteSkelAttackTextures)
 		{
-			texture.Initialize(GetHelper(), "Resource/Monster/BigWhiteSekl/Attack/" + std::to_string(index) + ".png");
-
-			Clip::Frame frame =
+			constexpr Point ATTACK_OFFSETS[] =
 			{
-				.texture = &texture,
-				.durationTime = 0.1f,
-				.center = ATTACK_OFFSETS[index]
+				{.x = 0.13f, .y = -0.5f },
+				{.x = 0.08f, .y = -0.5f },
+				{.x = -0.24f,.y = -0.5f },
+				{.x = -0.34f,.y = -0.5f },
+				{.x = -0.34f,.y = -0.5f },
+				{.x = -0.35f,.y = -0.5f },
+				{.x = -0.30f,.y = -0.5f },
+				{.x = -0.28f,.y = -0.5f },
+				{.x = -0.28f,.y = -0.5f },
+				{.x = -0.16f,.y = -0.5f },
+				{.x = -0.14f,.y = -0.5f },
+				{.x = 0.11f, .y = -0.5f }
 			};
 
-			mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
-			++index;
-		}
+			assert(std::size(ATTACK_OFFSETS) == mBigWhiteSkelAttackTextures.size() and "offset 개수와 texture 개수가 일치하지 않습니다.");
 
-		index = 0;
+			for (Texture& texture : mBigWhiteSkelAttackTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/BigWhiteSekl/Attack/" + std::to_string(index) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.1f,
+					.center = ATTACK_OFFSETS[index]
+				};
+
+				mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
+				++index;
+			}
+
+			index = 0;
+		}
 	}
 
 	// Archer
@@ -641,23 +619,6 @@ void MainScene::initialize_Resource()
 				};
 
 				mArcherClips[uint32_t(Monster::eState::Spawn)].AddClip(frame);
-			}
-
-			index = 0;
-		}
-
-		// Idle
-		{
-			for (Texture& texture : mArcherIdleTextures)
-			{
-				texture.Initialize(GetHelper(), "Resource/Monster/Archer/Idle/" + std::to_string(index++) + ".png");
-
-				Clip::Frame frame =
-				{
-					.texture = &texture,
-					.durationTime = 0.12f,
-				};
-				mArcherClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
 			}
 
 			index = 0;
@@ -715,24 +676,6 @@ void MainScene::initialize_Resource()
 				};
 
 				mSkelDogClips[uint32_t(Monster::eState::Spawn)].AddClip(frame);
-			}
-
-			index = 0;
-		}
-
-		// Idle
-		{
-			for (Texture& texture : mSkelDogIdleTextures)
-			{
-				texture.Initialize(GetHelper(), "Resource/Monster/SkelDog/Idle/" + std::to_string(index++) + ".png");
-
-				Clip::Frame frame =
-				{
-					.texture = &texture,
-					.durationTime = 0.12f,
-				};
-
-				mSkelDogClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
 			}
 
 			index = 0;
@@ -1220,17 +1163,14 @@ void MainScene::initialize_Entity()
 	// Monster
 	{
 		mBigWhiteSkelClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
-		mBigWhiteSkelClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mBigWhiteSkelClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
 		mArcherClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
-		mArcherClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
 		mSkelDogClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
-		mSkelDogClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mSkelDogClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mSkelDogClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 	}
@@ -2134,21 +2074,6 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			break;
 		}
 
-		case Monster::eState::Idle:
-		{
-			boxCollider->size = colliderState->runSize;
-			boxCollider->offset = colliderState->runOffset;
-
-			monster->idleTimer += deltaTime;
-			if (monster->idleTimer >= 2.0f)
-			{
-				monster->state = Monster::eState::Run;
-				monster->idleTimer = 0.0f;
-			}
-
-			break;
-		}
-
 		case Monster::eState::Attack:
 		{
 			const Clip& attackClip = monster->clips[uint32_t(Monster::eState::Attack)];
@@ -2174,20 +2099,6 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			{
 				monster->state = Monster::eState::Attack;
 			}
-
-			if (monster->type != eMonsterType::SkelDog)
-			{
-				break;
-			}
-
-			monster->idleTimer += deltaTime;
-			if (monster->idleTimer >= 2.0f)
-			{
-				monster->state = Monster::eState::Idle;
-				monster->idleTimer = 0.0f;
-			}
-
-			break;
 		}
 
 		case Monster::eState::Dead:
@@ -2342,8 +2253,7 @@ void MainScene::monsterHpBarMove()
 
 		if (const Monster* monster = monsterEntity.GetComponent<Monster>();
 			monster->state != Monster::eState::Run
-			and monster->state != Monster::eState::Attack
-			and monster->state != Monster::eState::Idle)
+			and monster->state != Monster::eState::Attack)
 		{
 			continue;
 		}
@@ -2388,10 +2298,6 @@ void MainScene::monsterSetClip()
 		{
 		case Monster::eState::Spawn:
 			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Spawn)]);
-			break;
-
-		case Monster::eState::Idle:
-			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Idle)]);
 			break;
 
 		case Monster::eState::Run:

@@ -28,21 +28,6 @@ void StudyScene::Initialize()
 			}
 
 			uint32_t index{};
-			// Idle
-			{
-				for (Texture& texture : mArchersIdleTextures)
-				{
-					texture.Initialize(GetHelper(), "Resource/Monster/Archer/Idle/" + std::to_string(index++) + ".png");
-
-					Clip::Frame frame =
-					{
-						.texture = &texture,
-						.durationTime = 0.12f,
-					};
-					mArcherClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
-				}
-				index = 0;
-			}
 
 			// Run
 			{
@@ -92,7 +77,6 @@ void StudyScene::Initialize()
 	 // Monster
 	{
 		mArcherClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
-		mArcherClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mArcherClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
@@ -449,10 +433,6 @@ bool StudyScene::Update(const float deltaTime)
 		{
 		case Monster::eState::Spawn:
 			animator->SetClip(&mArcherClips[uint32_t(Monster::eState::Spawn)]);
-			break;
-
-		case Monster::eState::Idle:
-			animator->SetClip(&mArcherClips[uint32_t(Monster::eState::Idle)]);
 			break;
 
 		case Monster::eState::Run:

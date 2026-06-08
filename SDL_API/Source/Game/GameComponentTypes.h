@@ -27,7 +27,6 @@ struct Monster : public Component
 	enum class eState
 	{
 		Spawn,
-		Idle,
 		Run,
 		Attack,
 		Dead,
@@ -46,7 +45,6 @@ struct Monster : public Component
 	float length = 0.0f;
 	float attackDistance = 0.0f;
 	float spawnBlinkTimer = 0.0f;
-	float idleTimer = 0.0f;
 };
 
 struct Sword : public Component
