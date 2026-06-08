@@ -201,53 +201,14 @@ bool MainScene::Update(const float deltaTime)
 	updateBulletStates(deltaTime);
 
 	// 몬스터를 업데이트한다.
-	{
-		updateMonsterStates(deltaTime);
-		
-		// 충돌했을 때 애니메이션 처리
-		{
-			constexpr float DAMAGE_TIME = 0.12f;
+	updateMonsterStates(deltaTime);
+	
+	// 충돌했을 때 애니메이션 처리
+	updateHpMonster(deltaTime);
+	//monsterDeadParticle(deltaTime);
 
-			for (Entity& entity : mMonsters)
-			{
-				if (Active* active = entity.GetComponent<Active>();
-					not active->isValue)
-				{
-					continue;
-				}
-
-				if (Knockback* knockback = entity.GetComponent<Knockback>();
-					knockback->isValue)
-				{
-					Color* color = entity.GetComponent<Color>();
-					color->r = 200;
-					color->g = 0;
-					color->b = 0;
-
-					knockback->coolTimer += deltaTime;
-					if (knockback->coolTimer >= DAMAGE_TIME)
-					{
-						Monster* monster = entity.GetComponent<Monster>();
-						monster->state = Monster::eState::Run;
-
-						Color* color = entity.GetComponent<Color>();
-						color->r = 255;
-						color->g = 255;
-						color->b = 255;
-
-						knockback->isValue = false;
-						knockback->coolTimer = 0.0f;
-					}
-				}
-			}
-
-			// 몬스터 죽는 처리 및 파티클이 생성된다.
-			//monsterDeadParticle(deltaTime);
-		}
-
-		monsterMove(deltaTime);
-		monsterHpBarMove();
-	}
+	monsterMove(deltaTime);
+	monsterHpBarMove();
 
 	// 원거리 몬스터의 공격을 초기화와 업데이트한다.
 	{
@@ -348,6 +309,8 @@ void MainScene::Finalize()
 		{
 			texture.Finalize();
 		}
+
+		mSkelDogAttackTexture.Finalize();
 	}
 
 	for (Texture& texture : mSwordTextures)
@@ -697,6 +660,19 @@ void MainScene::initialize_Resource()
 			}
 
 			index = 0;
+		}
+
+		// Attack
+		{
+			mSkelDogAttackTexture.Initialize(GetHelper(), "Resource/Monster/SkelDog/Attack/0.png");
+
+			Clip::Frame frame =
+			{
+				.texture = &mSkelDogAttackTexture,
+				.durationTime = 0.0f,
+			};
+
+			mSkelDogClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
 		}
 	}
 }
@@ -2009,7 +1985,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		damage->value = 1;
 		monster->attackType = eAttackType::Melee;
 		monster->speed = 60.0f;
-		monster->attackDistance = 10.0f;
+		monster->attackDistance = 200.0f;
 		monster->clips = mSkelDogClips.data();
 		colliderState->runSize = { .width = 15.0f, .height = 15.0f };
 		colliderState->attackSize = { .width = 15.0f, .height = 15.0f };
@@ -2134,6 +2110,44 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 		Active* hpBarActive = mMonsterHpBars[hp->hpBarIndex].GetComponent<Active>();
 		hpBarActive->isValue = false;
+	}
+}
+
+void MainScene::updateHpMonster(const float deltaTime)
+{
+	constexpr float DAMAGE_TIME = 0.12f;
+
+	for (Entity& entity : mMonsters)
+	{
+		if (Active* active = entity.GetComponent<Active>();
+			not active->isValue)
+		{
+			continue;
+		}
+
+		if (Knockback* knockback = entity.GetComponent<Knockback>();
+			knockback->isValue)
+		{
+			Color* color = entity.GetComponent<Color>();
+			color->r = 200;
+			color->g = 0;
+			color->b = 0;
+
+			knockback->coolTimer += deltaTime;
+			if (knockback->coolTimer >= DAMAGE_TIME)
+			{
+				Monster* monster = entity.GetComponent<Monster>();
+				monster->state = Monster::eState::Run;
+
+				Color* color = entity.GetComponent<Color>();
+				color->r = 255;
+				color->g = 255;
+				color->b = 255;
+
+				knockback->isValue = false;
+				knockback->coolTimer = 0.0f;
+			}
+		}
 	}
 }
 

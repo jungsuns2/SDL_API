@@ -98,6 +98,7 @@ private:
 	void spawnMonsterGroup(const MonsterGroup& group);
 	void spawnMonster(const SpawnMonsterDesc& desc);
 	void updateMonsterStates(const float deltaTime);
+	void updateHpMonster(const float deltaTime);
 	void monsterDeadParticle(const float deltaTime);
 	void monsterMove(const float deltaTime);
 	void monsterHpBarMove();
@@ -195,6 +196,7 @@ private:
 
 	std::array<Texture, 5> mSkelDogIdleTextures{};
 	std::array<Texture, 7> mSkelDogRunTextures{};
+	Texture mSkelDogAttackTexture{};
 
 	std::array<Texture, 12> mSwordTextures{};
 	std::array<Texture, 8> mSwordSkillTextures{};
