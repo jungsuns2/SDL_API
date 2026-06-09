@@ -2092,10 +2092,7 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			constexpr float TIME = 2.0f;
 
 			float gauge = pattern->timer / TIME;
-			if (gauge > 1.0f) 
-			{
-				gauge = 1.0f;
-			}
+			gauge = std::clamp(gauge, 0.0f, 1.0f);
 
 			Color* color = entity.GetComponent<Color>();
 			color->r = 255 - static_cast<uint8_t>(gauge * 255.0f);
