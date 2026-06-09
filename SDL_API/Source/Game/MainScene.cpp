@@ -2089,10 +2089,25 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 		case Monster::eState::Idle:
 		{
+			constexpr float TIME = 2.0f;
+
+			float gauge = pattern->timer / TIME;
+			if (gauge > 1.0f) 
+			{
+				gauge = 1.0f;
+			}
+
+			Color* color = entity.GetComponent<Color>();
+			color->r = 255 - static_cast<uint8_t>(gauge * 255.0f);
+			color->g = 255 - static_cast<uint8_t>(gauge * 255.0f);
+
 			AttackPattern* pattern = entity.GetComponent<AttackPattern>();
 			pattern->timer += deltaTime;
-			if (pattern->timer >= 2.0f)
+			if (pattern->timer >= TIME)
 			{
+				color->r = 255;
+				color->g = 255;
+
 				Transform* transfrom = entity.GetComponent<Transform>();
 				const Transform* playerTransform = mPlayer.GetComponent<Transform>();
 
