@@ -185,12 +185,10 @@ private:
 
 	std::array<Texture, 2> mSpwanTextures{};
 
-	std::array<Texture, 5> mBigWhiteSkelIdleTextures{};
 	std::array<Texture, 6> mBigWhiteSkelRunTextures{};
 	std::array<Texture, 12> mBigWhiteSkelAttackTextures{};
 
 	Texture mArrowTexture{};
-	std::array<Texture, 3> mArcherIdleTextures{};
 	std::array<Texture, 3> mArcherRunTextures{};
 	std::array<Texture, 13> mArcherAttackTextures{};
 

@@ -202,6 +202,22 @@ bool MainScene::Update(const float deltaTime)
 
 	// 몬스터를 업데이트한다.
 	updateMonsterStates(deltaTime);
+
+	for (Entity& entity : mMonsters)
+	{
+		Monster* monster = entity.GetComponent<Monster>();
+		if (monster->type != eMonsterType::SkelDog)
+		{
+			continue;
+		}
+
+		if (Active* active = entity.GetComponent<Active>();
+			not active)
+		{
+			continue;
+		}
+
+	}
 	
 	// 충돌했을 때 애니메이션 처리
 	updateHpMonster(deltaTime);
@@ -265,11 +281,6 @@ void MainScene::Finalize()
 	{
 		mArrowTexture.Finalize();
 
-		for (Texture& texture : mBigWhiteSkelIdleTextures)
-		{
-			texture.Finalize();
-		}
-
 		for (Texture& texture : mSpwanTextures)
 		{
 			texture.Finalize();
@@ -281,11 +292,6 @@ void MainScene::Finalize()
 		}
 
 		for (Texture& texture : mBigWhiteSkelAttackTextures)
-		{
-			texture.Finalize();
-		}
-
-		for (Texture& texture : mArcherIdleTextures)
 		{
 			texture.Finalize();
 		}
@@ -639,6 +645,24 @@ void MainScene::initialize_Resource()
 				};
 
 				mSkelDogClips[uint32_t(Monster::eState::Spawn)].AddClip(frame);
+			}
+
+			index = 0;
+		}
+
+		// Idle
+		{
+			for (Texture& texture : mSkelDogIdleTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/SkelDog/Idle/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mSkelDogClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
 			}
 
 			index = 0;
@@ -1147,6 +1171,7 @@ void MainScene::initialize_Entity()
 		mArcherClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
 		mSkelDogClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
+		mSkelDogClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mSkelDogClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mSkelDogClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 	}
@@ -1759,6 +1784,9 @@ void MainScene::initializeMonsters()
 		Monster monster{};
 		entity.AddComponent(monster);
 
+		AttackPattern pattern{};
+		entity.AddComponent(pattern);
+
 		Transform transform{};
 		entity.AddComponent(transform);
 
@@ -1941,12 +1969,15 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	Offset* hpBarOffset = hpBarEntity.GetComponent<Offset>();
 
 	Damage* damage = monsterEntity.GetComponent<Damage>();
+	AttackPattern* pattern = monsterEntity.GetComponent<AttackPattern>();
 
 	switch (monster->type)
 	{
 	case eMonsterType::BigWhite:
 		hp->max = 2;
 		damage->value = 1;
+		pattern->isValue = false;
+		pattern->timer = 0.0f;
 		monster->attackType = eAttackType::Melee;
 		monster->speed = 35.0f;
 		monster->attackDistance = 90.0f;
@@ -1965,6 +1996,8 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	case eMonsterType::Archer:
 		hp->max = 3;
 		damage->value = 2;
+		pattern->isValue = false;
+		pattern->timer = 0.0f;
 		monster->attackType = eAttackType::Range;
 		monster->speed = 50.0f;
 		monster->attackDistance = 300.0f;
@@ -1983,6 +2016,8 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	case eMonsterType::SkelDog:
 		hp->max = 1;
 		damage->value = 1;
+		pattern->isValue = true;
+		pattern->timer = 0.0f;
 		monster->attackType = eAttackType::Melee;
 		monster->speed = 60.0f;
 		monster->attackDistance = 200.0f;
@@ -2028,6 +2063,8 @@ void MainScene::updateMonsterStates(const float deltaTime)
 		BoxCollider* boxCollider = entity.GetComponent<BoxCollider>();
 		const ColliderState* colliderState = entity.GetComponent<ColliderState>();
 
+		AttackPattern* pattern = entity.GetComponent<AttackPattern>();
+
 		switch (monster->state)
 		{
 		case Monster::eState::Spawn:
@@ -2050,8 +2087,34 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			break;
 		}
 
+		case Monster::eState::Idle:
+		{
+			AttackPattern* pattern = entity.GetComponent<AttackPattern>();
+			pattern->timer += deltaTime;
+			if (pattern->timer >= 2.0f)
+			{
+				Transform* transfrom = entity.GetComponent<Transform>();
+				const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+
+				const Point difference = playerTransform->position - transfrom->position;
+				Direction* direction = entity.GetComponent<Direction>();
+				direction->value = Math::NormalizeVector(difference);
+
+				monster->state = Monster::eState::Rush;
+				pattern->timer = 0.0f;
+			}
+		
+			break;
+		}
+
 		case Monster::eState::Attack:
 		{
+			if (pattern->isValue)
+			{
+				monster->state = Monster::eState::Idle;
+				break;
+			}
+
 			const Clip& attackClip = monster->clips[uint32_t(Monster::eState::Attack)];
 			const Animator& anim = *entity.GetComponent<Animator>();
 			if (anim.clipState == &attackClip
@@ -2075,6 +2138,41 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			{
 				monster->state = Monster::eState::Attack;
 			}
+
+			break;
+		}
+
+		case Monster::eState::Rush:
+		{
+			constexpr float SPEED = 600.0f;
+			constexpr float RUSH_DISTANCE = 500.0f;
+
+			boxCollider->size = colliderState->runSize;
+			boxCollider->offset = colliderState->runOffset;
+
+			float movingDistance = SPEED * deltaTime;
+			pattern->distanceMoved += movingDistance;
+
+			const Direction* direction = entity.GetComponent<Direction>();
+			const Point velocity = direction->value * SPEED;
+
+			Transform* transform = entity.GetComponent<Transform>();
+			if (pattern->distanceMoved >= RUSH_DISTANCE)
+			{
+				float overDistance = pattern->distanceMoved - RUSH_DISTANCE;
+				movingDistance -= overDistance;
+				transform->position += direction->value * movingDistance;
+
+				pattern->distanceMoved = 0.0f;
+				monster->state = Monster::eState::Run;
+			}
+			else
+			{
+				clampToTile(transform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
+				transform->position += velocity * deltaTime;
+			}
+
+			break;
 		}
 
 		case Monster::eState::Dead:
@@ -2238,20 +2336,22 @@ void MainScene::monsterMove(const float deltaTime)
 		const Point difference = playerTransform->position - monsterTransform->position;
 		monster->length = Math::GetVectorLength(difference);
 
-		if (monster->state == Monster::eState::Run)
+		if (monster->state != Monster::eState::Run)
 		{
-			Direction* direction = entity.GetComponent<Direction>();
-			direction->value = Math::NormalizeVector(difference);
-
-			const Point velocity = direction->value * monster->speed;
-
-			//Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
-			//playerKnockback->direction = direction->value;
-
-			clampToTile(monsterTransform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
-			monsterTransform->position += velocity * deltaTime;
-			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+			continue;
 		}
+
+		Direction* direction = entity.GetComponent<Direction>();
+		direction->value = Math::NormalizeVector(difference);
+
+		const Point velocity = direction->value * monster->speed;
+
+		//Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
+		//playerKnockback->direction = direction->value;
+
+		clampToTile(monsterTransform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
+		monsterTransform->position += velocity * deltaTime;
+		monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 	}
 }
 
@@ -2267,12 +2367,13 @@ void MainScene::monsterHpBarMove()
 
 		if (const Monster* monster = monsterEntity.GetComponent<Monster>();
 			monster->state != Monster::eState::Run
-			and monster->state != Monster::eState::Attack)
+			and monster->state != Monster::eState::Attack
+			and monster->state != Monster::eState::Idle)
 		{
 			continue;
 		}
 
-		Hp* hp = monsterEntity.GetComponent<Hp>();
+		const Hp* hp = monsterEntity.GetComponent<Hp>();
 		Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
 
 		Active* hpBarActive = hpBarEntity.GetComponent<Active>();
@@ -2314,23 +2415,21 @@ void MainScene::monsterSetClip()
 			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Spawn)]);
 			break;
 
+		case Monster::eState::Idle:
+			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Idle)]);
+			break;
+
 		case Monster::eState::Run:
 			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Run)]);
 			break;
 
 		case Monster::eState::Attack:
-		{
-			if (monster->clips[uint32_t(Monster::eState::Attack)].GetLastFrameIndex() <= 0)
-			{
-				monster->state = Monster::eState::Run;
-			}
-			else
-			{
-				animator->SetClip(&monster->clips[uint32_t(Monster::eState::Attack)]);
-			}
-
+			animator->SetClip(&monster->clips[uint32_t(Monster::eState::Attack)]);
 			break;
-		}
+
+		case Monster::eState::Rush:
+			__noop;
+			break;
 
 		case Monster::eState::Dead:
 			__noop;

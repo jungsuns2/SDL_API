@@ -27,8 +27,10 @@ struct Monster : public Component
 	enum class eState
 	{
 		Spawn,
+		Idle,
 		Run,
 		Attack,
+		Rush,
 		Dead,
 		Count
 	};
@@ -133,6 +135,16 @@ struct RangedAttack : public Component
 	float distance = 0.0f;
 	bool isFiring = false;
 	Point startPosition = { .x = 0.0f, .y = 0.0f };
+};
+
+struct AttackPattern : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	AttackPattern() : Component(&_ID) {}
+
+	bool isValue = false;
+	float timer = 0.0f;
+	float distanceMoved = 0.0f;
 };
 
 struct ColliderState : public Component
