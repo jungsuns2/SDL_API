@@ -316,6 +316,16 @@ void MainScene::Finalize()
 			texture.Finalize();
 		}
 
+		for (Texture& texture : mBossIdleTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mBossAttackTextures)
+		{
+			texture.Finalize();
+		}
+
 		mSkelDogAttackTexture.Finalize();
 	}
 
@@ -697,6 +707,81 @@ void MainScene::initialize_Resource()
 			};
 
 			mSkelDogClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
+		}
+	}
+
+	// Boss
+	{
+		// Spwan
+		{
+			for (Texture& texture : mSpwanTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Spawn/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.06f
+				};
+
+				mBossClips[uint32_t(Monster::eState::Spawn)].AddClip(frame);
+			}
+
+			index = 0;
+		}
+
+		// Idle
+		{
+			for (Texture& texture : mBossIdleTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Idle/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mBossClips[uint32_t(Monster::eState::Idle)].AddClip(frame);
+			}
+
+			index = 0;
+		}
+
+		// Run
+		{
+			for (Texture& texture : mBossIdleTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Idle/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mBossClips[uint32_t(Monster::eState::Run)].AddClip(frame);
+			}
+
+			index = 0;
+		}
+
+		// Attack
+		{
+			for (Texture& texture : mBossAttackTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Attack/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mBossClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
+			}
+
+			index = 0;
 		}
 	}
 }
@@ -1100,6 +1185,8 @@ void MainScene::initialize_Entity()
 
 	// Bullet
 	{
+		mBulletClip.SetLoop(true);
+
 		for (Entity& entity : mBullets)
 		{
 			Bullet bullet{};
@@ -1115,8 +1202,6 @@ void MainScene::initialize_Entity()
 			Transform transform{};
 			transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 			entity.AddComponent(transform);
-
-			mBulletClip.SetLoop(true);
 
 			Image image{};
 			entity.AddComponent(image);
@@ -1174,6 +1259,11 @@ void MainScene::initialize_Entity()
 		mSkelDogClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mSkelDogClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mSkelDogClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
+
+		mBossClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
+		mBossClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
+		mBossClips[uint32_t(Monster::eState::Run)].SetLoop(true);
+		mBossClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 	}
 
 	// Arrow
@@ -1877,7 +1967,7 @@ void MainScene::initializeMonsters()
 
 void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 {
-	constexpr Point TILE_OFFSET = { .x = 30.0f, .y = 50.0f };
+	constexpr Point TILE_OFFSET = { .x = 50.0f, .y = 50.0f };
 
 	uint32_t monsterIndex = 0;
 
@@ -1953,6 +2043,9 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	hpBarActive->isValue = false;
 
 	BoxCollider* boxCollider = monsterEntity.GetComponent<BoxCollider>();
+	boxCollider->size = {.width = 0.0f, .height = 0.0f };
+	boxCollider->offset = { .x = 0.0f, .y = 0.0f };
+
 	ColliderState* colliderState = monsterEntity.GetComponent<ColliderState>();
 	Offset* hpBarOffset = hpBarEntity.GetComponent<Offset>();
 
@@ -1971,13 +2064,10 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		monster->attackDistance = 90.0f;
 		monster->clips = mBigWhiteSkelClips.data();
 		colliderState->runSize = { .width = 10.0f, .height = 30.0f };
-		colliderState->attackSize = { .width = 30.0f, .height = 60.0f };
 		colliderState->runOffset = { .x = 0.0f, .y = 45.0f };
+		colliderState->attackSize = { .width = 30.0f, .height = 60.0f };
 		colliderState->attackOffset = { .x = 70.0f, .y = 45.0f };
-		colliderState->isAttack = true;
 		colliderState->attackAnimIndex = 5;
-		boxCollider->size = colliderState->runSize;
-		boxCollider->offset = colliderState->runOffset;
 		hpBarOffset->value = { .x = 0.0f, .y = -20.0f };
 		break;
 
@@ -1991,13 +2081,10 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		monster->attackDistance = 300.0f;
 		monster->clips = mArcherClips.data();
 		colliderState->runSize = { .width = float(mArcherRunTextures[1].GetWidth()), .height = float(mArcherRunTextures[1].GetHeight()) };
-		colliderState->attackSize = { .width = float(mArcherAttackTextures[7].GetWidth()), .height = float(mArcherAttackTextures[7].GetHeight()) };
 		colliderState->runOffset = { .x = 0.0f, .y = 0.0f };
+		colliderState->attackSize = { .width = float(mArcherAttackTextures[7].GetWidth()), .height = float(mArcherAttackTextures[7].GetHeight()) };
 		colliderState->attackOffset = { .x = 0.0f, .y = 0.0f };
-		colliderState->isAttack = false;
 		colliderState->attackAnimIndex = 0;
-		boxCollider->size = colliderState->runSize;
-		boxCollider->offset = colliderState->runOffset;
 		hpBarOffset->value = { .x = 10.0f, .y = -55.0f };
 		break;
 
@@ -2011,13 +2098,27 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		monster->attackDistance = 200.0f;
 		monster->clips = mSkelDogClips.data();
 		colliderState->runSize = { .width = 15.0f, .height = 15.0f };
-		colliderState->attackSize = { .width = 15.0f, .height = 15.0f };
 		colliderState->runOffset = { .x = 0.0f, .y = -5.0f };
+		colliderState->attackSize = { .width = 15.0f, .height = 15.0f };
 		colliderState->attackOffset = { .x = 0.0f, .y = -5.0f };
-		colliderState->isAttack = true;
 		colliderState->attackAnimIndex = 5;
-		boxCollider->size = colliderState->runSize;
-		boxCollider->offset = colliderState->runOffset;
+		hpBarOffset->value = { .x = 0.0f, .y = -40.0f };
+		break;
+
+	case eMonsterType::Boss:
+		hp->max = 100;
+		damage->value = 10;
+		pattern->isValue = false;
+		pattern->timer = 0.0f;
+		monster->attackType = eAttackType::Range;
+		monster->speed = 80.0f;
+		monster->attackDistance = 200.0f;
+		monster->clips = mBossClips.data();
+		colliderState->runSize = { .width = 55.0f, .height = 75.0f };
+		colliderState->runOffset = { .x = 18.0f, .y = -15.0f };
+		colliderState->attackSize = { .width = 60.0f, .height = 90.0f };
+		colliderState->attackOffset = { .x = 10.0f, .y = 0.0f };
+		colliderState->attackAnimIndex = 5;
 		hpBarOffset->value = { .x = 0.0f, .y = -40.0f };
 		break;
 
@@ -2047,10 +2148,12 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			continue;
 		}
 
-		Monster* monster = entity.GetComponent<Monster>();
-		BoxCollider* boxCollider = entity.GetComponent<BoxCollider>();
 		const ColliderState* colliderState = entity.GetComponent<ColliderState>();
+		const Direction* direction = entity.GetComponent<Direction>();
 
+		BoxCollider* boxCollider = entity.GetComponent<BoxCollider>();
+
+		Monster* monster = entity.GetComponent<Monster>();
 		AttackPattern* pattern = entity.GetComponent<AttackPattern>();
 
 		switch (monster->state)
@@ -2077,6 +2180,9 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 		case Monster::eState::Idle:
 		{
+			boxCollider->offset = colliderState->runOffset;
+			boxCollider->size = colliderState->runSize;
+
 			constexpr float TIME = 2.0f;
 
 			float gauge = pattern->timer / TIME;
@@ -2408,6 +2514,11 @@ void MainScene::monsterSetClip()
 		Animator* animator = entity.GetComponent<Animator>();
 		Monster* monster = entity.GetComponent<Monster>();
 
+		if (animator == nullptr)
+		{
+			continue;
+		}
+
 		switch (monster->state)
 		{
 		case Monster::eState::Spawn:
@@ -2445,20 +2556,21 @@ void MainScene::initializeAttackCollider()
 {
 	for (Entity& monsterEntity : mMonsters)
 	{
+		const Monster* monster = monsterEntity.GetComponent<Monster>();
+		if (monster->attackType != eAttackType::Melee)
+		{
+			continue;
+		}
+
+		if (monster->state != Monster::eState::Attack)
+		{
+			continue;
+		}
+
+		const Animator* anim = monsterEntity.GetComponent<Animator>();
 		const ColliderState* state = monsterEntity.GetComponent<ColliderState>();
-		if (not state->isAttack)
-		{
-			continue;
-		}
 
-		if (const Monster* monster = monsterEntity.GetComponent<Monster>();
-			monster->state != Monster::eState::Attack)
-		{
-			continue;
-		}
-
-		if (const Animator* anim = monsterEntity.GetComponent<Animator>();
-			anim->frameIndex == state->attackAnimIndex)
+		if (anim->frameIndex == state->attackAnimIndex)
 		{
 			bool alreadyHasCollider = false;
 			for (Entity& attackEntity : mMonsterAttacks)
@@ -2505,6 +2617,9 @@ void MainScene::initializeAttackCollider()
 			Transform transform{};
 			targetAttackEntity->AddComponent(transform);
 
+			Direction direction{};
+			targetAttackEntity->AddComponent(direction);
+
 			Active active{};
 			targetAttackEntity->AddComponent(active);
 
@@ -2543,20 +2658,21 @@ void MainScene::attackCollision()
 			continue;
 		}
 
-		const ColliderState* state = monsterEntity->GetComponent<ColliderState>();
-		if (not state->isAttack)
+		const Monster* monster = monsterEntity->GetComponent<Monster>(); 
+		if (monster->attackType != eAttackType::Melee)
 		{
 			continue;
 		}
 
-		if (const Monster* monster = monsterEntity->GetComponent<Monster>(); 
-			monster->state != Monster::eState::Attack)
+		if (monster->state != Monster::eState::Attack)
 		{
 			continue;
 		}
 
 		const Animator* anim = monsterEntity->GetComponent<Animator>();
 		Active* active = attackEntity.GetComponent<Active>();
+		const ColliderState* state = monsterEntity->GetComponent<ColliderState>();
+
 		if (anim->frameIndex >= state->attackAnimIndex + 1
 			or anim->frameIndex < state->attackAnimIndex)
 		{
@@ -2568,10 +2684,11 @@ void MainScene::attackCollision()
 
 		BoxCollider* boxCollider = attackEntity.GetComponent<BoxCollider>();
 		boxCollider->size = state->attackSize;
+		boxCollider->offset = state->attackOffset;
 
-		const Direction* direction = monsterEntity->GetComponent<Direction>();
-		boxCollider->offset.x = (direction->value.x > 0.0f) ? state->attackOffset.x : -state->attackOffset.x;
-		boxCollider->offset.y = state->attackOffset.y;
+		const Direction* monsterDirection = monsterEntity->GetComponent<Direction>();
+		Direction* direction = attackEntity.GetComponent<Direction>();
+		direction->value = monsterDirection->value;
 
 		const Transform* monsterTransform = monsterEntity->GetComponent<Transform>();
 		Transform* transform = attackEntity.GetComponent<Transform>();
@@ -2588,20 +2705,21 @@ void MainScene::removeAttackCollider()
 {
 	for (const Entity& monsterEntity : mMonsters)
 	{
+		const Monster* monster = monsterEntity.GetComponent<Monster>();
+		if (monster->attackType != eAttackType::Melee)
+		{
+			continue;
+		}
+
+		if (monster->state != Monster::eState::Attack)
+		{
+			continue;
+		}
+
+		const Animator* anim = monsterEntity.GetComponent<Animator>();
 		const ColliderState* state = monsterEntity.GetComponent<ColliderState>();
-		if (not state->isAttack)
-		{
-			continue;
-		}
 
-		if (const Monster* monster = monsterEntity.GetComponent<Monster>();
-			monster->state != Monster::eState::Attack)
-		{
-			continue;
-		}
-
-		if (const Animator* anim = monsterEntity.GetComponent<Animator>();
-			anim->frameIndex == state->attackAnimIndex + 2)
+		if (anim->frameIndex == state->attackAnimIndex + 2)
 		{
 			for (Entity& attackEntity : mMonsterAttacks)
 			{
@@ -2673,9 +2791,9 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 					continue;
 				}
 
-				if (not monster->isAttack)
+				if (not monster->isRangeAttack)
 				{
-					monster->isAttack = true;
+					monster->isRangeAttack = true;
 					rangeActive->isValue = true;
 					rangedAttack->isFiring = true;
 
@@ -2734,11 +2852,11 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 			direction->value = Math::NormalizeVector(difference);
 			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 
-			monster->isAttack = false;
+			monster->isRangeAttack = false;
 		}
 		else
 		{
-			monster->isAttack = false;
+			monster->isRangeAttack = false;
 		}
 	}
 }
@@ -3248,7 +3366,7 @@ bool MainScene::checkCollisionBoxCircle(const Entity& boxEntity, const Entity& c
 		return false;
 	}
 
-	// TODO: std::array<Point, 5>를 사용해서 수정하기
+	// TODO: Quad를 사용해서 수정하기
 	const Transform* boxTransform = boxEntity.GetComponent<Transform>();
 	const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
 	//const std::array<Point, 5> points = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);
@@ -3274,7 +3392,7 @@ bool MainScene::checkCollisionBoxLine(const Entity& boxEntity, const Entity& lin
 		return false;
 	}
 
-	// TODO: std::array<Point, 5>를 사용해서 수정하기
+	// TODO: Quad를 사용해서 수정하기
 	//const Transform* boxTransform = boxEntity.GetComponent<Transform>();
 	//const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
 	//const Rect rect = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);

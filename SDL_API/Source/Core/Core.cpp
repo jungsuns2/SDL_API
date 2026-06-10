@@ -330,8 +330,12 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld)
 
 		const Transform* transform = entity->GetComponent<Transform>();
 		const BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
+		const Direction* direction = entity->GetComponent<Direction>();
+		
+		Point position = { .x = 0.0f, .y = transform->position.y + boxCollider->offset.y };
+		position.x = (direction->value.x > 0.0f) ?
+			transform->position.x + boxCollider->offset.x : transform->position.x - boxCollider->offset.x;
 
-		const Point position = transform->position + boxCollider->offset;
 		const Scale boxHalfSize = transform->scale * boxCollider->size * 0.5f;
 
 		const Quad local =
@@ -385,7 +389,7 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld)
 
 		const DebugColor* debugColor = entity->GetComponent<DebugColor>();
 		SDL_SetRenderDrawColor(mRenderer, debugColor->r, debugColor->g, debugColor->b, debugColor->a);
-		SDL_RenderDrawLinesF(mRenderer, result.data(), result.size());
+		SDL_RenderDrawLinesF(mRenderer, result.data(), int(result.size()));
 	}
 }
 

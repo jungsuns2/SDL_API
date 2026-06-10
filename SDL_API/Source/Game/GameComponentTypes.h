@@ -43,7 +43,7 @@ struct Monster : public Component
 	eState state{};
 	eMonsterType type = eMonsterType::None;
 	eAttackType attackType = eAttackType::None;
-	bool isAttack = false;
+	bool isRangeAttack = false;
 	float speed = 0.0f;
 	float length = 0.0f;
 	float attackDistance = 0.0f;
@@ -154,12 +154,11 @@ struct ColliderState : public Component
 	ColliderState() : Component(&_ID) {}
 
 	Scale runSize = { .width = 0.0f, .height = 0.0f };
-	Scale attackSize = { .width = 0.0f, .height = 0.0f };
-
 	Point runOffset = { .x = 0.0f, .y = 0.0f };
+	
+	Scale attackSize = { .width = 0.0f, .height = 0.0f };
 	Point attackOffset = { .x = 0.0f, .y = 0.0f };
 
-	uint32_t isAttack = false;
 	uint32_t attackAnimIndex = 0;
 };
 

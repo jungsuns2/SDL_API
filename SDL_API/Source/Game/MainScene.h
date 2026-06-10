@@ -174,6 +174,7 @@ private:
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBigWhiteSkelClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mArcherClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mSkelDogClips{};
+	std::array<Clip, uint32_t(Monster::eState::Count)> mBossClips{};
 
 	Clip mSwordClip{};
 	Clip mSwordSkillClip{};
@@ -197,6 +198,9 @@ private:
 	std::array<Texture, 5> mSkelDogIdleTextures{};
 	std::array<Texture, 7> mSkelDogRunTextures{};
 	Texture mSkelDogAttackTexture{};
+
+	std::array<Texture, 10> mBossIdleTextures{};
+	std::array<Texture, 12> mBossAttackTextures{};
 
 	std::array<Texture, 12> mSwordTextures{};
 	std::array<Texture, 8> mSwordSkillTextures{};
