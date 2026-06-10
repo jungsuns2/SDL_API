@@ -14,6 +14,9 @@ public:
 	void AddEntity(Entity* entity, std::source_location sourceLocation = std::source_location::current());
 	void Remove(Entity* entity);
 
+public:
+	std::vector<Entity*>& CleanRemovedEntities();
+
 	const std::vector<Entity*>& GetAllEntites() const;
 
 private:

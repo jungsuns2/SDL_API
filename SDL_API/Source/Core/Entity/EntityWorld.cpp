@@ -35,6 +35,26 @@ void EntityWorld::Remove(Entity* entity)
 	}
 }
 
+std::vector<Entity*>& EntityWorld::CleanRemovedEntities()
+{
+	uint32_t removeIndex = 0;
+
+	for (uint32_t i = 0; i < mEntites.size(); ++i)
+	{
+		const Entity& entity = *mEntites[i];
+		if (entity.IsRemoved())
+		{
+			removeIndex = i;
+			mEntites[removeIndex] = mEntites[mEntites.size() - 1];
+			mEntites.pop_back();
+
+			--i;
+		}
+	}
+
+	return mEntites;
+}
+
 const std::vector<Entity*>& EntityWorld::GetAllEntites() const
 {
 	return mEntites;

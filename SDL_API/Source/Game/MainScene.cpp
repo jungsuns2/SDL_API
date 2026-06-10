@@ -2615,8 +2615,7 @@ void MainScene::removeAttackCollider()
 					continue;
 				}
 
-				GetEntityWorld()->Remove(&attackEntity);
-
+				attackEntity.SetRemoved(true);
 				break;
 			}
 		}

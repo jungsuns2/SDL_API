@@ -272,6 +272,17 @@ bool StudyScene::Update(const float deltaTime)
 		transform->position.y += moveY * 500.0f * deltaTime;
 	}
 
+	// Remove Monster
+	{
+		static float timer;
+		timer += deltaTime;
+
+		if (timer >= 3.0f)
+		{
+			mMonsters[0].SetRemoved(true);
+		}
+	}
+
 	// Arrow Active
 	{
 		static float fireTimer[3];

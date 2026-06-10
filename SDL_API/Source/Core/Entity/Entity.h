@@ -19,8 +19,12 @@ public:
 	template<typename T>
 	bool HasComponent() const;
 
+	void SetRemoved(const bool isRemoved);
+	bool IsRemoved() const;
+
 private:
 	std::vector<Component*> mComponents{};
+	bool mIsRemoved = false;
 	
 #if defined(_DEBUG)
 public:

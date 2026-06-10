@@ -37,14 +37,19 @@ public:
 
 private:
 	void updateAnimator(const EntityWorld* entityWorld, const float deltaTime);
+
 	Transform* cameraSystem(const EntityWorld* entityWorld);
 	Point getCameraOffset() const;
+
 	void textureSystem(const TextureSystemDesc& desc);
 	void drawSystem(const DrawSystemDesc& desc);
 	void drawImages(const EntityWorld* entityWorld);
+
 	void colliderImageRenderingSystem(const EntityWorld* entityWorld);
 	void labelRenderingSystem(const EntityWorld* entityWorld);
 	void labelUIRenderingSystem(const EntityWorld* entityWorld);
+
+	void removeEntitySystem();
 
 	[[nodiscard]] SDL_Window* GetWindow() const;
 

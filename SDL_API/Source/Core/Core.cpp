@@ -52,6 +52,8 @@ bool Core::Update(const float deltaTime)
 	const EntityWorld* entityWorld = mScene->GetEntityWorld();
 	mCameraTransform = cameraSystem(entityWorld);
 
+	removeEntitySystem();
+
 	updateAnimator(entityWorld, deltaTime);
 	drawImages(entityWorld);
 
@@ -519,6 +521,12 @@ void Core::labelUIRenderingSystem(const EntityWorld* entityWorld)
 			label->texture = nullptr;
 		}
 	}
+}
+
+void Core::removeEntitySystem()
+{
+	EntityWorld* entityWorld = mScene->GetEntityWorld();
+	entityWorld->CleanRemovedEntities();
 }
 
 SDL_Window* Core::GetWindow() const
