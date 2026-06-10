@@ -1432,7 +1432,7 @@ void MainScene::playerMove(const float deltaTime)
 
 	// Dash Shadow
 	{
-		constexpr Point OFFSET = { .x = 0.0f, .y = 30.0f };
+		constexpr Point OFFSET = { .x = 50.0f, .y = 30.0f };
 		constexpr Point INTERVAL_POSITION = { .x = 30.0f, .y = 30.0f };
 
 		// 잔상 색을 업데이트한다.
@@ -1472,8 +1472,15 @@ void MainScene::playerMove(const float deltaTime)
 
 					Transform* shadowTransform = entity.GetComponent<Transform>();
 
-					shadowTransform->position = playerTransform->position + OFFSET;
+					shadowTransform->position = playerTransform->position;
+					shadowTransform->position.y += OFFSET.y;
 					shadowTransform->flip = (moveDirection.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+					if (moveVelocity.y == 0.0f)
+					{
+						shadowTransform->position.x = (moveDirection.x > 0.0f) ?
+							playerTransform->position.x + OFFSET.x : playerTransform->position.x - OFFSET.x;
+					}
 
 					break;
 				}
