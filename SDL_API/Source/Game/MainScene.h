@@ -132,6 +132,8 @@ private:
 
 private:
 	bool mIsUpdate = true;
+	bool mIsDebugActive = false;
+
 	uint32_t mTileMaxCount{};
 	float mTilePositionOffset{};
 	BulletState mBulletState{};

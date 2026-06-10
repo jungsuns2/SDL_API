@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Entity/Component.h"
+#include "Core/Entity/Entity.h"
 
 #include "MonsterGroupDescs.h"
 
@@ -159,13 +160,15 @@ struct ColliderState : public Component
 	Point attackOffset = { .x = 0.0f, .y = 0.0f };
 
 	uint32_t isAttack = false;
-	uint32_t attackIndex = 0;
+	uint32_t attackAnimIndex = 0;
 };
 
 struct MonsterAttackCollider : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	MonsterAttackCollider() : Component(&_ID) {}
+
+	Entity* ownerEntity = nullptr;
 };
 
 struct Damage : public Component

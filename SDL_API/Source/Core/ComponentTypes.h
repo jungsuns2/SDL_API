@@ -74,7 +74,6 @@ struct Animator final : public Component
 	Clip* clipState = nullptr;
 	float elapsedTime = 0.0f; // »Â∏• Ω√∞£
 	uint32_t frameIndex = 0;
-	uint32_t lastFrameIndex = 0;
 };
 
 struct Color final : public Component

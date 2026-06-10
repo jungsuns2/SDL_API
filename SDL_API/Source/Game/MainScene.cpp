@@ -237,7 +237,7 @@ bool MainScene::Update(const float deltaTime)
 	{
 		initializeAttackCollider();
 		attackCollision();
-		removeAttackCollider();
+		//removeAttackCollider();
 
 		playerToMonsterCollision();
 		playerToMonsterAttackCollision();
@@ -1262,6 +1262,8 @@ void MainScene::input()
 #if defined(_DEBUG)
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
 	{
+		mIsDebugActive = !mIsDebugActive;
+
 		for (Entity* entity : GetEntityWorld()->GetAllEntites())
 		{
 			if (not entity->HasComponent<DebugActive>())
@@ -1270,6 +1272,17 @@ void MainScene::input()
 			}
 
 			DebugActive* debugActive = entity->GetComponent<DebugActive>();
+			debugActive->isValue = mIsDebugActive;
+		}
+
+		for (Entity& attackEntity : mMonsterAttacks)
+		{
+			if (not attackEntity.HasComponent<DebugActive>())
+			{
+				continue;
+			}
+
+			DebugActive* debugActive = attackEntity.GetComponent<DebugActive>();
 			debugActive->isValue = !debugActive->isValue;
 		}
 	}
@@ -1853,38 +1866,6 @@ void MainScene::initializeMonsters()
 
 		GetEntityWorld()->AddEntity(&entity);
 	}
-
-	for (uint32_t i = 0; i < 5; ++i)
-	{
-		Entity& attackEntity = mMonsterAttacks[i];
-
-		MonsterAttackCollider attack{};
-		attackEntity.AddComponent(attack);
-
-		Transform transform{};
-		attackEntity.AddComponent(transform);
-
-		Damage damage{};
-		attackEntity.AddComponent(damage);
-
-		Active active{};
-		attackEntity.AddComponent(active);
-
-		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
-		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
-		attackEntity.AddComponent(collider);
-
-		BoxCollider boxCollider{};
-		attackEntity.AddComponent(boxCollider);
-
-		DebugActive debugActive{};
-		attackEntity.AddComponent(debugActive);
-
-		DebugColor debugColor{};
-		attackEntity.AddComponent(debugColor);
-
-		GetEntityWorld()->AddEntity(&attackEntity);
-	}
 }
 
 void MainScene::spawnMonsterGroup(const MonsterGroup& group)
@@ -1987,7 +1968,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		colliderState->runOffset = { .x = 0.0f, .y = 45.0f };
 		colliderState->attackOffset = { .x = 70.0f, .y = 45.0f };
 		colliderState->isAttack = true;
-		colliderState->attackIndex = 5;
+		colliderState->attackAnimIndex = 5;
 		boxCollider->size = colliderState->runSize;
 		boxCollider->offset = colliderState->runOffset;
 		hpBarOffset->value = { .x = 0.0f, .y = -20.0f };
@@ -2007,7 +1988,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		colliderState->runOffset = { .x = 0.0f, .y = 0.0f };
 		colliderState->attackOffset = { .x = 0.0f, .y = 0.0f };
 		colliderState->isAttack = false;
-		colliderState->attackIndex = 0;
+		colliderState->attackAnimIndex = 0;
 		boxCollider->size = colliderState->runSize;
 		boxCollider->offset = colliderState->runOffset;
 		hpBarOffset->value = { .x = 10.0f, .y = -55.0f };
@@ -2027,7 +2008,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		colliderState->runOffset = { .x = 0.0f, .y = -5.0f };
 		colliderState->attackOffset = { .x = 0.0f, .y = -5.0f };
 		colliderState->isAttack = true;
-		colliderState->attackIndex = 5;
+		colliderState->attackAnimIndex = 5;
 		boxCollider->size = colliderState->runSize;
 		boxCollider->offset = colliderState->runOffset;
 		hpBarOffset->value = { .x = 0.0f, .y = -40.0f };
@@ -2378,9 +2359,8 @@ void MainScene::monsterHpBarMove()
 		}
 
 		if (const Monster* monster = monsterEntity.GetComponent<Monster>();
-			monster->state != Monster::eState::Run
-			and monster->state != Monster::eState::Attack
-			and monster->state != Monster::eState::Idle)
+			monster->state == Monster::eState::Spawn
+			or monster->state == Monster::eState::Dead)
 		{
 			continue;
 		}
@@ -2456,116 +2436,144 @@ void MainScene::monsterSetClip()
 
 void MainScene::initializeAttackCollider()
 {
-	for (const Entity& monsterEntity : mMonsters)
+	for (Entity& monsterEntity : mMonsters)
 	{
 		const ColliderState* state = monsterEntity.GetComponent<ColliderState>();
 		if (not state->isAttack)
 		{
 			continue;
 		}
-		
-		if (const Monster* monster = monsterEntity.GetComponent<Monster>(); 
+
+		if (const Monster* monster = monsterEntity.GetComponent<Monster>();
 			monster->state != Monster::eState::Attack)
 		{
 			continue;
 		}
 
-		const Animator* anim = monsterEntity.GetComponent<Animator>();
-		if (anim->frameIndex != anim->lastFrameIndex)
+		if (const Animator* anim = monsterEntity.GetComponent<Animator>();
+			anim->frameIndex == state->attackAnimIndex)
 		{
-			continue;
-		}
-
-		if (anim->frameIndex == state->attackIndex)
-		{
+			bool alreadyHasCollider = false;
 			for (Entity& attackEntity : mMonsterAttacks)
 			{
-				MonsterAttackCollider attack{};
-				attackEntity.AddComponent(attack);
-
-				Damage damage{};
-				attackEntity.AddComponent(damage);
-
-				Transform transform{};
-				attackEntity.AddComponent(transform);
-
-				Active active{};
-				attackEntity.AddComponent(active);
-
-				CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
-				collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
-				attackEntity.AddComponent(collider);
-
-				BoxCollider boxCollider{};
-				attackEntity.AddComponent(boxCollider);
-
-				DebugActive debugActive{};
-				attackEntity.AddComponent(debugActive);
-
-				DebugColor debugColor{};
-				attackEntity.AddComponent(debugColor);
-
-				GetEntityWorld()->AddEntity(&attackEntity);
-
-				break;
+				if (attackEntity.HasComponent<MonsterAttackCollider>())
+				{
+					if (MonsterAttackCollider* attackCollider = attackEntity.GetComponent<MonsterAttackCollider>(); 
+						attackCollider->ownerEntity == &monsterEntity)
+					{
+						alreadyHasCollider = true;
+						break;
+					}
+				}
 			}
+
+			if (alreadyHasCollider)
+			{
+				continue;
+			}
+
+			Entity* targetAttackEntity = nullptr;
+
+			for (Entity& attackEntity : mMonsterAttacks)
+			{
+				if (not attackEntity.HasComponent<MonsterAttackCollider>())
+				{
+					targetAttackEntity = &attackEntity;
+					break;
+				}
+			}
+
+			if (targetAttackEntity == nullptr)
+			{
+				continue;
+			}
+
+			MonsterAttackCollider attack{};
+			attack.ownerEntity = &monsterEntity;
+			targetAttackEntity->AddComponent(attack);
+
+			Damage damage{};
+			targetAttackEntity->AddComponent(damage);
+
+			Transform transform{};
+			targetAttackEntity->AddComponent(transform);
+
+			Active active{};
+			targetAttackEntity->AddComponent(active);
+
+			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
+			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
+			targetAttackEntity->AddComponent(collider);
+
+			BoxCollider boxCollider{};
+			targetAttackEntity->AddComponent(boxCollider);
+
+			DebugActive debugActive{};
+			debugActive.isValue = mIsDebugActive;
+			targetAttackEntity->AddComponent(debugActive);
+
+			DebugColor debugColor{};
+			targetAttackEntity->AddComponent(debugColor);
+
+			GetEntityWorld()->AddEntity(targetAttackEntity);
 		}
 	}
 }
 
 void MainScene::attackCollision()
 {
-	for (const Entity& entity : mMonsters)
+	for (Entity& attackEntity : mMonsterAttacks)
 	{
-		const ColliderState* state = entity.GetComponent<ColliderState>();
+		if (not attackEntity.HasComponent<MonsterAttackCollider>())
+		{
+			continue;
+		}
+
+		const MonsterAttackCollider* attackCollider = attackEntity.GetComponent<MonsterAttackCollider>();
+		const Entity* monsterEntity = attackCollider->ownerEntity;
+		if (monsterEntity == nullptr)
+		{
+			continue;
+		}
+
+		const ColliderState* state = monsterEntity->GetComponent<ColliderState>();
 		if (not state->isAttack)
 		{
 			continue;
 		}
 
-		if (const Monster* monster = entity.GetComponent<Monster>();
+		if (const Monster* monster = monsterEntity->GetComponent<Monster>(); 
 			monster->state != Monster::eState::Attack)
 		{
 			continue;
 		}
 
-		const Transform* monsterTransform = entity.GetComponent<Transform>();
-
-		for (Entity& attackEntity : mMonsterAttacks)
+		const Animator* anim = monsterEntity->GetComponent<Animator>();
+		Active* active = attackEntity.GetComponent<Active>();
+		if (anim->frameIndex >= state->attackAnimIndex + 1
+			or anim->frameIndex < state->attackAnimIndex)
 		{
-			if (not attackEntity.HasComponent<Active>())
-			{
-				continue;
-			}
-
-			const Animator* anim = entity.GetComponent<Animator>();
-			Active* active = attackEntity.GetComponent<Active>();
-			if (anim->frameIndex >= state->attackIndex + 1
-				or anim->frameIndex < state->attackIndex)
-			{
-				active->isValue = false;
-				continue;
-			}
-
-			active->isValue = true;
-
-			BoxCollider* boxCollider = attackEntity.GetComponent<BoxCollider>();
-			boxCollider->size = state->attackSize;
-			boxCollider->offset = state->attackOffset;
-			
-			const Direction* direction = entity.GetComponent<Direction>();
-			boxCollider->offset.x = (direction->value.x > 0.0f) ? boxCollider->offset.x : -boxCollider->offset.x;
-
-			Transform* transform = attackEntity.GetComponent<Transform>();
-			transform->position = monsterTransform->position;
-			transform->scale = monsterTransform->scale;
-
-			const Damage* damage = entity.GetComponent<Damage>();
-			Damage* AttackDamage = attackEntity.GetComponent<Damage>();
-			AttackDamage->value = damage->value;
-
-			break;
+			active->isValue = false;
+			continue;
 		}
+
+		active->isValue = true;
+
+		BoxCollider* boxCollider = attackEntity.GetComponent<BoxCollider>();
+		boxCollider->size = state->attackSize;
+
+		const Direction* direction = monsterEntity->GetComponent<Direction>();
+		boxCollider->offset.x = (direction->value.x > 0.0f) ? state->attackOffset.x : -state->attackOffset.x;
+		boxCollider->offset.y = state->attackOffset.y;
+
+		const Transform* monsterTransform = monsterEntity->GetComponent<Transform>();
+		Transform* transform = attackEntity.GetComponent<Transform>();
+		transform->position = monsterTransform->position;
+		transform->scale = monsterTransform->scale;
+
+		const Damage* damage = monsterEntity->GetComponent<Damage>();
+		Damage* attackDamage = attackEntity.GetComponent<Damage>();
+		attackDamage->value = damage->value;
 	}
 }
 
@@ -2585,13 +2593,8 @@ void MainScene::removeAttackCollider()
 			continue;
 		}
 
-		Animator* anim = monsterEntity.GetComponent<Animator>();
-		if (anim->frameIndex != anim->lastFrameIndex)
-		{
-			continue;
-		}
-
-		if (anim->frameIndex == state->attackIndex + 2)
+		if (const Animator* anim = monsterEntity.GetComponent<Animator>();
+			anim->frameIndex == state->attackAnimIndex + 2)
 		{
 			for (Entity& attackEntity : mMonsterAttacks)
 			{
@@ -2600,14 +2603,24 @@ void MainScene::removeAttackCollider()
 					continue;
 				}
 
-				GetEntityWorld()->Remove(&attackEntity);
-				break;				
-			}
+				if (Active* active = attackEntity.GetComponent<Active>();
+					active->isValue)
+				{
+					active->isValue = false;
+				}
 
-			anim->lastFrameIndex = anim->frameIndex;
+				MonsterAttackCollider* attackCollider = attackEntity.GetComponent<MonsterAttackCollider>();
+				if (attackCollider->ownerEntity != &monsterEntity)
+				{
+					continue;
+				}
+
+				GetEntityWorld()->Remove(&attackEntity);
+
+				break;
+			}
 		}
 	}
-
 }
 
 template<uint32_t T>
