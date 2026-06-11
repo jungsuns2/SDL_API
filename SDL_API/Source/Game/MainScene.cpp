@@ -314,6 +314,11 @@ void MainScene::Finalize()
 		{
 			texture.Finalize();
 		}
+
+		for (Texture& texture : mBossBackTextures)
+		{
+			texture.Finalize();
+		}
 	}
 
 	for (Texture& texture : mSwordTextures)
@@ -806,6 +811,24 @@ void MainScene::initialize_Resource()
 
 			index = 0;
 		}
+
+		// Boss Back
+		{
+			for (Texture& texture : mBossBackTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Back/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mBossBackClip.AddClip(frame);
+			}
+
+			index = 0;
+		}
 	}
 }
 
@@ -1290,6 +1313,8 @@ void MainScene::initialize_Entity()
 
 		mBossLeftHandClip.SetLoop(true);
 		mBossRightHandClip.SetLoop(true);
+
+		mBossBackClip.SetLoop(true);
 	}
 
 	// Arrow
@@ -2019,6 +2044,11 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 		.y = getRandom(tileRect.bottom + TILE_OFFSET.y, tileRect.top - TILE_OFFSET.y)
 	};
 
+	if (group.type == eMonsterType::Boss)
+	{
+		initializeBossBack();
+	}
+
 	initializeMonsters();
 
 	uint32_t monsterIndex = 0;
@@ -2156,15 +2186,14 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		pattern->isValue = false;
 		pattern->timer = 0.0f;
 		monster->attackType = eAttackType::Range;
-		monster->speed = 80.0f;
-		monster->attackDistance = 200.0f;
+		monster->speed = 1.0f;
+		monster->attackDistance = 1.0f;
 		monster->clips = mBossClips.data();
 		colliderState->runSize = { .width = 55.0f, .height = 75.0f };
 		colliderState->runOffset = { .x = 18.0f, .y = -15.0f };
-		colliderState->attackSize = { .width = 60.0f, .height = 90.0f };
-		colliderState->attackOffset = { .x = 10.0f, .y = 0.0f };
+		colliderState->attackSize = { .width = 1.0f, .height = 1.0f };
+		colliderState->attackOffset = { .x = 0.0f, .y = 0.0f };
 		colliderState->attackAnimIndex = 5;
-		hpBarOffset->value = { .x = 0.0f, .y = -40.0f };
 
 		initializeBossHands();
 		break;
@@ -2227,8 +2256,10 @@ void MainScene::updateMonsterStates(const float deltaTime)
 				{
 					Active* leftActive = mBossLeftHand.GetComponent<Active>();
 					Active* rightActive = mBossRightHand.GetComponent<Active>();
+					Active* backActive = mBossBack.GetComponent<Active>();
 					leftActive->isValue = true;
 					rightActive->isValue = true;
+					backActive->isValue = true;
 				}
 			}
 
@@ -2546,7 +2577,7 @@ void MainScene::monsterHpBarMove()
 {
 	for (const Entity& monsterEntity : mMonsters)
 	{
-		if (not monsterEntity.HasComponent<Monster>())
+		if (not monsterEntity.HasComponent<Active>())
 		{
 			continue;
 		}
@@ -2557,8 +2588,13 @@ void MainScene::monsterHpBarMove()
 			continue;
 		}
 
-		if (const Monster* monster = monsterEntity.GetComponent<Monster>();
-			monster->state == Monster::eState::Spawn
+		const Monster* monster = monsterEntity.GetComponent<Monster>();
+		if (monster->type == eMonsterType::Boss)
+		{
+			continue;
+		}
+
+		if (monster->state == Monster::eState::Spawn
 			or monster->state == Monster::eState::Dead)
 		{
 			continue;
@@ -2648,18 +2684,6 @@ void MainScene::initializeBossHands()
 	constexpr Point LEFT_OFFSET = { .x = 20.0f, .y = 0.0f };
 	constexpr Point RIGHT_OFFSET = { .x = 200.0f, .y = 120.0f };
 
-	for (Entity& entity : mMonsters)
-	{
-		if (entity.HasComponent<Monster>())
-		{
-			const Monster* monster = entity.GetComponent<Monster>();
-			if (monster->type != eMonsterType::Boss)
-			{
-				continue;
-			}
-		}
-	}
-
 	// Left
 	{
 		Transform transform{};
@@ -2707,6 +2731,29 @@ void MainScene::initializeBossHands()
 
 		GetEntityWorld()->AddEntity(&mBossRightHand);
 	}
+}
+
+void MainScene::initializeBossBack()
+{	
+	Transform transform{};
+	transform.position = { .x = -97.0f, .y = Constant::Get().GetHalfHeight() - 250.0f };
+	transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+	mBossBack.AddComponent(transform);
+
+	Image image{};
+	mBossBack.AddComponent(image);
+
+	Animator animator{};
+	animator.clipState = &mBossBackClip;
+	mBossBack.AddComponent(animator);
+
+	Direction direction{};
+	mBossBack.AddComponent(direction);
+
+	Active active{};
+	mBossBack.AddComponent(active);
+
+	GetEntityWorld()->AddEntity(&mBossBack);
 }
 
 void MainScene::initializeAttackCollider()

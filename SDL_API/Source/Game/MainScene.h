@@ -106,6 +106,7 @@ private:
 	void monsterSetClip();
 
 	void initializeBossHands();
+	void initializeBossBack();
 
 	void initializeAttackCollider();
 	void attackCollision();
@@ -172,6 +173,7 @@ private:
 	std::array<Entity, 10> mMonsterAttacks{};
 	Entity mBossLeftHand{};
 	Entity mBossRightHand{};
+	Entity mBossBack{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 
@@ -181,6 +183,7 @@ private:
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBossClips{};
 	Clip mBossLeftHandClip{};
 	Clip mBossRightHandClip{};
+	Clip mBossBackClip{};
 
 	Clip mSwordClip{};
 	Clip mSwordSkillClip{};
@@ -208,6 +211,7 @@ private:
 	std::array<Texture, 10> mBossIdleTextures{};
 	std::array<Texture, 12> mBossAttackTextures{};
 	std::array<Texture, 10> mBossLeftHandTextures{};
+	std::array<Texture, 10> mBossBackTextures{};
 
 	std::array<Texture, 12> mSwordTextures{};
 	std::array<Texture, 8> mSwordSkillTextures{};
