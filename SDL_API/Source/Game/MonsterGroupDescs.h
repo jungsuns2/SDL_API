@@ -133,7 +133,7 @@ constexpr std::array<MonsterGroup, 12> MONSTER_GROUPS =
 	{
 		.type = eMonsterType::Boss,
 		.count = 1,
-		.rangeX = {.min = -100.0f, .max = 100.0f },
-		.rangeY = {.min = -100.0f, .max = 100.0f }
+		.rangeX = {.min = 0.0f, .max = 0.0f },
+		.rangeY = {.min = 0.0f, .max = 0.0f }
 	}, 
 };

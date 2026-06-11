@@ -105,6 +105,8 @@ private:
 	void setDirectionOffset(Entity* setEntity, const Entity& entity0);
 	void monsterSetClip();
 
+	void initializeBossHands();
+
 	void initializeAttackCollider();
 	void attackCollision();
 	void removeAttackCollider();
@@ -168,13 +170,17 @@ private:
 	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 40> mArrows{};
 	std::array<Entity, 10> mMonsterAttacks{};
-
+	Entity mBossLeftHand{};
+	Entity mBossRightHand{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
+
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBigWhiteSkelClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mArcherClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mSkelDogClips{};
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBossClips{};
+	Clip mBossLeftHandClip{};
+	Clip mBossRightHandClip{};
 
 	Clip mSwordClip{};
 	Clip mSwordSkillClip{};
@@ -201,6 +207,7 @@ private:
 
 	std::array<Texture, 10> mBossIdleTextures{};
 	std::array<Texture, 12> mBossAttackTextures{};
+	std::array<Texture, 10> mBossLeftHandTextures{};
 
 	std::array<Texture, 12> mSwordTextures{};
 	std::array<Texture, 8> mSwordSkillTextures{};

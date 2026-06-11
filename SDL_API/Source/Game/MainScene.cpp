@@ -18,8 +18,6 @@ void MainScene::Initialize()
 
 	// 현재 웨이브 상태를 초기화한다.
 	mGameWaveState.remainingMonsterGroupSpawnTime = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
-
-	//initializeMonsters();
 }
 
 bool MainScene::Update(const float deltaTime)
@@ -300,6 +298,8 @@ void MainScene::Finalize()
 			texture.Finalize();
 		}
 
+		mSkelDogAttackTexture.Finalize();
+
 		for (Texture& texture : mBossIdleTextures)
 		{
 			texture.Finalize();
@@ -310,7 +310,10 @@ void MainScene::Finalize()
 			texture.Finalize();
 		}
 
-		mSkelDogAttackTexture.Finalize();
+		for (Texture& texture : mBossLeftHandTextures)
+		{
+			texture.Finalize();
+		}
 	}
 
 	for (Texture& texture : mSwordTextures)
@@ -763,6 +766,42 @@ void MainScene::initialize_Resource()
 				};
 
 				mBossClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
+			}
+
+			index = 0;
+		}
+
+		// Left Hand
+		{
+			for (Texture& texture : mBossLeftHandTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mBossLeftHandClip.AddClip(frame);
+			}
+
+			index = 0;
+		}
+
+		// Right Hand
+		{
+			for (Texture& texture : mBossLeftHandTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mBossRightHandClip.AddClip(frame);
 			}
 
 			index = 0;
@@ -1248,6 +1287,9 @@ void MainScene::initialize_Entity()
 		mBossClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mBossClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mBossClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
+
+		mBossLeftHandClip.SetLoop(true);
+		mBossRightHandClip.SetLoop(true);
 	}
 
 	// Arrow
@@ -2108,6 +2150,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		break;
 
 	case eMonsterType::Boss:
+		transform->position = { .x = -120.0f, .y = Constant::Get().GetHalfHeight() - 200.0f };
 		hp->max = 100;
 		damage->value = 10;
 		pattern->isValue = false;
@@ -2122,6 +2165,8 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		colliderState->attackOffset = { .x = 10.0f, .y = 0.0f };
 		colliderState->attackAnimIndex = 5;
 		hpBarOffset->value = { .x = 0.0f, .y = -40.0f };
+
+		initializeBossHands();
 		break;
 
 	default:
@@ -2145,7 +2190,7 @@ void MainScene::updateMonsterStates(const float deltaTime)
 {
 	for (Entity& entity : mMonsters)
 	{
-		if (not entity.HasComponent<Monster>())
+		if (not entity.HasComponent<Active>())
 		{
 			continue;
 		}
@@ -2177,6 +2222,14 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 				Active* active = entity.GetComponent<Active>();
 				active->isValue = true;
+
+				if (monster->type == eMonsterType::Boss)
+				{
+					Active* leftActive = mBossLeftHand.GetComponent<Active>();
+					Active* rightActive = mBossRightHand.GetComponent<Active>();
+					leftActive->isValue = true;
+					rightActive->isValue = true;
+				}
 			}
 
 			break;
@@ -2184,34 +2237,37 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 		case Monster::eState::Idle:
 		{
+			constexpr float RUSH_WAITINGTIME = 2.0f;
+
 			boxCollider->offset = colliderState->runOffset;
 			boxCollider->size = colliderState->runSize;
 
-			constexpr float TIME = 2.0f;
-
-			float gauge = pattern->timer / TIME;
-			gauge = std::clamp(gauge, 0.0f, 1.0f);
-
-			Color* color = entity.GetComponent<Color>();
-			color->r = 255 - static_cast<uint8_t>(gauge * 255.0f);
-			color->g = 255 - static_cast<uint8_t>(gauge * 255.0f);
-
-			AttackPattern* pattern = entity.GetComponent<AttackPattern>();
-			pattern->timer += deltaTime;
-			if (pattern->timer >= TIME)
+			if (monster->type == eMonsterType::SkelDog)
 			{
-				color->r = 255;
-				color->g = 255;
+				float gauge = pattern->timer / RUSH_WAITINGTIME;
+				gauge = std::clamp(gauge, 0.0f, 1.0f);
 
-				Transform* transfrom = entity.GetComponent<Transform>();
-				const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+				Color* color = entity.GetComponent<Color>();
+				color->r = 255 - static_cast<uint8_t>(gauge * 255.0f);
+				color->g = 255 - static_cast<uint8_t>(gauge * 255.0f);
 
-				const Point difference = playerTransform->position - transfrom->position;
-				Direction* direction = entity.GetComponent<Direction>();
-				direction->value = Math::NormalizeVector(difference);
+				AttackPattern* pattern = entity.GetComponent<AttackPattern>();
+				pattern->timer += deltaTime;
+				if (pattern->timer >= RUSH_WAITINGTIME)
+				{
+					color->r = 255;
+					color->g = 255;
 
-				monster->state = Monster::eState::Rush;
-				pattern->timer = 0.0f;
+					Transform* transfrom = entity.GetComponent<Transform>();
+					const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+
+					const Point difference = playerTransform->position - transfrom->position;
+					Direction* direction = entity.GetComponent<Direction>();
+					direction->value = Math::NormalizeVector(difference);
+
+					monster->state = Monster::eState::Rush;
+					pattern->timer = 0.0f;
+				}
 			}
 		
 			break;
@@ -2241,6 +2297,12 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 		case Monster::eState::Run:
 		{
+			if (monster->type == eMonsterType::Boss)
+			{
+				monster->state = Monster::eState::Idle;
+				break;
+			}
+
 			boxCollider->size = colliderState->runSize;
 			boxCollider->offset = colliderState->runOffset;
 
@@ -2578,6 +2640,72 @@ void MainScene::monsterSetClip()
 			assert(false and "지원하지 않는 애니메이션입니다.");
 			break;
 		}
+	}
+}
+
+void MainScene::initializeBossHands()
+{
+	constexpr Point LEFT_OFFSET = { .x = 20.0f, .y = 0.0f };
+	constexpr Point RIGHT_OFFSET = { .x = 200.0f, .y = 120.0f };
+
+	for (Entity& entity : mMonsters)
+	{
+		if (entity.HasComponent<Monster>())
+		{
+			const Monster* monster = entity.GetComponent<Monster>();
+			if (monster->type != eMonsterType::Boss)
+			{
+				continue;
+			}
+		}
+	}
+
+	// Left
+	{
+		Transform transform{};
+		transform.position.x = LEFT_OFFSET.x - Constant::Get().GetHalfWidth();
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		mBossLeftHand.AddComponent(transform);
+
+		Image image{};
+		mBossLeftHand.AddComponent(image);
+
+		Animator animator{};
+		animator.clipState = &mBossLeftHandClip;
+		mBossLeftHand.AddComponent(animator);
+
+		Direction direction{};
+		mBossLeftHand.AddComponent(direction);
+
+		Active active{};
+		mBossLeftHand.AddComponent(active);
+
+		GetEntityWorld()->AddEntity(&mBossLeftHand);
+	}
+
+	// Right
+	{
+		Transform transform{};
+		transform.position.x = Constant::Get().GetHalfWidth() - RIGHT_OFFSET.x;
+		transform.position.y = Constant::Get().GetHalfHeight() - RIGHT_OFFSET.y;
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		transform.flip = SDL_FLIP_HORIZONTAL;
+		mBossRightHand.AddComponent(transform);
+
+		Image image{};
+		mBossRightHand.AddComponent(image);
+
+		Animator animator{};
+		animator.clipState = &mBossRightHandClip;
+		mBossRightHand.AddComponent(animator);
+
+		Direction direction{};
+		mBossRightHand.AddComponent(direction);
+
+		Active active{};
+		mBossRightHand.AddComponent(active);
+
+		GetEntityWorld()->AddEntity(&mBossRightHand);
 	}
 }
 
