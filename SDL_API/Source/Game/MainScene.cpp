@@ -19,7 +19,7 @@ void MainScene::Initialize()
 	// 현재 웨이브 상태를 초기화한다.
 	mGameWaveState.remainingMonsterGroupSpawnTime = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
 
-	initializeMonsters();
+	//initializeMonsters();
 }
 
 bool MainScene::Update(const float deltaTime)
@@ -202,22 +202,6 @@ bool MainScene::Update(const float deltaTime)
 
 	// 몬스터를 업데이트한다.
 	updateMonsterStates(deltaTime);
-
-	for (Entity& entity : mMonsters)
-	{
-		Monster* monster = entity.GetComponent<Monster>();
-		if (monster->type != eMonsterType::SkelDog)
-		{
-			continue;
-		}
-
-		if (Active* active = entity.GetComponent<Active>();
-			not active)
-		{
-			continue;
-		}
-
-	}
 	
 	// 충돌했을 때 애니메이션 처리
 	updateHpMonster(deltaTime);
@@ -1047,7 +1031,7 @@ void MainScene::initialize_Entity()
 
 		BoxCollider boxCollider{};
 		boxCollider.offset = { .x = 0.0f, .y = 32.0f };
-		boxCollider.size = { .width = float(mPlayerRunTextures[3].GetWidth()), .height = float(mPlayerRunTextures[3].GetHeight()) };
+		boxCollider.size = { .width = 13.0f, .height = 20.0f };
 		mPlayer.AddComponent(boxCollider);
 
 		DebugActive debugActive{};
@@ -1553,15 +1537,15 @@ void MainScene::playerMove(const float deltaTime)
 
 			for (Entity& entity : mPlayerShadows)
 			{
+				Active* active = entity.GetComponent<Active>();
 				Color* color = entity.GetComponent<Color>();
-				if (Active* active = entity.GetComponent<Active>();
-					color->a == 0 and not active->isValue)
+
+				if (not active->isValue and color->a == 0)
 				{
 					active->isValue = true;
 					color->a = 255;
 
 					Transform* shadowTransform = entity.GetComponent<Transform>();
-
 					shadowTransform->position = playerTransform->position;
 					shadowTransform->position.y += OFFSET.y;
 					shadowTransform->flip = (moveDirection.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
@@ -1891,6 +1875,11 @@ void MainScene::initializeMonsters()
 {
 	for (Entity& entity : mMonsters)
 	{
+		if (entity.HasComponent<Monster>())
+		{
+			continue;
+		}
+
 		Monster monster{};
 		entity.AddComponent(monster);
 
@@ -1948,6 +1937,11 @@ void MainScene::initializeMonsters()
 
 	for (Entity& entity : mMonsterHpBars)
 	{
+		if (entity.HasComponent<Image>())
+		{
+			continue;
+		}
+
 		Transform transform{};
 		entity.AddComponent(transform);
 
@@ -1968,16 +1962,24 @@ void MainScene::initializeMonsters()
 void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 {
 	constexpr Point TILE_OFFSET = { .x = 50.0f, .y = 50.0f };
+	
+	const Rect tileRect =
+	{
+		.left = mTiles[0][0].GetComponent<Transform>()->position.x,
+		.top = mTiles[0][0].GetComponent<Transform>()->position.y,
+		.right = mTiles[mTileMaxCount - 1][mTileMaxCount - 1].GetComponent<Transform>()->position.x,
+		.bottom = mTiles[mTileMaxCount - 1][mTileMaxCount - 1].GetComponent<Transform>()->position.y
+	};
+
+	const Point randomTilePosition =
+	{
+		.x = getRandom(tileRect.left + TILE_OFFSET.x, tileRect.right - TILE_OFFSET.x),
+		.y = getRandom(tileRect.bottom + TILE_OFFSET.y, tileRect.top - TILE_OFFSET.y)
+	};
+
+	initializeMonsters();
 
 	uint32_t monsterIndex = 0;
-
-	// TODO: Rect 멤버변수로 저장해서 처리하자.
-	const Point leftTopTilePosition = mTiles[0][0].GetComponent<Transform>()->position;
-	const Point rightBottomTilePosition = mTiles[mTileMaxCount - 1][mTileMaxCount - 1].GetComponent<Transform>()->position;
-
-	float groupX = getRandom(leftTopTilePosition.x + TILE_OFFSET.x, rightBottomTilePosition.x - TILE_OFFSET.x);
-	float groupY = getRandom(rightBottomTilePosition.y + TILE_OFFSET.y, leftTopTilePosition.y - TILE_OFFSET.y);
-
 	for (uint32_t i = 0; i < group.count; ++i)
 	{
 		const float xInGroup = getRandom(group.rangeX.min, group.rangeX.max);
@@ -1991,8 +1993,8 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 				continue;
 			}
 
-			const float monsterX = groupX + xInGroup;
-			const float monsterY = groupY + yInGroup;
+			const float monsterX = randomTilePosition.x + xInGroup;
+			const float monsterY = randomTilePosition.y + yInGroup;
 			spawnMonster
 			(
 				SpawnMonsterDesc
@@ -2043,7 +2045,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	hpBarActive->isValue = false;
 
 	BoxCollider* boxCollider = monsterEntity.GetComponent<BoxCollider>();
-	boxCollider->size = {.width = 0.0f, .height = 0.0f };
+	boxCollider->size = {.width = SIZE, .height = SIZE };
 	boxCollider->offset = { .x = 0.0f, .y = 0.0f };
 
 	ColliderState* colliderState = monsterEntity.GetComponent<ColliderState>();
@@ -2143,6 +2145,11 @@ void MainScene::updateMonsterStates(const float deltaTime)
 {
 	for (Entity& entity : mMonsters)
 	{
+		if (not entity.HasComponent<Monster>())
+		{
+			continue;
+		}
+
 		if (not entity.GetComponent<Active>()->isValue)
 		{
 			continue;
@@ -2160,9 +2167,6 @@ void MainScene::updateMonsterStates(const float deltaTime)
 		{
 		case Monster::eState::Spawn:
 		{
-			boxCollider->size = { .width = 0.0f, .height = 0.0f };
-			boxCollider->offset = { .x = 0.0f, .y = 0.0f };
-
 			monster->spawnBlinkTimer += deltaTime;
 			if (monster->spawnBlinkTimer >= 0.5f)
 			{
@@ -2294,6 +2298,11 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 	for (Entity& monsterEntity : mMonsters)
 	{
+		if (not monsterEntity.HasComponent<Monster>())
+		{
+			continue;
+		}
+
 		Active* monsterActive = monsterEntity.GetComponent<Active>();
 		if (not monsterActive)
 		{
@@ -2323,6 +2332,11 @@ void MainScene::updateHpMonster(const float deltaTime)
 
 	for (Entity& entity : mMonsters)
 	{
+		if (not entity.HasComponent<Monster>())
+		{
+			continue;
+		}
+
 		if (Active* active = entity.GetComponent<Active>();
 			not active->isValue)
 		{
@@ -2424,6 +2438,11 @@ void MainScene::monsterMove(const float deltaTime)
 {
 	for (Entity& entity : mMonsters)
 	{
+		if (not entity.HasComponent<Monster>())
+		{
+			continue;
+		}
+
 		Monster* monster = entity.GetComponent<Monster>();
 		if (monster->type == eMonsterType::None)
 		{
@@ -2465,6 +2484,11 @@ void MainScene::monsterHpBarMove()
 {
 	for (const Entity& monsterEntity : mMonsters)
 	{
+		if (not monsterEntity.HasComponent<Monster>())
+		{
+			continue;
+		}
+
 		if (const Active* active = monsterEntity.GetComponent<Active>();
 			not active)
 		{
@@ -2506,6 +2530,11 @@ void MainScene::monsterSetClip()
 {
 	for (Entity& entity : mMonsters)
 	{
+		if (not entity.HasComponent<Monster>())
+		{
+			continue;
+		}
+
 		if (not entity.GetComponent<Active>()->isValue)
 		{
 			continue;
@@ -2556,6 +2585,11 @@ void MainScene::initializeAttackCollider()
 {
 	for (Entity& monsterEntity : mMonsters)
 	{
+		if (not monsterEntity.HasComponent<Monster>())
+		{
+			continue;
+		}
+
 		const Monster* monster = monsterEntity.GetComponent<Monster>();
 		if (monster->attackType != eAttackType::Melee)
 		{
@@ -2752,6 +2786,11 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 {
 	for (const Entity& monsterEntity : mMonsters)
 	{
+		if (not monsterEntity.HasComponent<Monster>())
+		{
+			continue;
+		}
+
 		Monster* monster = monsterEntity.GetComponent<Monster>();
 		if (monster->type != type)
 		{
@@ -2912,17 +2951,13 @@ void MainScene::playerToMonsterCollision()
 {
 	for (const Entity& monsterEntity : mMonsters)
 	{
-		if (const Active* active = monsterEntity.GetComponent<Active>();
-			not active)
+		if (monsterEntity.HasComponent<Active>())
 		{
-			continue;
-		}
-
-		const Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
-		if (monsterState != Monster::eState::Run
-			and monsterState != Monster::eState::Attack)
-		{
-			continue;
+			if (const Active* active = monsterEntity.GetComponent<Active>();
+				not active->isValue)
+			{
+				continue;
+			}
 		}
 
 		if (isCollisionEnter(mPlayer, monsterEntity))
@@ -2947,15 +2982,13 @@ void MainScene::playerToMonsterAttackCollision()
 {
 	for (const Entity& attack : mMonsterAttacks)
 	{
-		if (not attack.HasComponent<MonsterAttackCollider>())
+		if (attack.HasComponent<Active>())
 		{
-			return;
-		}
-
-		if (const Active* active = attack.GetComponent<Active>();
-			not active)
-		{
-			continue;
+			if (const Active* active = attack.GetComponent<Active>();
+				not active->isValue)
+			{
+				continue;
+			}
 		}
 
 		if (isCollisionEnter(mPlayer, attack))
@@ -2980,10 +3013,13 @@ void MainScene::playerToArrowCollision()
 {
 	for (const Entity& arrowEntity : mArrows)
 	{
-		if (const Active* active = arrowEntity.GetComponent<Active>();
-			not active)
+		if (arrowEntity.HasComponent<Active>())
 		{
-			continue;
+			if (const Active* active = arrowEntity.GetComponent<Active>();
+				not active->isValue)
+			{
+				continue;
+			}
 		}
 
 		if (isCollisionEnter(mPlayer, arrowEntity))
