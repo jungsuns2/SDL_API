@@ -37,18 +37,12 @@ void EntityWorld::Remove(Entity* entity)
 
 std::vector<Entity*>& EntityWorld::CleanRemovedEntities()
 {
-	uint32_t removeIndex = 0;
-
-	for (uint32_t i = 0; i < mEntites.size(); ++i)
+	for (int i = static_cast<int>(mEntites.size()) - 1; i >= 0; --i)
 	{
-		const Entity& entity = *mEntites[i];
-		if (entity.IsRemoved())
+		if (mEntites[i]->IsRemoved())
 		{
-			removeIndex = i;
-			mEntites[removeIndex] = mEntites[mEntites.size() - 1];
+			mEntites[i] = mEntites.back();
 			mEntites.pop_back();
-
-			--i;
 		}
 	}
 

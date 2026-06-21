@@ -140,10 +140,19 @@ struct RangedAttack : public Component
 
 struct AttackPattern : public Component
 {
+	enum class eType
+	{
+		None,
+		Rush,
+		CycloneFan,
+		Hands,
+		Count
+	};
+
 	static constexpr uint32_t _ID = 0;
 	AttackPattern() : Component(&_ID) {}
 
-	bool isValue = false;
+	eType type = eType::None;
 	float timer = 0.0f;
 	float distanceMoved = 0.0f;
 };
@@ -198,4 +207,16 @@ struct Shadow : public Component
 	Shadow() : Component(&_ID) {}
 
 	float timer = 0.0f;
+};
+
+struct Boss : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	Boss() : Component(&_ID) {}
+};
+
+struct CycloneFan : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	CycloneFan() : Component(&_ID) {}
 };

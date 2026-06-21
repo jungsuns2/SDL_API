@@ -55,6 +55,7 @@ public:
 		SwordSkill,
 		Bullet,
 		Arrow,
+		CycloneFan,
 		Wall,
 		Count
 	};
@@ -76,6 +77,7 @@ private:
 
 	void input();
 	void updateCamera();
+	[[nodiscard]] Rect& getCameraRect() const;
 
 	void playerState(const float deltaTime);
 	void playerMove(const float deltaTime);
@@ -98,15 +100,24 @@ private:
 	void spawnMonsterGroup(const MonsterGroup& group);
 	void spawnMonster(const SpawnMonsterDesc& desc);
 	void updateMonsterStates(const float deltaTime);
-	void updateHpMonster(const float deltaTime);
+	void updateHpMonsters(const float deltaTime);
 	void monsterDeadParticle(const float deltaTime);
 	void monsterMove(const float deltaTime);
 	void monsterHpBarMove();
 	void setDirectionOffset(Entity* setEntity, const Entity& entity0);
 	void monsterSetClip();
 
-	void initializeBossHands();
 	void initializeBossBack();
+	void initializeBoss();
+	void spawnBoss();
+	void updateBossStates(const float deltaTime);
+	void BossSetClip();
+
+	void initializeCycloneFan();
+	void spawnCycloneFan(const float deltaTime);
+	void updateCycloneFan(const float deltaTime);
+
+	void initializeBossHands();
 
 	void initializeAttackCollider();
 	void attackCollision();
@@ -140,6 +151,7 @@ private:
 	uint32_t mTileMaxCount{};
 	float mTilePositionOffset{};
 	BulletState mBulletState{};
+	BulletState mCycloneFanState{};
 
 	GameWaveState mGameWaveState{};
 
@@ -171,9 +183,13 @@ private:
 	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 40> mArrows{};
 	std::array<Entity, 10> mMonsterAttacks{};
+
+	Entity mBoss{};
+	Entity mBossHpBar{};
 	Entity mBossLeftHand{};
 	Entity mBossRightHand{};
 	Entity mBossBack{};
+	std::array<Entity, 10> mCycloneFans{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 
@@ -184,6 +200,7 @@ private:
 	Clip mBossLeftHandClip{};
 	Clip mBossRightHandClip{};
 	Clip mBossBackClip{};
+	Clip mCycloneFanClip{};
 
 	Clip mSwordClip{};
 	Clip mSwordSkillClip{};
@@ -212,6 +229,7 @@ private:
 	std::array<Texture, 12> mBossAttackTextures{};
 	std::array<Texture, 10> mBossLeftHandTextures{};
 	std::array<Texture, 10> mBossBackTextures{};
+	std::array<Texture, 2> mCycloneFanTextures{};
 
 	std::array<Texture, 12> mSwordTextures{};
 	std::array<Texture, 8> mSwordSkillTextures{};

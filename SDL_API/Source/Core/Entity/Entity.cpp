@@ -13,6 +13,16 @@ Entity::~Entity()
 	}
 }
 
+void Entity::RemovedComponent()
+{
+	for (Component* component : mComponents)
+	{
+		delete component;
+	}
+	
+	mComponents.clear();
+}
+
 void Entity::SetRemoved(const bool isRemoved)
 {
 	mIsRemoved = isRemoved;

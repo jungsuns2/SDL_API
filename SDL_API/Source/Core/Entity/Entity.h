@@ -18,6 +18,8 @@ public:
 
 	template<typename T>
 	bool HasComponent() const;
+	
+	void RemovedComponent();
 
 	void SetRemoved(const bool isRemoved);
 	bool IsRemoved() const;
@@ -77,4 +79,4 @@ bool Entity::HasComponent() const
 	}
 
 	return false;
-};
+}
