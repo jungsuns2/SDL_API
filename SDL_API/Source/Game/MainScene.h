@@ -79,6 +79,8 @@ private:
 	void updateCamera();
 	[[nodiscard]] Rect& getCameraRect() const;
 
+	Entity& getPlayerEntity();
+	void spawnPlayer();
 	void playerState(const float deltaTime);
 	void playerMove(const float deltaTime);
 	void playerSetClip();
@@ -166,7 +168,6 @@ private:
 
 	Entity** mTiles = nullptr;
 
-	Entity mPlayer{};
 	Entity mUIPlayerHp{};
 	Entity mPlayerLeftHand{};
 	Entity mPlayerRightHand{};

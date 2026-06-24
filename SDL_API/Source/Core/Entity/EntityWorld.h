@@ -11,7 +11,7 @@ public:
 	~EntityWorld() = default;
 
 public:
-	void AddEntity(Entity* entity, std::source_location sourceLocation = std::source_location::current());
+	Entity* AddEntity(Entity* entity, std::source_location sourceLocation = std::source_location::current());
 	void Remove(Entity* entity);
 
 public:

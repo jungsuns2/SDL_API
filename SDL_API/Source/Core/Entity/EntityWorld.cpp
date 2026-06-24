@@ -2,7 +2,7 @@
 #include "EntityWorld.h"
 #include "Entity.h"
 
-void EntityWorld::AddEntity(Entity* entity, std::source_location sourceLocation)
+Entity* EntityWorld::AddEntity(Entity* entity, std::source_location sourceLocation)
 {
 	assert(entity != nullptr);
 	assert(std::find(mEntites.begin(), mEntites.end(), entity) == mEntites.end());
@@ -12,6 +12,8 @@ void EntityWorld::AddEntity(Entity* entity, std::source_location sourceLocation)
 #endif
 
 	mEntites.push_back(entity);
+	
+	return entity;
 }
 
 void EntityWorld::Remove(Entity* entity)

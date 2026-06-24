@@ -6,6 +6,12 @@
 
 class Clip;
 
+struct PlayerTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	PlayerTag() : Component(&_ID) {}
+};
+
 struct Player : public Component
 {
 	enum class eState
@@ -19,8 +25,10 @@ struct Player : public Component
 	static constexpr uint32_t _ID = 0;
 	Player() : Component(&_ID) {}
 
-	eState state{};
-	float length{};
+	eState state = Player::eState::Idle;
+	float length = 0.0f;
+
+	Entity* entity = nullptr;
 };
 
 struct Monster : public Component

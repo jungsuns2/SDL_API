@@ -103,7 +103,7 @@ struct Direction final : public Component
 	static constexpr uint32_t _ID = 0;
 	Direction() : Component(&_ID) {}
 
-	Point value{};
+	Point value = { .x = 1.0f, .y = 1.0f };
 };
 
 struct Active final : public Component
