@@ -162,8 +162,8 @@ private:
 
 	void initializeBossHands();
 
-	void initializeAttackCollider();
-	void attackCollision();
+	void spawnAttackCollider();
+	void updateAttackCollision();
 	void removeAttackCollider();
 
 	void playerToMonsterCollision();
@@ -193,6 +193,7 @@ private:
 
 	uint32_t mTileMaxCount{};
 	float mTilePositionOffset{};
+
 	BulletState mBulletState{};
 	BulletState mCycloneFanState{};
 
@@ -200,14 +201,10 @@ private:
 
 	uint32_t mMonsterIndex = 0;
 
-	Font mUIFont{};
-	Font mHpFont{};
-
 	Entity** mTiles = nullptr;
 
 	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 40> mArrows{};
-	std::array<Entity, 10> mMonsterAttacks{};
 
 	Entity mBoss{};
 	Entity mBossHpBar{};
@@ -215,6 +212,9 @@ private:
 	Entity mBossRightHand{};
 	Entity mBossBack{};
 	std::array<Entity, 10> mCycloneFans{};
+	
+	Font mUIFont{};
+	Font mHpFont{};
 
 	std::array<Clip, uint32_t(Player::eState::Count)> mPlayerClips{};
 
