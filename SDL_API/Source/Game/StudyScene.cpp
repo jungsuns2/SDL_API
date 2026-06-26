@@ -279,7 +279,7 @@ bool StudyScene::Update(const float deltaTime)
 
 		if (timer >= 3.0f)
 		{
-			mMonsters[0].SetRemoved(true);
+			mMonsters[0].SetRemove();
 		}
 	}
 

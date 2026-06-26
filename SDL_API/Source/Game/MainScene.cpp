@@ -127,9 +127,10 @@ bool MainScene::Update(const float deltaTime)
 				active->isValue = false;
 			}
 
-			for (Entity& entity : mArrows)
+			for (const std::array<Entity*, 5> entities{};
+				Entity* entity : entities)
 			{
-				Active* active = entity.GetComponent<Active>();
+				Active* active = entity->GetComponent<Active>();
 				active->isValue = false;
 			}
 
@@ -221,9 +222,9 @@ bool MainScene::Update(const float deltaTime)
 	monsterHpBarMove();
 
 	// 원거리 몬스터의 공격을 초기화와 업데이트한다.
-	spawnRangedAttack(mArrows, eMonsterType::Archer, 7);
-	rangedAttackState(mArrows);
-	rangedAttackMove(mArrows, 300.0f, deltaTime);
+	spawnRangedAttack(eMonsterType::Archer, 7);
+	rangedAttackState();
+	rangedAttackMove(300.0f, deltaTime);
 
 	// 보스를 업데이트한다.
 	updateBossStates(deltaTime);
@@ -981,16 +982,16 @@ void MainScene::initialize_Entity()
 
 	// Dash Shadow
 	{
-		std::array<Entity*, 10> entities{};
-		for (Entity* entity : entities)
+		for (std::array<Entity*, 5> entities{}; 
+			Entity* entity : entities)
 		{
-			entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(ShadowTag());
-			entity->AddComponent(Shadow());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Image());
-			entity->AddComponent(Active());
-			entity->AddComponent(Color());
+			Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+			newEntity->AddComponent(ShadowTag());
+			newEntity->AddComponent(Shadow());
+			newEntity->AddComponent(Transform());
+			newEntity->AddComponent(Image());
+			newEntity->AddComponent(Active());
+			newEntity->AddComponent(Color());
 		}
 	}
 
@@ -1094,26 +1095,25 @@ void MainScene::initialize_Entity()
 	{
 		mBulletClip.SetLoop(true);
 
-		std::array<Entity*, 10> entities{};
-		for (Entity* entity : entities)
+		for (const std::array<Entity*, 10> entities{}; 
+			Entity* entity : entities)
 		{
-			entity = GetEntityWorld()->AddEntity(new Entity());
-
-			entity->AddComponent(BulletTag());
-			entity->AddComponent(RangedAttack());
-			entity->AddComponent(Direction());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Image());
-			entity->AddComponent(Animator());
-			entity->AddComponent(Active());
-			entity->AddComponent(Color());
-			entity->AddComponent(BoxCollider());
-			entity->AddComponent(DebugActive());
-			entity->AddComponent(DebugColor());
+			Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+			newEntity->AddComponent(BulletTag());
+			newEntity->AddComponent(RangedAttack());
+			newEntity->AddComponent(Direction());
+			newEntity->AddComponent(Transform());
+			newEntity->AddComponent(Image());
+			newEntity->AddComponent(Animator());
+			newEntity->AddComponent(Active());
+			newEntity->AddComponent(Color());
+			newEntity->AddComponent(BoxCollider());
+			newEntity->AddComponent(DebugActive());
+			newEntity->AddComponent(DebugColor());
 
 			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Bullet));
 			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-			entity->AddComponent(collider);
+			newEntity->AddComponent(collider);
 		}
 
 		const Entity* bulletCountEntity = getEntity<BulletCountTag>();
@@ -1155,51 +1155,6 @@ void MainScene::initialize_Entity()
 			.fireTimer = 0.0f,
 			.reloadTimer = 0.0f
 		};
-	}
-
-	// Arrow
-	{
-		for (Entity& entity : mArrows)
-		{
-			RangedAttack arrow{};
-			arrow.distance = 300.0f;
-			entity.AddComponent(arrow);
-
-			Transform transform{};
-			transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-			transform.angle = 90.0f;
-			entity.AddComponent(transform);
-
-			Direction direction{};
-			entity.AddComponent(direction);
-
-			Active active{};
-			entity.AddComponent(active);
-
-			Image image{};
-			image.texture = &mArrowTexture;
-			entity.AddComponent(image);
-
-			Damage damage{};
-			damage.value = 2;
-			entity.AddComponent(damage);
-
-			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Arrow));
-			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
-			entity.AddComponent(collider);
-
-			BoxCollider boxCollider{};
-			boxCollider.size = { .width = float(mArrowTexture.GetWidth()), .height = float(mArrowTexture.GetHeight()) };
-			entity.AddComponent(boxCollider);
-
-			DebugActive debugActive{};
-			entity.AddComponent(debugActive);
-
-			DebugColor debugColor{};
-			entity.AddComponent(debugColor);
-
-			GetEntityWorld()->AddEntity(&entity);
-		}
 	}
 }
 
@@ -2755,8 +2710,6 @@ void MainScene::initializeCycloneFan()
 			continue;
 		}
 
-		entity.SetRemoved(false);
-
 		CycloneFan fan{};
 		entity.AddComponent(fan);
 
@@ -2813,7 +2766,7 @@ void MainScene::spawnCycloneFan(const float deltaTime)
 	{
 		for (Entity& entity : mCycloneFans)
 		{
-			if (entity.IsRemoved())
+			if (entity.IsRemove())
 			{
 				continue;
 			}
@@ -3055,7 +3008,7 @@ void MainScene::updateCycloneFan(const float deltaTime)
 
 	for (Entity& entity : mCycloneFans)
 	{
-		if (entity.IsRemoved())
+		if (entity.IsRemove())
 		{
 			continue;
 		}
@@ -3069,7 +3022,7 @@ void MainScene::updateCycloneFan(const float deltaTime)
 
 	for (Entity& entity : mCycloneFans)
 	{
-		if (entity.IsRemoved())
+		if (entity.IsRemove())
 		{
 			continue;
 		}
@@ -3083,7 +3036,7 @@ void MainScene::updateCycloneFan(const float deltaTime)
 			continue;
 		}
 		
-		entity.SetRemoved(true);
+		entity.SetRemove();
 		entity.RemovedComponent();
 	}
 }
@@ -3296,7 +3249,7 @@ void MainScene::removeAttackCollider()
 					continue;
 				}
 
-				attackEntity->SetRemoved(true);
+				attackEntity->SetRemove();
 				attackEntity->RemovedComponent();
 
 				break;
@@ -3305,11 +3258,14 @@ void MainScene::removeAttackCollider()
 	}
 }
 
-template<uint32_t T>
-void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const eMonsterType type, const uint32_t spawnFrameIndex)
+void MainScene::spawnRangedAttack(const eMonsterType type, const uint32_t spawnFrameIndex)
 {
-	const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
-	for (const Entity* monsterEntity : monsterEntities)
+	constexpr float monsterLeftOffsetX = 20.0f;
+	constexpr float monsterRightOffsetX = 80.0f;
+	constexpr Point centerOffset = { .x = -0.4f, .y = 0.0f };
+	
+	for (const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+		const Entity* monsterEntity : monsterEntities)
 	{
 		if (not monsterEntity->HasComponent<MonsterTag>())
 		{
@@ -3327,83 +3283,108 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 			continue;
 		}
 
+		if (monster->state != Monster::eState::Attack)
+		{
+			continue;
+		}
+
 		const Animator* monsterAnim = monsterEntity->GetComponent<Animator>();
 		if (monsterAnim->clipState != &mArcherClips[uint32_t(Monster::eState::Attack)])
 		{
 			continue;
 		}
 			
-		const Entity* playerEntity = getEntity<PlayerTag>();
-		const Transform* playerTransform = playerEntity->GetComponent<Transform>();
-
 		if (monsterAnim->frameIndex == spawnFrameIndex)
 		{
-			for (const Entity& rangeEntity : entities)
+			if (monster->isRangeAttack)
 			{
-				Active* rangeActive = rangeEntity.GetComponent<Active>();
-				if (rangeActive->isValue)
-				{
-					continue;
-				}
-
-				RangedAttack* rangedAttack = rangeEntity.GetComponent<RangedAttack>();
-				if (rangedAttack->isFiring)
-				{
-					continue;
-				}
-
-				if (not monster->isRangeAttack)
-				{
-					monster->isRangeAttack = true;
-					rangeActive->isValue = true;
-					rangedAttack->isFiring = true;
-
-					const Point centerOffset = { .x = -0.4f, .y = 0.0f };
-					const float centerOffsetX = centerOffset.x * (mArrowTexture.GetWidth() - 1.0f);
-					constexpr float monsterLeftOffsetX = 20.0f;
-					constexpr float monsterRightOffsetX = 80.0f;
-
-					const Transform* monsterTransform = monsterEntity->GetComponent<Transform>();
-					const Point diff = playerTransform->position - monsterTransform->position;
-
-					const Direction* monsterDirection = monsterEntity->GetComponent<Direction>();
-					Direction* rangedDirection = rangeEntity.GetComponent<Direction>();
-					rangedDirection->value = monsterDirection->value;
-
-					Transform* transform = rangeEntity.GetComponent<Transform>();
-					transform->flip = (rangedDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
-
-					float degree = std::atan2(rangedDirection->value.y, rangedDirection->value.x) * (180.0f / 3.141592f);
-					degree -= 90.0f;
-					transform->angle = -degree;
-
-					// Offset을 계산한다.
-					if (transform->flip == SDL_FLIP_NONE)
-					{
-						rangedAttack->startPosition.x = monsterTransform->position.x
-							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
-
-						transform->position.x = monsterTransform->position.x
-							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
-					}
-					else
-					{
-						rangedAttack->startPosition.x = monsterTransform->position.x
-							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
-
-						transform->position.x = monsterTransform->position.x
-							+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
-					}
-
-					rangedAttack->startPosition.y = monsterTransform->position.y;
-					transform->position.y = monsterTransform->position.y;
-
-					break;
-				}
+				continue;
 			}
+
+			monster->isRangeAttack = true;
+
+			// 기본 세팅을 합니다.
+			Entity* arrowEntity = GetEntityWorld()->AddEntity(new Entity());
+			{
+				arrowEntity->AddComponent(MonsterArrow());
+				arrowEntity->AddComponent(RangedAttack());
+				arrowEntity->AddComponent(Direction());
+				arrowEntity->AddComponent(Transform());
+				arrowEntity->AddComponent(Image());
+				arrowEntity->AddComponent(Active());
+				arrowEntity->AddComponent(Damage());
+				arrowEntity->AddComponent(BoxCollider());
+				arrowEntity->AddComponent(DebugActive());
+				arrowEntity->AddComponent(DebugColor());
+
+				RangedAttack* rangedAttack = arrowEntity->GetComponent<RangedAttack>();
+				rangedAttack->distance = 300.0f;
+				rangedAttack->isFiring = true;
+
+				const Direction* monsterDirection = monsterEntity->GetComponent<Direction>();
+				Direction* direction = arrowEntity->GetComponent<Direction>();
+				direction->value = monsterDirection->value;
+
+				Transform* transform = arrowEntity->GetComponent<Transform>();
+				transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+				transform->angle = 90.0f;
+				transform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+				float degree = std::atan2(direction->value.y, direction->value.x) * (180.0f / 3.141592f);
+				degree -= 90.0f;
+				transform->angle = -degree;
+
+				Image* image = arrowEntity->GetComponent<Image>();
+				image->texture = &mArrowTexture;
+
+				Damage* damage = arrowEntity->GetComponent<Damage>();
+				damage->value = 2;
+
+				Active* active = arrowEntity->GetComponent<Active>();
+				active->isValue = true;
+
+				CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Arrow));
+				collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
+				arrowEntity->AddComponent(collider);
+
+				BoxCollider* boxCollider = arrowEntity->GetComponent<BoxCollider>();
+				boxCollider->size = { .width = float(mArrowTexture.GetWidth()), .height = float(mArrowTexture.GetHeight()) };
+			}
+
+			// Offset을 계산한다.
+			const Transform* monsterTransform = monsterEntity->GetComponent<Transform>();
+			const float centerOffsetX = centerOffset.x * (mArrowTexture.GetWidth() - 1.0f);
+
+			RangedAttack* rangedAttack = arrowEntity->GetComponent<RangedAttack>();
+			Transform* transform = arrowEntity->GetComponent<Transform>();
+
+			if (transform->flip == SDL_FLIP_NONE)
+			{
+				rangedAttack->startPosition.x = monsterTransform->position.x
+					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
+
+				transform->position.x = monsterTransform->position.x
+					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
+			}
+			else
+			{
+				rangedAttack->startPosition.x = monsterTransform->position.x
+					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
+
+				transform->position.x = monsterTransform->position.x
+					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
+			}
+
+			rangedAttack->startPosition.y = monsterTransform->position.y;
+			transform->position.y = monsterTransform->position.y;
+
+			break;		
 		}
 		else if (monsterAnim->frameIndex >= monsterAnim->clipState->GetLastFrameIndex() - 1)
 		{
+			const Entity* playerEntity = getEntity<PlayerTag>();
+			const Transform* playerTransform = playerEntity->GetComponent<Transform>();
+
 			Transform* monsterTransform = monsterEntity->GetComponent<Transform>();
 			const Point difference = playerTransform->position - monsterTransform->position;
 			
@@ -3421,49 +3402,47 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 	}
 }
 
-template<uint32_t T>
-void MainScene::rangedAttackState(const std::array<Entity, T>& entities)
+void MainScene::rangedAttackState()
 {
-	for (const Entity& entity : entities)
+	for (const auto entities = getEntities<MonsterArrow>();
+		Entity* entity : entities)
 	{
-		if (Active* active = entity.GetComponent<Active>();
+		if (Active* active = entity->GetComponent<Active>();
 			not active->isValue)
 		{
 			continue;
 		}
 
-		RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
+		RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
 		if (not rangedAttack->isFiring)
 		{
 			continue;
 		}
 
-		Transform* transform = entity.GetComponent<Transform>();
+		Transform* transform = entity->GetComponent<Transform>();
 		if (Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
 		{
-			Active* active = entity.GetComponent<Active>();
-			active->isValue = false;
-
 			rangedAttack->isFiring = false;
+			entity->SetRemove();
 		}
 	}
 }
 
-template<uint32_t T>
-void MainScene::rangedAttackMove(const std::array<Entity, T>& entities, const float speed, const float deltaTime)
+void MainScene::rangedAttackMove(const float speed, const float deltaTime)
 {
-	for (const Entity& entity : entities)
+	for (const auto entities = getEntities<MonsterArrow>();
+		Entity* entity : entities)
 	{
-		if (Active* active = entity.GetComponent<Active>(); 
+		if (Active* active = entity->GetComponent<Active>(); 
 			not active->isValue)
 		{
 			continue;
 		}
 
-		const Direction* direction = entity.GetComponent<Direction>();
+		const Direction* direction = entity->GetComponent<Direction>();
 		const Point velocity = direction->value * speed;
 
-		Transform* transform = entity.GetComponent<Transform>();
+		Transform* transform = entity->GetComponent<Transform>();
 		transform->position = transform->position + velocity * deltaTime;
 	}
 }
@@ -3539,11 +3518,12 @@ void MainScene::playerToMonsterAttackCollision()
 
 void MainScene::playerToArrowCollision()
 {
-	for (const Entity& arrowEntity : mArrows)
+	for (const auto entities = getEntities<MonsterArrow>();
+		Entity* arrowEntity : entities)
 	{
-		if (arrowEntity.HasComponent<Active>())
+		if (arrowEntity->HasComponent<Active>())
 		{
-			if (const Active* active = arrowEntity.GetComponent<Active>();
+			if (const Active* active = arrowEntity->GetComponent<Active>();
 				not active->isValue)
 			{
 				continue;
@@ -3551,10 +3531,10 @@ void MainScene::playerToArrowCollision()
 		}
 
 		const Entity* playerEntity = getEntity<PlayerTag>();
-		if (isCollisionEnter(*playerEntity, arrowEntity))
+		if (isCollisionEnter(*playerEntity, *arrowEntity))
 		{
 			Hp* playerHp = playerEntity->GetComponent<Hp>();
-			const Damage* damage = arrowEntity.GetComponent<Damage>();
+			const Damage* damage = arrowEntity->GetComponent<Damage>();
 			playerHp->value -= damage->value;
 
 			std::string name = "Hp: " + std::to_string(playerHp->value);
@@ -3562,15 +3542,15 @@ void MainScene::playerToArrowCollision()
 			Label* playerLabel = hpEntity->GetComponent<Label>();
 			playerLabel->text = name;
 		}
-		else if (isCollisionStay(*playerEntity, arrowEntity))
+		else if (isCollisionStay(*playerEntity, *arrowEntity))
 		{
 			Knockback* knockback = playerEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
 
-			Active* active = arrowEntity.GetComponent<Active>();
+			Active* active = arrowEntity->GetComponent<Active>();
 			active->isValue = false;
 
-			RangedAttack* arrow = arrowEntity.GetComponent<RangedAttack>();
+			RangedAttack* arrow = arrowEntity->GetComponent<RangedAttack>();
 			arrow->isFiring = false;
 		}
 	}

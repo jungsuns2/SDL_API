@@ -16,33 +16,33 @@ constexpr std::array<WaveDesc, 20> WAVES =
 	WaveDesc
 	{
 		.elapsedTime = 20.0f,
-		.monsterGroupIndicies = { 11, 1, 1, 1 },
+		.monsterGroupIndicies = { 4, 4, 4, 4, 4, 4 },
 		.monsterGroupCount = 4,
 		.monsterGroupSpawnIntervalTime = 3.0f
 	},
 
-	// 0
-WaveDesc
-{
-	.elapsedTime = 20.0f,
-	.monsterGroupIndicies = { 0, 3, 0, 3, 0, 3, 0, 3, 0, 3 },
-	.monsterGroupCount = 10,
-	.monsterGroupSpawnIntervalTime = 3.0f
-},
-
-// 0
-WaveDesc
-{
-	.elapsedTime = 20.0f,
-	.monsterGroupIndicies = { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
-	.monsterGroupCount = 10,
-	.monsterGroupSpawnIntervalTime = 3.0f
-},
-
-	// 0
+	// 1
 	WaveDesc
 	{
-		.elapsedTime = 20.0f,
+		.elapsedTime = 25.0f,
+		.monsterGroupIndicies = { 0, 3, 0, 3, 0, 3, 0, 3, 0, 3 },
+		.monsterGroupCount = 10,
+		.monsterGroupSpawnIntervalTime = 3.0f
+	},
+	
+	// 2
+	WaveDesc
+	{
+		.elapsedTime = 30.0f,
+		.monsterGroupIndicies = { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
+		.monsterGroupCount = 10,
+		.monsterGroupSpawnIntervalTime = 3.0f
+	},
+
+	// 3
+	WaveDesc
+	{
+		.elapsedTime = 35.0f,
 		.monsterGroupIndicies = { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
 		.monsterGroupCount = 10,
 		.monsterGroupSpawnIntervalTime = 3.0f

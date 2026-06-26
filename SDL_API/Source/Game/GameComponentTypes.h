@@ -90,10 +90,10 @@ struct MonsterHpBarTag : public Component
 	MonsterHpBarTag() : Component(&_ID) {}
 };
 
-struct AttackColliderBigWhiteTag : public Component
+struct MonsterArrow : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	AttackColliderBigWhiteTag() : Component(&_ID) {}
+	MonsterArrow() : Component(&_ID) {}
 };
 
 struct Player : public Component

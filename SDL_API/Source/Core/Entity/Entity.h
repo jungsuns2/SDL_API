@@ -21,8 +21,8 @@ public:
 	
 	void RemovedComponent();
 
-	void SetRemoved(const bool isRemoved);
-	bool IsRemoved() const;
+	void SetRemove();
+	bool IsRemove() const;
 
 private:
 	std::vector<Component*> mComponents{};

@@ -41,7 +41,7 @@ std::vector<Entity*>& EntityWorld::CleanRemovedEntities()
 {
 	for (int i = static_cast<int>(mEntites.size()) - 1; i >= 0; --i)
 	{
-		if (mEntites[i]->IsRemoved())
+		if (mEntites[i]->IsRemove())
 		{
 			mEntites[i] = mEntites.back();
 			mEntites.pop_back();

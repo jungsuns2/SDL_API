@@ -23,12 +23,12 @@ void Entity::RemovedComponent()
 	mComponents.clear();
 }
 
-void Entity::SetRemoved(const bool isRemoved)
+void Entity::SetRemove()
 {
-	mIsRemoved = isRemoved;
+	mIsRemoved = true;
 }
 
-bool Entity::IsRemoved() const
+bool Entity::IsRemove() const
 {
 	return mIsRemoved;
 }
