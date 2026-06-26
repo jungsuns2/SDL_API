@@ -90,10 +90,16 @@ struct MonsterHpBarTag : public Component
 	MonsterHpBarTag() : Component(&_ID) {}
 };
 
-struct MonsterArrow : public Component
+struct MonsterArrowTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	MonsterArrow() : Component(&_ID) {}
+	MonsterArrowTag() : Component(&_ID) {}
+};
+
+struct MonsterRangedAttackTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	MonsterRangedAttackTag() : Component(&_ID) {}
 };
 
 struct Player : public Component

@@ -222,8 +222,16 @@ bool MainScene::Update(const float deltaTime)
 	monsterHpBarMove();
 
 	// 원거리 몬스터의 공격을 초기화와 업데이트한다.
-	spawnRangedAttack(eMonsterType::Archer, 7);
-	rangedAttackState();
+	spawnRangedAttack<MonsterArrowTag>
+	(
+		SpawnRangeAttackDesc
+		{
+			.type = eMonsterType::Archer,
+			.texture = &mArrowTexture,
+			.spawnFrameIndex = 7
+		}
+	);
+	rangedAttackState<MonsterArrowTag>();
 	rangedAttackMove(300.0f, deltaTime);
 
 	// 보스를 업데이트한다.
@@ -3258,12 +3266,17 @@ void MainScene::removeAttackCollider()
 	}
 }
 
-void MainScene::spawnRangedAttack(const eMonsterType type, const uint32_t spawnFrameIndex)
+template<typename T>
+void MainScene::spawnRangedAttack(const SpawnRangeAttackDesc& desc)
 {
 	constexpr float monsterLeftOffsetX = 20.0f;
 	constexpr float monsterRightOffsetX = 80.0f;
 	constexpr Point centerOffset = { .x = -0.4f, .y = 0.0f };
-	
+
+	const eMonsterType type = desc.type;
+	Texture* texture = desc.texture;
+	const uint32_t spawnFrameIndex = desc.spawnFrameIndex;
+
 	for (const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
 		const Entity* monsterEntity : monsterEntities)
 	{
@@ -3279,11 +3292,6 @@ void MainScene::spawnRangedAttack(const eMonsterType type, const uint32_t spawnF
 		}
 
 		if (monster->attackType != eAttackType::Range)
-		{
-			continue;
-		}
-
-		if (monster->state != Monster::eState::Attack)
 		{
 			continue;
 		}
@@ -3306,7 +3314,8 @@ void MainScene::spawnRangedAttack(const eMonsterType type, const uint32_t spawnF
 			// 기본 세팅을 합니다.
 			Entity* arrowEntity = GetEntityWorld()->AddEntity(new Entity());
 			{
-				arrowEntity->AddComponent(MonsterArrow());
+				arrowEntity->AddComponent(T());
+				arrowEntity->AddComponent(MonsterRangedAttackTag());
 				arrowEntity->AddComponent(RangedAttack());
 				arrowEntity->AddComponent(Direction());
 				arrowEntity->AddComponent(Transform());
@@ -3318,7 +3327,7 @@ void MainScene::spawnRangedAttack(const eMonsterType type, const uint32_t spawnF
 				arrowEntity->AddComponent(DebugColor());
 
 				RangedAttack* rangedAttack = arrowEntity->GetComponent<RangedAttack>();
-				rangedAttack->distance = 300.0f;
+				rangedAttack->distance = monster->attackDistance;
 				rangedAttack->isFiring = true;
 
 				const Direction* monsterDirection = monsterEntity->GetComponent<Direction>();
@@ -3335,10 +3344,11 @@ void MainScene::spawnRangedAttack(const eMonsterType type, const uint32_t spawnF
 				transform->angle = -degree;
 
 				Image* image = arrowEntity->GetComponent<Image>();
-				image->texture = &mArrowTexture;
+				image->texture = texture;
 
+				const Damage* monsterDamage = monsterEntity->GetComponent<Damage>();
 				Damage* damage = arrowEntity->GetComponent<Damage>();
-				damage->value = 2;
+				damage->value = monsterDamage->value;
 
 				Active* active = arrowEntity->GetComponent<Active>();
 				active->isValue = true;
@@ -3402,9 +3412,10 @@ void MainScene::spawnRangedAttack(const eMonsterType type, const uint32_t spawnF
 	}
 }
 
+template<typename T>
 void MainScene::rangedAttackState()
 {
-	for (const auto entities = getEntities<MonsterArrow>();
+	for (const auto entities = getEntities<T>();
 		Entity* entity : entities)
 	{
 		if (Active* active = entity->GetComponent<Active>();
@@ -3430,7 +3441,7 @@ void MainScene::rangedAttackState()
 
 void MainScene::rangedAttackMove(const float speed, const float deltaTime)
 {
-	for (const auto entities = getEntities<MonsterArrow>();
+	for (const auto entities = getEntities<MonsterRangedAttackTag>();
 		Entity* entity : entities)
 	{
 		if (Active* active = entity->GetComponent<Active>(); 
@@ -3518,7 +3529,7 @@ void MainScene::playerToMonsterAttackCollision()
 
 void MainScene::playerToArrowCollision()
 {
-	for (const auto entities = getEntities<MonsterArrow>();
+	for (const auto entities = getEntities<MonsterArrowTag>();
 		Entity* arrowEntity : entities)
 	{
 		if (arrowEntity->HasComponent<Active>())

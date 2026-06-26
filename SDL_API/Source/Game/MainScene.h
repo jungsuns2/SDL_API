@@ -25,6 +25,13 @@ struct SpawnMonsterDesc
 	const float y;
 };
 
+struct SpawnRangeAttackDesc
+{
+	const eMonsterType type;
+	Texture* texture;
+	const uint32_t spawnFrameIndex;
+};
+
 struct GameWaveState
 {
 	uint32_t index;
@@ -171,8 +178,12 @@ private:
 	void swordSkillToMonsterCollision();
 	void bulletToMonsterCollision();
 
-	void spawnRangedAttack(const eMonsterType type, const uint32_t spawnFrameIndex);
+	template<typename T>
+	void spawnRangedAttack(const SpawnRangeAttackDesc& desc);
+
+	template<typename T>
 	void rangedAttackState();
+
 	void rangedAttackMove(const float speed, const float deltaTime);
 
 	void clampToTile(Transform* transform, const Range rangeX, const Range RangeY);
