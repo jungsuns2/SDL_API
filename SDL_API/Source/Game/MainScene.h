@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Entity/Entity.h"
+#include "Core/Entity/EntityWorld.h"
 
 #include "Core/Clip.h"
 #include "Core/ComponentTypes.h"
@@ -30,8 +31,8 @@ struct GameWaveState
 	uint32_t groupIndex;
 
 	float waveTimer; // 현재 웨이브에서 흐른 시간
-	float remainingMonsterGroupSpawnTime;
-	float labelShowElapsedTime;
+	float remainingMonsterGroupSpawnTimer;
+	float labelShowElapsedTimer;
 };
 
 struct BulletState
@@ -78,27 +79,67 @@ private:
 	void input();
 	void updateCamera();
 	[[nodiscard]] Rect& getCameraRect() const;
+		
+	template <typename T>
+	Entity* getEntity() const
+	{
+		for (Entity* entity : GetEntityWorld()->GetAllEntities())
+		{
+			if (not entity->HasComponent<T>())
+			{
+				continue;
+			}
 
-	Entity& getPlayerEntity();
-	void spawnPlayer();
+			return entity;
+		}
+
+		return nullptr;
+	}
+		
+	template <typename T>
+	std::vector<Entity*> getEntities() const
+	{
+		std::vector<Entity*> result{};
+
+		for (Entity* entity : GetEntityWorld()->GetAllEntities())
+		{
+			if (not entity->HasComponent<T>())
+			{
+				continue;
+			}
+
+			result.push_back(entity);
+		}
+
+		return result;
+	}
+
+	void initializeUI();
+	void initializeWaveTimer();
+	void initializeWaveStage();
+
+	void initializePlayer();
 	void playerState(const float deltaTime);
 	void playerMove(const float deltaTime);
 	void playerSetClip();
 
+	void initializeGun();
 	void updateGun();
 
+	void initializeSword();
 	void updateSword();
 	void updateSwordStates(const float deltaTime);
 
+	void initializeSwordSkill();
 	void spawnSwordSkill();
 	void updateSwordSkill(const float deltaTime);
 	void updateSwordSkillStates(const float deltaTime);
 
+	void initializeBullets();
 	void spawnBullets(const float deltaTime);
 	void updateBullets(const float deltaTime);
 	void updateBulletStates(const float deltaTime);
 
-	void initializeMonsters();
 	void spawnMonsterGroup(const MonsterGroup& group);
 	void spawnMonster(const SpawnMonsterDesc& desc);
 	void updateMonsterStates(const float deltaTime);
@@ -157,30 +198,13 @@ private:
 
 	GameWaveState mGameWaveState{};
 
+	uint32_t mMonsterIndex = 0;
+
 	Font mUIFont{};
 	Font mHpFont{};
 
-	Entity mMainCamera{};
-
-	Entity mWaveTimerLebel{};
-	Entity mStageLabel{};
-	Entity mBulletLabel{};
-
 	Entity** mTiles = nullptr;
 
-	Entity mUIPlayerHp{};
-	Entity mPlayerLeftHand{};
-	Entity mPlayerRightHand{};
-	std::array<Entity, 10> mPlayerShadows{};
-
-	Entity mSword{};
-	Entity mSwordSkill{};
-
-	Entity mGun{};
-	std::array<Entity, 10> mBullets{};
-
-	std::array<Entity, 20> mMonsters{};
-	std::array<Entity, 20> mMonsterHpBars{};
 	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 40> mArrows{};
 	std::array<Entity, 10> mMonsterAttacks{};

@@ -12,6 +12,84 @@ struct PlayerTag : public Component
 	PlayerTag() : Component(&_ID) {}
 };
 
+struct LeftHandTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	LeftHandTag() : Component(&_ID) {}
+};
+
+struct RightHandTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	RightHandTag() : Component(&_ID) {}
+};
+
+struct ShadowTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	ShadowTag() : Component(&_ID) {}
+};
+
+struct PlayerHpBarTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	PlayerHpBarTag() : Component(&_ID) {}
+};
+
+struct SwordTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	SwordTag() : Component(&_ID) {}
+};
+
+struct SwordSkillTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	SwordSkillTag() : Component(&_ID) {}
+};
+
+struct GunTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	GunTag() : Component(&_ID) {}
+};
+
+struct BulletTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BulletTag() : Component(&_ID) {}
+};
+
+struct BulletCountTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BulletCountTag() : Component(&_ID) {}
+};
+
+struct WaveTimerTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	WaveTimerTag() : Component(&_ID) {}
+};
+
+struct WaveStageTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	WaveStageTag() : Component(&_ID) {}
+};
+
+struct MonsterTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	MonsterTag() : Component(&_ID) {}
+};
+
+struct MonsterHpBarTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	MonsterHpBarTag() : Component(&_ID) {}
+};
+
 struct Player : public Component
 {
 	enum class eState
@@ -56,24 +134,6 @@ struct Monster : public Component
 	float length = 0.0f;
 	float attackDistance = 0.0f;
 	float spawnBlinkTimer = 0.0f;
-};
-
-struct Sword : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	Sword() : Component(&_ID) {}
-};
-
-struct Gun : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	Gun() : Component(&_ID) {}
-};
-
-struct Bullet : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	Bullet() : Component(&_ID) {}
 };
 
 struct Tile : public Component
@@ -205,6 +265,8 @@ struct Dash : public Component
 	float moveSpeed = 0.0f;
 	bool isValue = false;
 	bool isShadow = false;
+	Point startPosition = { .x = 0.0f, .y = 0.0f };
+	Point direction = { .x = 0.0f, .y = 0.0f };
 	float countTimer = 0.0f;
 	float shadowTimer = 0.0f;
 };

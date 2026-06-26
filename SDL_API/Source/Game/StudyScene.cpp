@@ -202,7 +202,7 @@ bool StudyScene::Update(const float deltaTime)
 {	
 	// Core
 	{
-		for (const Entity* entity0 : GetEntityWorld()->GetAllEntites())
+		for (const Entity* entity0 : GetEntityWorld()->GetAllEntities())
 		{
 			if (not entity0->HasComponent<Transform>()
 				or not entity0->HasComponent<CollisionDetector>())
@@ -216,7 +216,7 @@ bool StudyScene::Update(const float deltaTime)
 				continue;
 			}
 
-			for (const Entity* entity1 : GetEntityWorld()->GetAllEntites())
+			for (const Entity* entity1 : GetEntityWorld()->GetAllEntities())
 			{
 				if (not entity1->HasComponent<Transform>()
 					or not entity1->HasComponent<CollisionDetector>())

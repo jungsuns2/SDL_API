@@ -17,7 +17,7 @@ public:
 public:
 	std::vector<Entity*>& CleanRemovedEntities();
 
-	const std::vector<Entity*>& GetAllEntites() const;
+	const std::vector<Entity*>& GetAllEntities() const;
 
 private:
 	std::vector<Entity*> mEntites{};

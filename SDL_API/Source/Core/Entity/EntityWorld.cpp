@@ -51,7 +51,7 @@ std::vector<Entity*>& EntityWorld::CleanRemovedEntities()
 	return mEntites;
 }
 
-const std::vector<Entity*>& EntityWorld::GetAllEntites() const
+const std::vector<Entity*>& EntityWorld::GetAllEntities() const
 {
 	return mEntites;
 }

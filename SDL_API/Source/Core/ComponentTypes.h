@@ -122,10 +122,10 @@ struct DebugActive final : public Component
 	bool isValue = false;
 };
 
-struct UI : public Component
+struct Ui : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	UI() : Component(&_ID) {}
+	Ui() : Component(&_ID) {}
 };
 
 struct CollisionDetector final : public Component

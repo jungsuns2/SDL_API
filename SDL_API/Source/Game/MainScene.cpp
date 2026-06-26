@@ -1,5 +1,4 @@
 ﻿#include "pch.h"
-#include "Core/Entity/EntityWorld.h"
 
 #include "Core/Collision.h"
 #include "Core/Constant.h"
@@ -13,20 +12,27 @@ constexpr float PRIMARY_SIZE = 3.0f;
 void MainScene::Initialize()
 {
 	initialize_Resource();
-
 	initialize_Entity();
 
-	spawnPlayer();
+	initializePlayer();
 
-	// 현재 웨이브 상태를 초기화한다.
-	mGameWaveState.remainingMonsterGroupSpawnTime = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
+	initializeSword();
+	initializeSwordSkill();
+
+	initializeGun();
+	initializeBullets();
+
+	initializeUI();
+
+	initializeWaveTimer();
+	initializeWaveStage();
 }
 
 bool MainScene::Update(const float deltaTime)
 {
 	// Core
 	{
-		for (const Entity* entity0 : GetEntityWorld()->GetAllEntites())
+		for (const Entity* entity0 : GetEntityWorld()->GetAllEntities())
 		{
 			if (not entity0->HasComponent<Transform>()
 				or not entity0->HasComponent<CollisionDetector>())
@@ -40,7 +46,7 @@ bool MainScene::Update(const float deltaTime)
 				continue;
 			}
 
-			for (const Entity* entity1 : GetEntityWorld()->GetAllEntites())
+			for (const Entity* entity1 : GetEntityWorld()->GetAllEntities())
 			{
 				if (not entity1->HasComponent<Transform>()
 					or not entity1->HasComponent<CollisionDetector>())
@@ -88,32 +94,36 @@ bool MainScene::Update(const float deltaTime)
 	// Wave를 업데이트한다.
 	{
 		// 현재 웨이브 상태를 업데이트한다.
-		mGameWaveState.waveTimer += deltaTime;
-		if (mGameWaveState.waveTimer >= WAVES[mGameWaveState.index].elapsedTime)
+		mGameWaveState.waveTimer -= deltaTime;
+		if (mGameWaveState.waveTimer <= 0.0f)
 		{
 			if (++mGameWaveState.index >= WAVES.size())
 			{
-				assert(false && "구현 예정.");
+				assert(false and "구현 예정.");
 			}
 
-			mGameWaveState.waveTimer = 0.0f;
+			mGameWaveState.waveTimer = WAVES[mGameWaveState.index].elapsedTime;
 			mGameWaveState.groupIndex = 0;
-			mGameWaveState.remainingMonsterGroupSpawnTime = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
-			mGameWaveState.labelShowElapsedTime = 0.0f;
+			mGameWaveState.remainingMonsterGroupSpawnTimer = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
+			mGameWaveState.labelShowElapsedTimer = 0.0f;
 
 			// 다음 웨이브를 위해 값을 초기화한다.
-			for (Entity& entity : mMonsters)
+			mMonsterIndex = 0;
+
+			for (const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>(); 
+				const Entity* entity : monsterEntities)
 			{
-				Monster* monster = entity.GetComponent<Monster>();
+				Monster* monster = entity->GetComponent<Monster>();
 				monster->state = Monster::eState::Dead;
 
-				Active* active = entity.GetComponent<Active>();
+				Active* active = entity->GetComponent<Active>();
 				active->isValue = false;
 			}
 
-			for (Entity& entity : mMonsterHpBars)
+			for (const std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
+				Entity* entity : hpBarEntities)
 			{
-				Active* active = entity.GetComponent<Active>();
+				Active* active = entity->GetComponent<Active>();
 				active->isValue = false;
 			}
 
@@ -125,17 +135,19 @@ bool MainScene::Update(const float deltaTime)
 
 			// 플레이어 총알을 갱신한다.
 			{
-				Label* label = mBulletLabel.GetComponent<Label>();
+				const Entity* bulletCountEntity = getEntity<BulletCountTag>();
+				Label* label = bulletCountEntity->GetComponent<Label>();
 				label->text = std::to_string(mBulletState.count) + "/" + std::to_string(mBulletState.maxCount);
 			}
 
 			// 라벨 정보를 갱신한다.
 			{
-				Label* label = mStageLabel.GetComponent<Label>();
+				const Entity* entity = getEntity<WaveStageTag>();
+;				Label* label = entity->GetComponent<Label>();
 				const std::string name = std::to_string(mGameWaveState.index + 1) + " Wave";
 				label->text = name;
 
-				Active* active = mStageLabel.GetComponent<Active>();
+				Active* active = entity->GetComponent<Active>();
 				active->isValue = true;
 			}
 		}
@@ -145,38 +157,40 @@ bool MainScene::Update(const float deltaTime)
 			const uint32_t monsterGroupIndex = waveDesc.monsterGroupIndicies[mGameWaveState.groupIndex];
 			const MonsterGroup& monsterGroup = MONSTER_GROUPS[monsterGroupIndex];
 
-			mGameWaveState.remainingMonsterGroupSpawnTime -= deltaTime;
-			if (mGameWaveState.remainingMonsterGroupSpawnTime <= 0.0f)
+			mGameWaveState.remainingMonsterGroupSpawnTimer -= deltaTime;
+			if (mGameWaveState.remainingMonsterGroupSpawnTimer <= 0.0f)
 			{
 				spawnMonsterGroup(monsterGroup);
 
 				++mGameWaveState.groupIndex;
 				assert(mGameWaveState.groupIndex < MONSTER_GROUPS.size() && "더 이상 그룹이 없습니다.");
 
-				mGameWaveState.remainingMonsterGroupSpawnTime = waveDesc.monsterGroupSpawnIntervalTime;
+				mGameWaveState.remainingMonsterGroupSpawnTimer = waveDesc.monsterGroupSpawnIntervalTime;
 			}
 		}
 
 		// 다음 웨이브가 되면 잠시 동안 라벨을 표시한다.
 		{
-			mGameWaveState.labelShowElapsedTime += deltaTime;
+			mGameWaveState.labelShowElapsedTimer += deltaTime;
 
-			Active* active = mStageLabel.GetComponent<Active>();
-			if (active->isValue and mGameWaveState.labelShowElapsedTime >= 2.0f)
+			const Entity* entity = getEntity<WaveStageTag>();
+			Active* active = entity->GetComponent<Active>();
+			if (active->isValue and mGameWaveState.labelShowElapsedTimer >= 2.0f)
 			{
-				mGameWaveState.labelShowElapsedTime = 0.0f;
+				mGameWaveState.labelShowElapsedTimer = 0.0f;
 				active->isValue = false;
 			}
 		}
 
 		// Upeate Wave Timer Label
 		{
-			Label* label = mWaveTimerLebel.GetComponent<Label>();
+			const Entity* entity = getEntity<WaveTimerTag>();
+			Label* label = entity->GetComponent<Label>();
 			const uint32_t seconds = uint32_t(mGameWaveState.waveTimer) % 60;
 			const uint32_t minutes = uint32_t(mGameWaveState.waveTimer) / 60;
 
-			const std::string fseconds = (seconds < 10) ? "0" + std::to_string(seconds) : std::to_string(seconds);
-			const std::string fMinutes = (minutes < 10) ? "0" + std::to_string(minutes) : std::to_string(minutes);
+			const std::string fseconds = (seconds >= 10) ? std::to_string(seconds) : "0" + std::to_string(seconds);
+			const std::string fMinutes = (minutes >= 10) ? std::to_string(minutes) : "0" + std::to_string(minutes);
 
 			const std::string name = "Timer: " + fMinutes + ":" + fseconds;
 			label->text = name;
@@ -857,13 +871,9 @@ void MainScene::initialize_Entity()
 {
 	// Camera
 	{
-		Camera camera{};
-		mMainCamera.AddComponent(camera);
-
-		Transform transform{};
-		mMainCamera.AddComponent(transform);
-
-		GetEntityWorld()->AddEntity(&mMainCamera);
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(Camera());
+		entity->AddComponent(Transform());
 	}
 
 	// Tile
@@ -928,65 +938,32 @@ void MainScene::initialize_Entity()
 	{
 		// Timer
 		{
-			UI ui{};
-			mWaveTimerLebel.AddComponent(ui);
-
-			Label label{};
-			label.font = &mUIFont;
-			label.text = "dd";
-			mWaveTimerLebel.AddComponent(label);
-
-			Transform transform{};
-			transform.position = { .x = Constant::Get().GetHalfWidth() - 150.0f, .y = 0.0f };
-			mWaveTimerLebel.AddComponent(transform);
-
-			Active active{};
-			active.isValue = true;
-			mWaveTimerLebel.AddComponent(active);
-
-			GetEntityWorld()->AddEntity(&mWaveTimerLebel);
+			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+			entity->AddComponent(WaveTimerTag());
+			entity->AddComponent(Ui());
+			entity->AddComponent(Label());
+			entity->AddComponent(Transform());
+			entity->AddComponent(Active());
 		}
 
 		// Wave Stage
 		{
-			UI ui{};
-			mStageLabel.AddComponent(ui);
-
-			Label label{};
-			label.font = &mUIFont;
-			label.text = "1 Wave";
-			mStageLabel.AddComponent(label);
-
-			Transform transform{};
-			transform.position = { .x = Constant::Get().GetHalfWidth() - 80.0f, .y = Constant::Get().GetHalfHeight() - 50.0f };
-			mStageLabel.AddComponent(transform);
-
-			Active active{};
-			active.isValue = true;
-			mStageLabel.AddComponent(active);
-
-			GetEntityWorld()->AddEntity(&mStageLabel);
+			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+			entity->AddComponent(WaveStageTag());
+			entity->AddComponent(Ui());
+			entity->AddComponent(Label());
+			entity->AddComponent(Transform());
+			entity->AddComponent(Active());
 		}
 
 		// Bullet Count
 		{
-			UI ui{};
-			mBulletLabel.AddComponent(ui);
-
-			Label label{};
-			label.font = &mUIFont;
-			label.text = " ";
-			mBulletLabel.AddComponent(label);
-
-			Transform transform{};
-			transform.position = { .x = float(Constant::Get().GetWidth()) - 140.0f, .y = float(Constant::Get().GetHeight()) - 60.0f };
-			mBulletLabel.AddComponent(transform);
-
-			Active active{};
-			active.isValue = true;
-			mBulletLabel.AddComponent(active);
-
-			GetEntityWorld()->AddEntity(&mBulletLabel);
+			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+			entity->AddComponent(BulletCountTag());
+			entity->AddComponent(Ui());
+			entity->AddComponent(Label());
+			entity->AddComponent(Transform());
+			entity->AddComponent(Active());
 		}
 	}
 
@@ -994,72 +971,37 @@ void MainScene::initialize_Entity()
 	{
 		constexpr Point CENTER = { .x = -0.25f,.y = -0.25f };
 
-		Gun gun{};
-		mGun.AddComponent(gun);
-
-		Direction direction{};
-		mGun.AddComponent(direction);
-
-		Transform transform{};
-		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-		transform.center = CENTER;
-		mGun.AddComponent(transform);
-
-		Image image;
-		image.texture = &mGunTexture;
-		mGun.AddComponent(image);
-
-		Active active{};
-		active.isValue = true;
-		mGun.AddComponent(active);
-
-		Color color{};
-		mGun.AddComponent(color);
-
-		GetEntityWorld()->AddEntity(&mGun);
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(GunTag());
+		entity->AddComponent(Direction());
+		entity->AddComponent(Transform());
+		entity->AddComponent(Image());
+		entity->AddComponent(Active());
+		entity->AddComponent(Color());
 	}
 
 	// Dash Shadow
 	{
-		for (Entity& entity : mPlayerShadows)
+		std::array<Entity*, 10> entities{};
+		for (Entity* entity : entities)
 		{
-			Shadow shadow{};
-			entity.AddComponent(shadow);
-
-			Transform transform{};
-			transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-			entity.AddComponent(transform);
-
-			Image image{};
-			image.texture = &mPlayerShadowTexture;
-			entity.AddComponent(image);
-
-			Active active{};
-			entity.AddComponent(active);
-
-			Color color{};
-			color.a = 0;
-			entity.AddComponent(color);
-
-			GetEntityWorld()->AddEntity(&entity);
+			entity = GetEntityWorld()->AddEntity(new Entity());
+			entity->AddComponent(ShadowTag());
+			entity->AddComponent(Shadow());
+			entity->AddComponent(Transform());
+			entity->AddComponent(Image());
+			entity->AddComponent(Active());
+			entity->AddComponent(Color());
 		}
 	}
 
 	// Player Left Hand
 	{
-		Transform transform{};
-		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-		mPlayerLeftHand.AddComponent(transform);
-
-		Image image{};
-		image.texture = &mPlayerHandTexture;
-		mPlayerLeftHand.AddComponent(image);
-
-		Active active{};
-		active.isValue = true;
-		mPlayerLeftHand.AddComponent(active);
-
-		GetEntityWorld()->AddEntity(&mPlayerLeftHand);
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(LeftHandTag());
+		entity->AddComponent(Transform());
+		entity->AddComponent(Image());
+		entity->AddComponent(Active());
 	}
 
 	// Player
@@ -1070,7 +1012,6 @@ void MainScene::initialize_Entity()
 		mPlayerClips[uint32_t(Player::eState::Run)].SetLoop(true);
 
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-
 		entity->AddComponent(PlayerTag());
 		entity->AddComponent(Player());
 		entity->AddComponent(Image());
@@ -1093,191 +1034,91 @@ void MainScene::initialize_Entity()
 
 	// Player Hp
 	{
-		UI ui{};
-		mUIPlayerHp.AddComponent(ui);
-
-		Label label{};
-		label.font = &mUIFont;
-
-		const Entity& playerEntity = getPlayerEntity();
-
-		const Hp* hp = playerEntity.GetComponent<Hp>();
-		std::string hpName = "HP: " + std::to_string(hp->value);
-		label.text = hpName;
-
-		mUIPlayerHp.AddComponent(label);
-
-		Transform transform{};
-		mUIPlayerHp.AddComponent(transform);
-
-		Active active{};
-		active.isValue = true;
-		mUIPlayerHp.AddComponent(active);
-
-		Color color{};
-		mUIPlayerHp.AddComponent(color);
-
-		GetEntityWorld()->AddEntity(&mUIPlayerHp);
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(PlayerHpBarTag());
+		entity->AddComponent(Ui());
+		entity->AddComponent(Label());
+		entity->AddComponent(Transform());
+		entity->AddComponent(Active());
+		entity->AddComponent(Color());
 	}
 
 	// Player Right Hand
 	{
-		Transform transform{};
-		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-		mPlayerRightHand.AddComponent(transform);
-
-		Image image{};
-		image.texture = &mPlayerHandTexture;
-		mPlayerRightHand.AddComponent(image);
-
-		Active active{};
-		active.isValue = true;
-		mPlayerRightHand.AddComponent(active);
-
-		GetEntityWorld()->AddEntity(&mPlayerRightHand);
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(RightHandTag());
+		entity->AddComponent(Transform());
+		entity->AddComponent(Image());
+		entity->AddComponent(Active());
 	}
 
 	// Sword
 	{
-		Sword sword{};
-		mSword.AddComponent(sword);
-
-		Direction direction{};
-		mSword.AddComponent(direction);
-
-		Transform transform{};
-		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-		transform.center = { .x = 0.0f,.y = -0.33f };
-		mSword.AddComponent(transform);
-
 		mSwordClip.SetLoop(true);
 
-		Image image{};
-		mSword.AddComponent(image);
-
-		Animator animator{};
-		animator.clipState = &mSwordClip;
-		mSword.AddComponent(animator);
-
-		Active active{};
-		active.isValue = true;
-		mSword.AddComponent(active);
-
-		Color color{};
-		mSword.AddComponent(color);
-
-		GetEntityWorld()->AddEntity(&mSword);
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(SwordTag());
+		entity->AddComponent(Direction());
+		entity->AddComponent(Transform());
+		entity->AddComponent(Image());
+		entity->AddComponent(Animator());
+		entity->AddComponent(Active());
+		entity->AddComponent(Color());
 	}
 
 	// Sword Skill
 	{
 		const float SIZE = 2.5f;
 
-		Effect effect{};
-		mSwordSkill.AddComponent(effect);
-
-		RangedAttack rangedAttack{};
-		rangedAttack.distance = 200.0f;
-		mSwordSkill.AddComponent(rangedAttack);
-
-		Direction direction{};
-		mSwordSkill.AddComponent(direction);
-
-		Transform transform{};
-		transform.scale = { .width = SIZE, .height = SIZE };
-		mSwordSkill.AddComponent(transform);
-
 		mSwordSkillClip.SetLoop(true);
 
-		Image image{};
-		mSwordSkill.AddComponent(image);
-
-		Animator animator{};
-		animator.clipState = &mSwordSkillClip;
-		mSwordSkill.AddComponent(animator);
-
-		Active active{};
-		mSwordSkill.AddComponent(active);
-
-		Color color{};
-		mSwordSkill.AddComponent(color);
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(SwordSkillTag());
+		entity->AddComponent(Effect());
+		entity->AddComponent(RangedAttack());
+		entity->AddComponent(Direction());
+		entity->AddComponent(Transform());
+		entity->AddComponent(Image());
+		entity->AddComponent(Animator());
+		entity->AddComponent(Active());
+		entity->AddComponent(Color());
+		entity->AddComponent(BoxCollider());
+		entity->AddComponent(DebugActive());
+		entity->AddComponent(DebugColor());
 
 		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::SwordSkill));
 		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-		mSwordSkill.AddComponent(collider);
-
-		BoxCollider boxCollider{};
-		boxCollider.size = { .width = float(mSwordSkillTextures[5].GetWidth()), .height = float(mSwordSkillTextures[5].GetHeight()) };
-		mSwordSkill.AddComponent(boxCollider);
-
-		DebugActive debugActive{};
-		mSwordSkill.AddComponent(debugActive);
-
-		DebugColor debugColor{};
-		mSwordSkill.AddComponent(debugColor);
-
-		GetEntityWorld()->AddEntity(&mSwordSkill);
+		entity->AddComponent(collider);
 	}
 
 	// Bullet
 	{
 		mBulletClip.SetLoop(true);
 
-		for (Entity& entity : mBullets)
+		std::array<Entity*, 10> entities{};
+		for (Entity* entity : entities)
 		{
-			Bullet bullet{};
-			entity.AddComponent(bullet);
+			entity = GetEntityWorld()->AddEntity(new Entity());
 
-			RangedAttack rangedAttack{};
-			rangedAttack.distance = 300.0f;
-			entity.AddComponent(rangedAttack);
-
-			Direction direction{};
-			entity.AddComponent(direction);
-
-			Transform transform{};
-			transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-			entity.AddComponent(transform);
-
-			Image image{};
-			entity.AddComponent(image);
-
-			Animator animator{};
-			animator.clipState = &mBulletClip;
-			entity.AddComponent(animator);
-
-			Active active{};
-			entity.AddComponent(active);
-
-			Color color{};
-			entity.AddComponent(color);
+			entity->AddComponent(BulletTag());
+			entity->AddComponent(RangedAttack());
+			entity->AddComponent(Direction());
+			entity->AddComponent(Transform());
+			entity->AddComponent(Image());
+			entity->AddComponent(Animator());
+			entity->AddComponent(Active());
+			entity->AddComponent(Color());
+			entity->AddComponent(BoxCollider());
+			entity->AddComponent(DebugActive());
+			entity->AddComponent(DebugColor());
 
 			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Bullet));
 			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-			entity.AddComponent(collider);
-
-			BoxCollider boxCollider{};
-			boxCollider.size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
-			entity.AddComponent(boxCollider);
-
-			DebugActive debugActive{};
-			entity.AddComponent(debugActive);
-
-			DebugColor debugColor{};
-			entity.AddComponent(debugColor);
-
-			GetEntityWorld()->AddEntity(&entity);
+			entity->AddComponent(collider);
 		}
 
-		mBulletState =
-		{
-			.maxCount = 30,
-			.count = 30,
-			.fireTimer = 0.0f,
-			.reloadTimer = 0.0f
-		};
-
-		Label* label = mBulletLabel.GetComponent<Label>();
+		const Entity* bulletCountEntity = getEntity<BulletCountTag>();
+		Label* label = bulletCountEntity->GetComponent<Label>();
 		label->text = std::to_string(mBulletState.maxCount) + "/" + std::to_string(mBulletState.maxCount);
 	}
 
@@ -1405,7 +1246,7 @@ void MainScene::input()
 	{
 		mIsDebugActive = !mIsDebugActive;
 
-		for (Entity* entity : GetEntityWorld()->GetAllEntites())
+		for (const Entity* entity : GetEntityWorld()->GetAllEntities())
 		{
 			if (not entity->HasComponent<DebugActive>())
 			{
@@ -1434,10 +1275,11 @@ void MainScene::updateCamera()
 {
 	constexpr Point OFFSET = { .x = 24.0f, .y = 23.0f };
 
-	Transform* transform = mMainCamera.GetComponent<Transform>();
+	const Entity* entity = getEntity<Camera>();
+	Transform* transform = entity->GetComponent<Transform>();
 
-	const Entity& playerEntity = getPlayerEntity();
-	Transform* target = playerEntity.GetComponent<Transform>();
+	const Entity* playerEntity = getEntity<PlayerTag>();
+	Transform* target = playerEntity->GetComponent<Transform>();
 	
 	transform->position = target->position;
 
@@ -1460,7 +1302,8 @@ Rect& MainScene::getCameraRect() const
 		.height = Constant::Get().GetHalfHeight() - OFFSET.y,
 	};
 
-	Transform* transform = mMainCamera.GetComponent<Transform>();
+	const Entity* entity = getEntity<Camera>();
+	Transform* transform = entity->GetComponent<Transform>();
 
 	Rect result =
 	{
@@ -1473,58 +1316,172 @@ Rect& MainScene::getCameraRect() const
 	return result;
 }
 
-Entity& MainScene::getPlayerEntity()
+void MainScene::initializeUI()
 {
-	for (auto& entity : GetEntityWorld()->GetAllEntites())
+	// Player Hp
 	{
-		if (not entity->HasComponent<PlayerTag>())
-		{
-			continue;
-		}
+		const Entity* entity = getEntity<PlayerHpBarTag>();
 
-		return *entity;
+		Label* label = entity->GetComponent<Label>();
+		label->font = &mUIFont;
+
+		const Entity* playerEntity = getEntity<PlayerTag>();
+
+		const Hp* hp = playerEntity->GetComponent<Hp>();
+		std::string hpName = "HP: " + std::to_string(hp->value);
+		label->text = hpName;
+
+		Active* active = entity->GetComponent<Active>();
+		active->isValue = true;
+	}
+
+	// Bullet Count
+	{
+		const Entity* entity = getEntity<BulletCountTag>();
+
+		Label* label = entity->GetComponent<Label>();
+		label->font = &mUIFont;
+		label->text = " ";
+
+		Transform* transform = entity->GetComponent<Transform>();
+		transform->position = { .x = float(Constant::Get().GetWidth()) - 140.0f, .y = float(Constant::Get().GetHeight()) - 60.0f };
+
+		Active* active = entity->GetComponent<Active>();
+		active->isValue = true;
 	}
 }
 
-void MainScene::spawnPlayer()
+void MainScene::initializeWaveTimer()
+{
+	const Entity* entity = getEntity<WaveTimerTag>();
+
+	Label* label = entity->GetComponent<Label>();
+	label->font = &mUIFont;
+	label->text = " ";
+
+	Transform* transform = entity->GetComponent<Transform>();
+	transform->position = { .x = Constant::Get().GetHalfWidth() - 150.0f, .y = 0.0f };
+
+	Active* active = entity->GetComponent<Active>();
+	active->isValue = true;
+}
+
+void MainScene::initializeWaveStage()
+{	
+	// 현재 웨이브 상태를 초기화한다.
+	mGameWaveState =
+	{
+		.index = 0,
+		.groupIndex = 0,
+		.waveTimer = WAVES[mGameWaveState.index].elapsedTime,
+		.remainingMonsterGroupSpawnTimer = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime,
+		.labelShowElapsedTimer = 0.0f
+	};
+	
+	const Entity* entity = getEntity<WaveStageTag>();
+
+	Label* label = entity->GetComponent<Label>();
+	label->font = &mUIFont;
+	label->text = "1 Wave";
+
+	Transform* transform = entity->GetComponent<Transform>();
+	transform->position = { .x = Constant::Get().GetHalfWidth() - 80.0f, .y = Constant::Get().GetHalfHeight() - 50.0f };
+
+	Active* active = entity->GetComponent<Active>();
+	active->isValue = true;
+}
+
+void MainScene::initializePlayer()
 {
 	constexpr uint32_t MAX_HP = 100;
 	constexpr uint32_t MAX_DASH = 5;
 
-	const Entity& entity = getPlayerEntity();
+	// Information
+	{
+		const Entity* entity = getEntity<PlayerTag>();
 
-	Transform* transform = entity.GetComponent<Transform>();
-	transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		Transform* transform = entity->GetComponent<Transform>();
+		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 
-	Animator* animator = entity.GetComponent<Animator>();
-	animator->clipState = &mPlayerClips[uint32_t(Player::eState::Idle)];
+		Animator* animator = entity->GetComponent<Animator>();
+		animator->clipState = &mPlayerClips[uint32_t(Player::eState::Idle)];
 
-	Hp* hp = entity.GetComponent<Hp>();
-	hp->max = MAX_HP;
-	hp->value = MAX_HP;
+		Hp* hp = entity->GetComponent<Hp>();
+		hp->max = MAX_HP;
+		hp->value = MAX_HP;
 
-	Dash* dash = entity.GetComponent<Dash>();
-	dash->maxCount = MAX_DASH;
-	dash->count = MAX_DASH;
+		Dash* dash = entity->GetComponent<Dash>();
+		dash->maxCount = MAX_DASH;
+		dash->count = MAX_DASH;
 
-	Active* active = entity.GetComponent<Active>();
-	active->isValue = true;
+		Active* active = entity->GetComponent<Active>();
+		active->isValue = true;
 
-	BoxCollider* boxCollider = entity.GetComponent<BoxCollider>();
-	boxCollider->offset = { .x = 0.0f, .y = 32.0f };
-	boxCollider->size = { .width = 13.0f, .height = 20.0f };
+		BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
+		boxCollider->offset = { .x = 0.0f, .y = 32.0f };
+		boxCollider->size = { .width = 13.0f, .height = 20.0f };
+	}
+
+	// Left Hand
+	{
+		const Entity* entity = getEntity<LeftHandTag>();
+
+		Transform* transform = entity->GetComponent<Transform>();
+		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+
+		Image* image = entity->GetComponent<Image>();
+		image->texture = &mPlayerHandTexture;
+
+		Active* active = entity->GetComponent<Active>();
+		active->isValue = true;
+	}
+
+	// Right Hand
+	{
+		const Entity* entity = getEntity<RightHandTag>();
+
+		Transform* transform = entity->GetComponent<Transform>();
+		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+
+		Image* image = entity->GetComponent<Image>();
+		image->texture = &mPlayerHandTexture;
+
+		Active* active = entity->GetComponent<Active>();
+		active->isValue = true;
+	}
+
+	// Dash Shadow
+	{
+		const std::vector<Entity*> entities = getEntities<ShadowTag>();
+		for (auto& entity : entities)
+		{
+			Transform* transform = entity->GetComponent<Transform>();
+			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+
+			Image* image = entity->GetComponent<Image>();
+			image->texture = &mPlayerShadowTexture;
+
+			Active* active = entity->GetComponent<Active>();
+			active->isValue = false;
+
+			Color* color = entity->GetComponent<Color>();
+			color->a = 0;
+		}
+	}
 }
 
 void MainScene::playerState(const float deltaTime)
 {
 	static float deadTimer;
 
-	const Entity& entity = getPlayerEntity();
+	const Entity* entity = getEntity<PlayerTag>();
+	const Entity* leftHandEntity = getEntity<LeftHandTag>();
+	const Entity* rightHandEntity = getEntity<RightHandTag>();
 
-	Player* player = entity.GetComponent<Player>();
+	Player* player = entity->GetComponent<Player>();
 	player->state = (player->length != 0.0f) ? Player::eState::Run : Player::eState::Idle;
 
-	Hp* playerHp = entity.GetComponent<Hp>();
+	Hp* playerHp = entity->GetComponent<Hp>();
 	if (playerHp->value <= 0)
 	{
 		playerHp->value = 0;
@@ -1534,10 +1491,10 @@ void MainScene::playerState(const float deltaTime)
 		{
 			player->state = Player::eState::Dead;
 
-			Active* leftHandActive = mPlayerLeftHand.GetComponent<Active>();
+			Active* leftHandActive = leftHandEntity->GetComponent<Active>();
 			leftHandActive->isValue = false;
 
-			Active* rightHandActive = mPlayerRightHand.GetComponent<Active>();
+			Active* rightHandActive = rightHandEntity->GetComponent<Active>();
 			rightHandActive->isValue = false;
 		}
 	}
@@ -1593,22 +1550,25 @@ void MainScene::playerMove(const float deltaTime)
 		}
 	}
 
-	const Entity& entity = getPlayerEntity();
-	Player* player = entity.GetComponent<Player>();
-	player->length = Math::GetVectorLength(moveVelocity);
+	// Moving
+	Point moveDirection = { .x = 0.0f, .y = 0.0f };
+	{
+		const Entity* entity = getEntity<PlayerTag>();
+		Player* player = entity->GetComponent<Player>();
+		player->length = Math::GetVectorLength(moveVelocity);
 
-	const Point moveDirection = Math::NormalizeVector(moveVelocity);
-	const float velocity = fmin(Math::GetVectorLength(moveVelocity), MAX_SPEED);
-	moveVelocity = moveDirection * velocity;
+		moveDirection = Math::NormalizeVector(moveVelocity);
+		const float velocity = fmin(Math::GetVectorLength(moveVelocity), MAX_SPEED);
+		moveVelocity = moveDirection * velocity;
+	}
 
 	// Dash
 	{
 		constexpr float MAX_DASH_SPEED = 800.0f;
 		constexpr float DASH_ACC = 30.0f;
 
-		const Entity& entity = getPlayerEntity();
-
-		Dash* dash = entity.GetComponent<Dash>();
+		const Entity* playerEntity = getEntity<PlayerTag>();
+		Dash* dash = playerEntity->GetComponent<Dash>();
 
 		if (Input::Get().GetKeyDown(SDL_SCANCODE_SPACE))
 		{
@@ -1616,7 +1576,6 @@ void MainScene::playerMove(const float deltaTime)
 			{
 				--dash->count;
 				dash->isValue = true;
-				dash->isShadow = true;
 			}
 		}
 
@@ -1629,10 +1588,15 @@ void MainScene::playerMove(const float deltaTime)
 			{
 				dash->moveSpeed = 0.0f;
 				dash->isValue = false;
+				
+				dash->isShadow = true;
 			}
 
-			Transform* transform = entity.GetComponent<Transform>();
+			Transform* transform = playerEntity->GetComponent<Transform>();
 			transform->position += velocity;
+
+			dash->startPosition = transform->position;
+			dash->direction = moveDirection;
 		}
 
 		if (dash->count < dash->maxCount)
@@ -1652,15 +1616,16 @@ void MainScene::playerMove(const float deltaTime)
 		constexpr Point INTERVAL_POSITION = { .x = 30.0f, .y = 30.0f };
 
 		// 잔상 색을 업데이트한다.
-		for (Entity& entity : mPlayerShadows)
+		std::vector<Entity*> entities = getEntities<ShadowTag>();
+		for (const Entity* entity : entities)
 		{
-			Active* active = entity.GetComponent<Active>();
+			Active* active = entity->GetComponent<Active>();
 			if (not active->isValue)
 			{
 				continue;
 			}
 
-			Color* color = entity.GetComponent<Color>();
+			Color* color = entity->GetComponent<Color>();
 			const float currentAlpha = static_cast<float>(color->a) - (500.0f * deltaTime);
 			color->a = static_cast<uint8_t>(currentAlpha);
 
@@ -1672,33 +1637,27 @@ void MainScene::playerMove(const float deltaTime)
 		}
 
 		// 잔상 좌표를 업데이트한다.
-		const Entity& entity = getPlayerEntity();
-
-		Dash* dash = entity.GetComponent<Dash>();
+		const Entity* playerEntity = getEntity<PlayerTag>();
+		Dash* dash = playerEntity->GetComponent<Dash>();
 		if (dash->isShadow)
 		{
-			const Transform* playerTransform = entity.GetComponent<Transform>();
-
-			for (Entity& entity : mPlayerShadows)
+			std::vector<Entity*> shadowEntities = getEntities<ShadowTag>();
+			static int32_t index = -1;
+			for (Entity* shadowEntity : shadowEntities)
 			{
-				Active* active = entity.GetComponent<Active>();
-				Color* color = entity.GetComponent<Color>();
+				Active* active = shadowEntity->GetComponent<Active>();
+				Color* color = shadowEntity->GetComponent<Color>();
 
 				if (not active->isValue and color->a == 0)
 				{
 					active->isValue = true;
 					color->a = 255;
 
-					Transform* shadowTransform = entity.GetComponent<Transform>();
-					shadowTransform->position = playerTransform->position + 20.0f;
-					shadowTransform->position.y += OFFSET.y;
-					shadowTransform->flip = (moveDirection.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
-
-					if (moveVelocity.y == 0.0f)
-					{
-						shadowTransform->position.x = (moveDirection.x > 0.0f) ?
-							playerTransform->position.x + OFFSET.x : playerTransform->position.x - OFFSET.x;
-					}
+					Transform* shadowTransform = shadowEntity->GetComponent<Transform>();
+					shadowTransform->position = dash->startPosition;
+					shadowTransform->position.x -= dash->direction.x * (++index) * 5.0f;
+					shadowTransform->position.y += OFFSET.y - dash->direction.y * (++index) * 5.0f;
+					shadowTransform->flip = (dash->direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 
 					break;
 				}
@@ -1707,6 +1666,8 @@ void MainScene::playerMove(const float deltaTime)
 			dash->shadowTimer += deltaTime;
 			if (dash->shadowTimer >= 0.2f)
 			{
+				index = -1;
+
 				dash->isShadow = false;
 				dash->shadowTimer = 0.0f;
 			}
@@ -1715,8 +1676,9 @@ void MainScene::playerMove(const float deltaTime)
 
 	// Knockback
 	{
-		Knockback* knockback = entity.GetComponent<Knockback>();
-		Color* color = entity.GetComponent<Color>();
+		const Entity* entity = getEntity<PlayerTag>();
+		Knockback* knockback = entity->GetComponent<Knockback>();
+		Color* color = entity->GetComponent<Color>();
 
 		if (knockback->isValue)
 		{
@@ -1739,15 +1701,13 @@ void MainScene::playerMove(const float deltaTime)
 		}
 	}
 
-	Point playerPosition = { .x = 0.0f, .y = 0.0f };
-	SDL_RendererFlip playerFlip = SDL_FLIP_NONE;
-	
-	Transform* transform = entity.GetComponent<Transform>();
+	const Entity* playerEntity = getEntity<PlayerTag>();
+
+	Transform* transform = playerEntity->GetComponent<Transform>();
 	clampToTile(transform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
 	transform->position += moveVelocity * deltaTime;
-	playerPosition = transform->position;
 
-	Direction* direction = entity.GetComponent<Direction>();
+	Direction* direction = playerEntity->GetComponent<Direction>();
 	direction->value = Math::NormalizeVector(getScreenMousePosition() - transform->position);
 
 	if (direction->value.x > 0.0f)
@@ -1759,19 +1719,17 @@ void MainScene::playerMove(const float deltaTime)
 		transform->flip = SDL_FLIP_HORIZONTAL;
 	}
 
-	playerFlip = transform->flip;
-	
-
 	// Update Left Hand
 	{
 		constexpr Point OFFSET = { .x = 14.0f, .y = 18.0f };
 
-		Transform* leftHandTransform = mPlayerLeftHand.GetComponent<Transform>();
-		leftHandTransform->position = playerPosition;
+		const Entity* entity = getEntity<LeftHandTag>();
+		Transform* leftHandTransform = entity->GetComponent<Transform>();
+		leftHandTransform->position = playerEntity->GetComponent<Transform>()->position;
 
 		leftHandTransform->position.y += OFFSET.y;
 
-		if (playerFlip == SDL_FLIP_NONE)
+		if (playerEntity->GetComponent<Transform>()->flip == SDL_FLIP_NONE)
 		{
 			leftHandTransform->position.x += OFFSET.x;
 		}
@@ -1784,12 +1742,14 @@ void MainScene::playerMove(const float deltaTime)
 	// Update Right Hand
 	{
 		constexpr Point OFFSET = { .x = -10.0f, .y = 15.0f };
-		Transform* rightHandTransform = mPlayerRightHand.GetComponent<Transform>();
-		rightHandTransform->position = playerPosition;
+
+		const Entity* rightHandEntity = getEntity<RightHandTag>();
+		Transform* rightHandTransform = rightHandEntity->GetComponent<Transform>();
+		rightHandTransform->position = playerEntity->GetComponent<Transform>()->position;
 
 		rightHandTransform->position.y += OFFSET.y;
 
-		if (playerFlip == SDL_FLIP_NONE)
+		if (playerEntity->GetComponent<Transform>()->flip == SDL_FLIP_NONE)
 		{
 			rightHandTransform->position.x += OFFSET.x;
 		}
@@ -1802,10 +1762,10 @@ void MainScene::playerMove(const float deltaTime)
 
 void MainScene::playerSetClip()
 {
-	const Entity& entity = getPlayerEntity();
+	const Entity* entity = getEntity<PlayerTag>();
 
-	Player* player = entity.GetComponent<Player>();
-	Animator* animator = entity.GetComponent<Animator>();
+	Player* player = entity->GetComponent<Player>();
+	Animator* animator = entity->GetComponent<Animator>();
 
 	switch (player->state)
 	{
@@ -1828,31 +1788,52 @@ void MainScene::playerSetClip()
 	
 }
 
+void MainScene::initializeSwordSkill()
+{
+	const float SIZE = 2.5f;
+
+	const Entity* entity = getEntity<SwordSkillTag>();
+
+	RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
+	rangedAttack->distance = 200.0f;
+
+	Transform* transform = entity->GetComponent<Transform>();
+	transform->scale = { .width = SIZE, .height = SIZE };
+
+	Animator* animator = entity->GetComponent<Animator>();
+	animator->clipState = &mSwordSkillClip;
+
+	BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
+	boxCollider->size = { .width = float(mSwordSkillTextures[5].GetWidth()), .height = float(mSwordSkillTextures[5].GetHeight()) };
+}
+
 void MainScene::spawnSwordSkill()
 {
-	Active* active = mSwordSkill.GetComponent<Active>();
-	if (Effect* effect = mSwordSkill.GetComponent<Effect>();
+	const Entity* entity = getEntity<SwordSkillTag>();
+	Active* active = entity->GetComponent<Active>();
+
+	if (Effect* effect = entity->GetComponent<Effect>();
 		Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT)
 		and not active->isValue
 		and not effect->isDisabled)
 	{
-		Animator* effectAnim = mSwordSkill.GetComponent<Animator>();
+		Animator* effectAnim = entity->GetComponent<Animator>();
 		effectAnim->frameIndex = 0;
 		effectAnim->elapsedTime = 0.0f;
 
 		active->isValue = true;
 
-		const Entity& entity = getPlayerEntity();
-		const Transform* playerTransform = entity.GetComponent<Transform>();
+		const Entity* playerEntity = getEntity<PlayerTag>();
+		const Transform* playerTransform = playerEntity->GetComponent<Transform>();
 
-		RangedAttack* rangedAttack = mSwordSkill.GetComponent<RangedAttack>();
+		RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
 		rangedAttack->startPosition = playerTransform->position;
 
-		Transform* effectTransform = mSwordSkill.GetComponent<Transform>();
+		Transform* effectTransform = entity->GetComponent<Transform>();
 		effectTransform->position = playerTransform->position;
 
 		const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
-		Direction* effectDirection = mSwordSkill.GetComponent<Direction>();
+		Direction* effectDirection = entity->GetComponent<Direction>();
 		effectDirection->value = Math::NormalizeVector(mouseToPlayer);
 
 		float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
@@ -1868,16 +1849,17 @@ void MainScene::updateSwordSkill(const float deltaTime)
 	constexpr float SPEED = 900.0f;
 	constexpr float SWING_COOLTIME = 0.7f;
 
-	if (const Active* active = mSwordSkill.GetComponent<Active>();
+	const Entity* entity = getEntity<SwordSkillTag>();
+	if (const Active* active = entity->GetComponent<Active>();
 		not active->isValue)
 	{
 		return;
 	}
 
-	const Direction* direction = mSwordSkill.GetComponent<Direction>();
+	const Direction* direction = entity->GetComponent<Direction>();
 	const Point velocity = direction->value * SPEED;
 
-	Transform* transform = mSwordSkill.GetComponent<Transform>();
+	Transform* transform = entity->GetComponent<Transform>();
 	transform->position = transform->position + velocity * deltaTime;
 }
 
@@ -1885,16 +1867,17 @@ void MainScene::updateSwordSkillStates(const float deltaTime)
 {
 	constexpr float SWING_COOLTIME = 0.7f;
 
-	Effect* effect = mSwordSkill.GetComponent<Effect>();
-	Active* active = mSwordSkill.GetComponent<Active>();
+	const Entity* entity = getEntity<SwordSkillTag>();
+	Effect* effect = entity->GetComponent<Effect>();
+	Active* active = entity->GetComponent<Active>();
 
 	if (active->isValue)
 	{
-		Transform* transform = mSwordSkill.GetComponent<Transform>();
-		if (const RangedAttack* rangedAttack = mSwordSkill.GetComponent<RangedAttack>();
+		Transform* transform = entity->GetComponent<Transform>();
+		if (const RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
 			Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
 		{
-			Animator* effectAnim = mSwordSkill.GetComponent<Animator>();
+			Animator* effectAnim = entity->GetComponent<Animator>();
 			effectAnim->frameIndex = 0;
 			effectAnim->elapsedTime = 0.0f;
 
@@ -1915,26 +1898,57 @@ void MainScene::updateSwordSkillStates(const float deltaTime)
 	}
 }
 
+void MainScene::initializeBullets()
+{
+	mBulletState =
+	{
+		.maxCount = 30,
+		.count = 30,
+		.fireTimer = 0.0f,
+		.reloadTimer = 0.0f
+	};
+
+	const std::vector<Entity*> entities = getEntities<BulletTag>();
+	for (const Entity* entity : entities)
+	{
+		RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
+		rangedAttack->distance = 300.0f;
+
+		Transform* transform = entity->GetComponent<Transform>();
+		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+
+		Animator* animator = entity->GetComponent<Animator>();
+		animator->clipState = &mBulletClip;
+
+		BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
+		boxCollider->size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
+	}
+}
+
 void MainScene::spawnBullets(const float deltaTime)
 {
 	constexpr float FIRE_TIME = 0.8f;
-	const Transform* gunTransform = mGun.GetComponent<Transform>();
+
+	const Entity* gunEntity = getEntity<GunTag>();
+	const Transform* gunTransform = gunEntity->GetComponent<Transform>();
 
 	if (mBulletState.count <= 0)
 	{
 		return;
 	}
 
+	const std::vector<Entity*> entities = getEntities<BulletTag>();
+
 	mBulletState.fireTimer += deltaTime;
-	for (Entity& entity : mBullets)
+	for (const Entity* entity : entities)
 	{
-		Active* active = entity.GetComponent<Active>();
+		Active* active = entity->GetComponent<Active>();
 		if (active->isValue)
 		{
 			continue;
 		}
 
-		RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
+		RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
 		if (rangedAttack->isFiring)
 		{
 			continue;
@@ -1945,22 +1959,23 @@ void MainScene::spawnBullets(const float deltaTime)
 			active->isValue = true;
 			rangedAttack->isFiring = true;
 
-			Animator* anim = entity.GetComponent<Animator>();
+			Animator* anim = entity->GetComponent<Animator>();
 			anim->frameIndex = 0;
 			anim->elapsedTime = 0.0f;
 
 			rangedAttack->startPosition = gunTransform->position;
 
-			Transform* transform = entity.GetComponent<Transform>();
+			Transform* transform = entity->GetComponent<Transform>();
 			transform->position = gunTransform->position;
 
 			const Point difference = getScreenMousePosition() - gunTransform->position;
-			Direction* direction = entity.GetComponent<Direction>();
+			Direction* direction = entity->GetComponent<Direction>();
 			direction->value = Math::NormalizeVector(difference);
 
 			--mBulletState.count;
 
-			Label* label = mBulletLabel.GetComponent<Label>();
+			const Entity* bulletCountEntity = getEntity<BulletCountTag>();
+			Label* label = bulletCountEntity->GetComponent<Label>();
 			const std::string strLabel = (mBulletState.count < 10) ? "0" + std::to_string(mBulletState.count) : std::to_string(mBulletState.count);
 			label->text = strLabel + "/" + std::to_string(mBulletState.maxCount);
 
@@ -1974,17 +1989,18 @@ void MainScene::updateBullets(const float deltaTime)
 {
 	constexpr float SPEED = 1300.0f;
 
-	for (Entity& entity : mBullets)
+	const std::vector<Entity*> entities = getEntities<BulletTag>();
+	for (const Entity* entity : entities)
 	{
-		if (const Active* active = entity.GetComponent<Active>();
+		if (const Active* active = entity->GetComponent<Active>();
 			not active->isValue)
 		{
 			continue;
 		}
 
-		const Direction* direction = entity.GetComponent<Direction>();
+		const Direction* direction = entity->GetComponent<Direction>();
 		const Point velocity = direction->value * SPEED;
-		Transform* transform = entity.GetComponent<Transform>();
+		Transform* transform = entity->GetComponent<Transform>();
 		transform->position += velocity * deltaTime;
 	}
 }
@@ -2003,120 +2019,34 @@ void MainScene::updateBulletStates(const float deltaTime)
 		}
 	}
 
-	for (Entity& entity : mBullets)
+	const std::vector<Entity*> entities = getEntities<BulletTag>();
+	for (const Entity* entity : entities)
 	{
-		if (const Active* active = entity.GetComponent<Active>();
+		if (const Active* active = entity->GetComponent<Active>();
 			not active->isValue)
 		{
 			continue;
 		}
 
-		RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
+		RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
 		if (not rangedAttack->isFiring)
 		{
 			continue;
 		}
 
-		Transform* transform = entity.GetComponent<Transform>();
+		Transform* transform = entity->GetComponent<Transform>();
 		if (Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
 		{
-			Active* active = entity.GetComponent<Active>();
+			Active* active = entity->GetComponent<Active>();
 			active->isValue = false;
 			rangedAttack->isFiring = false;
 		}
 	}
 }
 
-void MainScene::initializeMonsters()
-{
-	for (Entity& entity : mMonsters)
-	{
-		if (entity.HasComponent<Monster>())
-		{
-			continue;
-		}
-
-		Monster monster{};
-		entity.AddComponent(monster);
-
-		AttackPattern pattern{};
-		entity.AddComponent(pattern);
-
-		Transform transform{};
-		entity.AddComponent(transform);
-
-		Image image{};
-		entity.AddComponent(image);
-
-		Animator animator{};
-		entity.AddComponent(animator);
-
-		Direction direction{};
-		entity.AddComponent(direction);
-
-		DamageTimer damageTimer{};
-		entity.AddComponent(damageTimer);
-
-		Hp hp{};
-		entity.AddComponent(hp);
-
-		Damage damage{};
-		entity.AddComponent(damage);
-
-		Active active{};
-		entity.AddComponent(active);
-
-		Color color{};
-		entity.AddComponent(color);
-
-		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
-		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-		entity.AddComponent(collider);
-
-		BoxCollider boxCollider{};
-		entity.AddComponent(boxCollider);
-
-		ColliderState colliderState{};
-		entity.AddComponent(colliderState);
-
-		DebugActive debugActive{};
-		entity.AddComponent(debugActive);
-
-		DebugColor debugColor{};
-		entity.AddComponent(debugColor);
-
-		Knockback knockback{};
-		entity.AddComponent(knockback);
-
-		GetEntityWorld()->AddEntity(&entity);
-	}
-
-	for (Entity& entity : mMonsterHpBars)
-	{
-		if (entity.HasComponent<Image>())
-		{
-			continue;
-		}
-
-		Transform transform{};
-		entity.AddComponent(transform);
-
-		Offset offset{};
-		entity.AddComponent(offset);
-
-		Image image{};
-		image.texture = &mRedRectTexture;
-		entity.AddComponent(image);
-
-		Active active{};
-		entity.AddComponent(active);
-
-		GetEntityWorld()->AddEntity(&entity);
-	}
-}
-
 void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 {
+	constexpr uint32_t MONSTER_COUNT = 20;
 	constexpr Point TILE_OFFSET = { .x = 50.0f, .y = 50.0f };
 	
 	const Rect tileRect =
@@ -2143,30 +2073,22 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 
 		return;
 	}
-
-	initializeMonsters();
-
-	uint32_t monsterIndex = 0;
+	
 	for (uint32_t i = 0; i < group.count; ++i)
 	{
 		const float xInGroup = getRandom(group.rangeX.min, group.rangeX.max);
 		const float yInGroup = getRandom(group.rangeY.min, group.rangeY.max);
 
-		for (__noop; monsterIndex < mMonsters.size(); ++monsterIndex)
+		for (__noop; mMonsterIndex < MONSTER_COUNT; ++mMonsterIndex)
 		{
-			if (const Entity& monsterEntity = mMonsters[monsterIndex]; 
-				monsterEntity.GetComponent<Active>()->isValue)
-			{
-				continue;
-			}
-
 			const float monsterX = randomTilePosition.x + xInGroup;
 			const float monsterY = randomTilePosition.y + yInGroup;
+			
 			spawnMonster
 			(
 				SpawnMonsterDesc
 				{
-					.index = monsterIndex,
+					.index = mMonsterIndex,
 					.type = group.type,
 					.x = monsterX,
 					.y = monsterY
@@ -2175,8 +2097,8 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 
 			break;
 		}
-
-		++monsterIndex;
+		
+		++mMonsterIndex;
 	}
 }
 
@@ -2189,37 +2111,78 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	const float x = desc.x;
 	const float y = desc.y;
 
-	Entity& monsterEntity = mMonsters[index];
-	Active* active = monsterEntity.GetComponent<Active>();
-	assert(not active->isValue and "이미 사용되고 있는 몬스터입니다.");
+	// 몬스터 컴포넌트를 추가합니다.
+	{
+		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+		newEntity->AddComponent(MonsterTag());
+		newEntity->AddComponent(Monster());
+		newEntity->AddComponent(AttackPattern());
+		newEntity->AddComponent(Transform());
+		newEntity->AddComponent(Image());
+		newEntity->AddComponent(Animator());
+		newEntity->AddComponent(Direction());
+		newEntity->AddComponent(DamageTimer());
+		newEntity->AddComponent(Hp());
+		newEntity->AddComponent(Damage());
+		newEntity->AddComponent(Active());
+		newEntity->AddComponent(Color());
+		newEntity->AddComponent(BoxCollider());
+		newEntity->AddComponent(ColliderState());
+		newEntity->AddComponent(DebugActive());
+		newEntity->AddComponent(DebugColor());
+		newEntity->AddComponent(Knockback());
 
-	Monster* monster = monsterEntity.GetComponent<Monster>();
+		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
+		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
+		newEntity->AddComponent(collider);
+	}
+
+	// 체력바 컴포넌트를 추가합니다.
+	{
+		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+		newEntity->AddComponent(MonsterHpBarTag());
+		newEntity->AddComponent(Transform());
+		newEntity->AddComponent(Offset());
+		newEntity->AddComponent(Image());
+		newEntity->AddComponent(Active());
+	}
+	
+	const std::vector<Entity*> entities = getEntities<MonsterTag>();
+	const Entity* entity = entities[index];
+	MonsterTag* tag = entity->GetComponent<MonsterTag>();
+	assert(tag and "이미 사용되고 있는 몬스터입니다.");
+
+	Monster* monster = entity->GetComponent<Monster>();
 	monster->type = type;
 	monster->state = Monster::eState::Spawn;
 
-	Transform* transform = monsterEntity.GetComponent<Transform>();
+	Transform* transform = entity->GetComponent<Transform>();
 	transform->position = { .x = x, .y = y };
 	transform->scale = { .width = SIZE, .height = SIZE };
 
-	DamageTimer* damageTimer = monsterEntity.GetComponent<DamageTimer>();
+	DamageTimer* damageTimer = entity->GetComponent<DamageTimer>();
 	damageTimer->deadTimer = 0.0f;
 
-	Hp* hp = monsterEntity.GetComponent<Hp>();
+	Hp* hp = entity->GetComponent<Hp>();
 	hp->hpBarIndex = index;
 
-	Entity& hpBarEntity = mMonsterHpBars[index];
-	Active* hpBarActive = hpBarEntity.GetComponent<Active>();
-	hpBarActive->isValue = false;
-
-	BoxCollider* boxCollider = monsterEntity.GetComponent<BoxCollider>();
+	BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
 	boxCollider->size = {.width = SIZE, .height = SIZE };
 	boxCollider->offset = { .x = 0.0f, .y = 0.0f };
 
-	ColliderState* colliderState = monsterEntity.GetComponent<ColliderState>();
-	Offset* hpBarOffset = hpBarEntity.GetComponent<Offset>();
+	ColliderState* colliderState = entity->GetComponent<ColliderState>();
+	
+	Damage* damage = entity->GetComponent<Damage>();
+	
+	AttackPattern* pattern = entity->GetComponent<AttackPattern>();
+	
+	// 몬스터 체력바
+	const std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
+	const Entity* hpBarEntity = hpBarEntities[index];
+	MonsterHpBarTag* hpBarTag = hpBarEntity->GetComponent<MonsterHpBarTag>();
+	assert(hpBarTag and "이미 사용되고 있는 체력바입니다.");
 
-	Damage* damage = monsterEntity.GetComponent<Damage>();
-	AttackPattern* pattern = monsterEntity.GetComponent<AttackPattern>();
+	Offset* hpBarOffset = hpBarEntity->GetComponent<Offset>();
 
 	switch (monster->type)
 	{
@@ -2279,39 +2242,51 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		break;
 	}
 
-	Animator* anim = monsterEntity.GetComponent<Animator>();
+	Animator* anim = entity->GetComponent<Animator>();
 	anim->frameIndex = 0;
 	anim->elapsedTime = 0.0f;
 
 	hp->value = hp->max;
-	active->isValue = true;
 
-	Transform* hpBartransform = hpBarEntity.GetComponent<Transform>();
-	const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
-	hpBartransform->scale = { .width = currentWidth, .height = 0.2f };
+	Active* active = entity->GetComponent<Active>();
+	active->isValue = true;
+	
+	// 몬스터 체력바
+	{
+		Image* image = hpBarEntity->GetComponent<Image>();
+		image->texture = &mRedRectTexture;
+
+		Active* hpBarActive = hpBarEntity->GetComponent<Active>();
+		hpBarActive->isValue = false;
+
+		Transform* hpBartransform = hpBarEntity->GetComponent<Transform>();
+		const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
+		hpBartransform->scale = { .width = currentWidth, .height = 0.2f };
+	}
 }
 
 void MainScene::updateMonsterStates(const float deltaTime)
 {
-	for (Entity& entity : mMonsters)
+	const std::vector<Entity*> entities = getEntities<MonsterTag>();
+	for (Entity* entity : entities)
 	{
-		if (not entity.HasComponent<Active>())
+		if (not entity->HasComponent<MonsterTag>())
 		{
 			continue;
 		}
 
-		if (not entity.GetComponent<Active>()->isValue)
+		if (not entity->GetComponent<Active>()->isValue)
 		{
 			continue;
 		}
 
-		const ColliderState* colliderState = entity.GetComponent<ColliderState>();
-		const Direction* direction = entity.GetComponent<Direction>();
+		const ColliderState* colliderState = entity->GetComponent<ColliderState>();
+		const Direction* direction = entity->GetComponent<Direction>();
 
-		BoxCollider* boxCollider = entity.GetComponent<BoxCollider>();
+		BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
 
-		Monster* monster = entity.GetComponent<Monster>();
-		AttackPattern* pattern = entity.GetComponent<AttackPattern>();
+		Monster* monster = entity->GetComponent<Monster>();
+		AttackPattern* pattern = entity->GetComponent<AttackPattern>();
 
 		switch (monster->state)
 		{
@@ -2320,12 +2295,12 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			monster->spawnBlinkTimer += deltaTime;
 			if (monster->spawnBlinkTimer >= 0.5f)
 			{
-				Transform* monsterTransform = entity.GetComponent<Transform>();
+				Transform* monsterTransform = entity->GetComponent<Transform>();
 				monsterTransform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 
 				monster->state = Monster::eState::Run;
 
-				Active* active = entity.GetComponent<Active>();
+				Active* active = entity->GetComponent<Active>();
 				active->isValue = true;
 
 				monster->spawnBlinkTimer = 0.0f;
@@ -2346,23 +2321,25 @@ void MainScene::updateMonsterStates(const float deltaTime)
 				float gauge = pattern->timer / RUSH_WAITINGTIME;
 				gauge = std::clamp(gauge, 0.0f, 1.0f);
 
-				Color* color = entity.GetComponent<Color>();
+				Color* color = entity->GetComponent<Color>();
 				color->r = 255 - static_cast<uint8_t>(gauge * 255.0f);
 				color->g = 255 - static_cast<uint8_t>(gauge * 255.0f);
 
-				AttackPattern* pattern = entity.GetComponent<AttackPattern>();
+				AttackPattern* pattern = entity->GetComponent<AttackPattern>();
 				pattern->timer += deltaTime;
 				if (pattern->timer >= RUSH_WAITINGTIME)
 				{
 					color->r = 255;
 					color->g = 255;
 
-					Transform* transfrom = entity.GetComponent<Transform>();
-					//const Transform* playerTransform = mPlayer.GetComponent<Transform>();
-
-					//const Point difference = playerTransform->position - transfrom->position;
-					//Direction* direction = entity.GetComponent<Direction>();
-					//direction->value = Math::NormalizeVector(difference);
+					const Entity* playerEntity = getEntity<PlayerTag>();
+					const Transform* playerTransform = playerEntity->GetComponent<Transform>();
+					
+					const Transform* transfrom = entity->GetComponent<Transform>();
+					const Point difference = playerTransform->position - transfrom->position;
+					
+					Direction* direction = entity->GetComponent<Direction>();
+					direction->value = Math::NormalizeVector(difference);
 
 					monster->state = Monster::eState::Rush;
 					pattern->timer = 0.0f;
@@ -2381,7 +2358,7 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			}
 
 			const Clip& attackClip = monster->clips[uint32_t(Monster::eState::Attack)];
-			const Animator& anim = *entity.GetComponent<Animator>();
+			const Animator& anim = *entity->GetComponent<Animator>();
 			if (anim.clipState == &attackClip
 				and anim.frameIndex >= attackClip.GetLastFrameIndex() - 1)
 			{
@@ -2418,10 +2395,10 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			float movingDistance = SPEED * deltaTime;
 			pattern->distanceMoved += movingDistance;
 
-			const Direction* direction = entity.GetComponent<Direction>();
+			const Direction* direction = entity->GetComponent<Direction>();
 			const Point velocity = direction->value * SPEED;
 
-			Transform* transform = entity.GetComponent<Transform>();
+			Transform* transform = entity->GetComponent<Transform>();
 			if (pattern->distanceMoved >= RUSH_DISTANCE)
 			{
 				float overDistance = pattern->distanceMoved - RUSH_DISTANCE;
@@ -2451,34 +2428,31 @@ void MainScene::updateMonsterStates(const float deltaTime)
 		}
 	}
 
-	for (Entity& entity : mMonsters)
+	for (Entity* entity : entities)
 	{
-		if (not entity.HasComponent<Monster>())
+		if (not entity->HasComponent<MonsterTag>())
 		{
 			continue;
 		}
 
-		Active* active = entity.GetComponent<Active>();
-		if (not active)
-		{
-			continue;
-		}
-
-		Hp* hp = entity.GetComponent<Hp>();
+		Hp* hp = entity->GetComponent<Hp>();
 		if (hp->value > 0)
 		{
 			continue;
 		}
 
 		hp->value = 0;
+
+		Active* active = entity->GetComponent<Active>();
 		active->isValue = false;
 
-		Monster* monster = entity.GetComponent<Monster>();
+		Monster* monster = entity->GetComponent<Monster>();
 		monster->state = Monster::eState::Dead;
 
-		if (mMonsterHpBars[hp->hpBarIndex].HasComponent<Active>())
+		if (const Entity* hpBarEntity = getEntities<MonsterHpBarTag>()[hp->hpBarIndex];
+			hpBarEntity->HasComponent<Active>())
 		{
-			if (Active* hpBarActive = mMonsterHpBars[hp->hpBarIndex].GetComponent<Active>())
+			if (Active* hpBarActive = hpBarEntity->GetComponent<Active>())
 			{
 				hpBarActive->isValue = false;
 			}
@@ -2490,23 +2464,18 @@ void MainScene::updateHpMonsters(const float deltaTime)
 {
 	constexpr float DAMAGE_TIME = 0.12f;
 
-	for (Entity& entity : mMonsters)
+	const std::vector<Entity*> entities = getEntities<MonsterTag>();
+	for (Entity* entity : entities)
 	{
-		if (not entity.HasComponent<Monster>())
+		if (not entity->HasComponent<MonsterTag>())
 		{
 			continue;
 		}
 
-		if (Active* active = entity.GetComponent<Active>();
-			not active->isValue)
-		{
-			continue;
-		}
-
-		if (Knockback* knockback = entity.GetComponent<Knockback>();
+		if (Knockback* knockback = entity->GetComponent<Knockback>();
 			knockback->isValue)
 		{
-			Color* color = entity.GetComponent<Color>();
+			Color* color = entity->GetComponent<Color>();
 			color->r = 200;
 			color->g = 0;
 			color->b = 0;
@@ -2514,10 +2483,10 @@ void MainScene::updateHpMonsters(const float deltaTime)
 			knockback->coolTimer += deltaTime;
 			if (knockback->coolTimer >= DAMAGE_TIME)
 			{
-				Monster* monster = entity.GetComponent<Monster>();
+				Monster* monster = entity->GetComponent<Monster>();
 				monster->state = Monster::eState::Run;
 
-				Color* color = entity.GetComponent<Color>();
+				Color* color = entity->GetComponent<Color>();
 				color->r = 255;
 				color->g = 255;
 				color->b = 255;
@@ -2596,66 +2565,59 @@ void MainScene::monsterDeadParticle(const float deltaTime)
 
 void MainScene::monsterMove(const float deltaTime)
 {
-	for (Entity& entity : mMonsters)
+	const std::vector<Entity*> entities = getEntities<MonsterTag>();
+	for (Entity* entity : entities)
 	{
-		if (not entity.HasComponent<Monster>())
+		if (not entity->HasComponent<MonsterTag>())
 		{
 			continue;
 		}
 
-		Monster* monster = entity.GetComponent<Monster>();
+		Monster* monster = entity->GetComponent<Monster>();
 		if (monster->type == eMonsterType::None)
 		{
 			continue;
 		}
 		
-		if (Active* active = entity.GetComponent<Active>(); 
-			not active)
+		Transform* monsterTransform = entity->GetComponent<Transform>();
+
+		const Entity* playerEntity = getEntity<PlayerTag>();
+		const Transform* playerTransform = playerEntity->GetComponent<Transform>();
+
+		const Point difference = playerTransform->position - monsterTransform->position;
+		monster->length = Math::GetVectorLength(difference);
+
+		if (monster->state != Monster::eState::Run)
 		{
 			continue;
 		}
 
-		Transform* monsterTransform = entity.GetComponent<Transform>();
-		//const Transform* playerTransform = mPlayer.GetComponent<Transform>();
+		Direction* direction = entity->GetComponent<Direction>();
+		direction->value = Math::NormalizeVector(difference);
 
-		//const Point difference = playerTransform->position - monsterTransform->position;
-		//monster->length = Math::GetVectorLength(difference);
+		const Point velocity = direction->value * monster->speed;
 
-		//if (monster->state != Monster::eState::Run)
-		//{
-		//	continue;
-		//}
+		// TODO: 플레이어 Knockback
+		//Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
+		//playerKnockback->direction = direction->value;
 
-		//Direction* direction = entity.GetComponent<Direction>();
-		//direction->value = Math::NormalizeVector(difference);
-
-		//const Point velocity = direction->value * monster->speed;
-
-		////Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
-		////playerKnockback->direction = direction->value;
-
-		//clampToTile(monsterTransform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
-		//monsterTransform->position += velocity * deltaTime;
-		//monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+		clampToTile(monsterTransform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
+		monsterTransform->position += velocity * deltaTime;
+		monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 	}
 }
 
 void MainScene::monsterHpBarMove()
 {
-	for (const Entity& monsterEntity : mMonsters)
+	const std::vector<Entity*> entities = getEntities<MonsterTag>();
+	for (const Entity* monsterEntity : entities)
 	{
-		if (not monsterEntity.HasComponent<Active>())
+		if (not monsterEntity->HasComponent<MonsterTag>())
 		{
 			continue;
 		}
 
-		if (const Active* active = monsterEntity.GetComponent<Active>();
-			not active)
-		{
-			continue;
-		}
-
-		const Monster* monster = monsterEntity.GetComponent<Monster>();
+		const Monster* monster = monsterEntity->GetComponent<Monster>();
 		if (monster->type == eMonsterType::Boss)
 		{
 			continue;
@@ -2667,13 +2629,13 @@ void MainScene::monsterHpBarMove()
 			continue;
 		}
 
-		const Hp* hp = monsterEntity.GetComponent<Hp>();
-		Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
+		const Hp* hp = monsterEntity->GetComponent<Hp>();
+		Entity* hpBarEntity = getEntities<MonsterHpBarTag>()[hp->hpBarIndex];
 
-		Active* hpBarActive = hpBarEntity.GetComponent<Active>();
+		Active* hpBarActive = hpBarEntity->GetComponent<Active>();
 		hpBarActive->isValue = true;
 
-		setDirectionOffset(&hpBarEntity, monsterEntity);
+		setDirectionOffset(hpBarEntity, *monsterEntity);
 	}
 }
 
@@ -2693,15 +2655,16 @@ void MainScene::setDirectionOffset(Entity* setEntity, const Entity& entity)
 
 void MainScene::monsterSetClip()
 {
-	for (Entity& entity : mMonsters)
+	const std::vector<Entity*> entities = getEntities<MonsterTag>();
+	for (Entity* entity : entities)
 	{
-		if (not entity.HasComponent<Monster>())
+		if (not entity->HasComponent<MonsterTag>())
 		{
 			continue;
 		}
 
-		Animator* animator = entity.GetComponent<Animator>();
-		Monster* monster = entity.GetComponent<Monster>();
+		Animator* animator = entity->GetComponent<Animator>();
+		Monster* monster = entity->GetComponent<Monster>();
 
 		if (animator == nullptr)
 		{
@@ -2992,7 +2955,8 @@ void MainScene::spawnBoss()
 	monster->attackDistance = 1.0f;
 	monster->clips = mBossClips.data();
 
-	const Transform* cameraTransform = mMainCamera.GetComponent<Transform>();
+	const Entity* cameraEntity = getEntity<Camera>();
+	const Transform* cameraTransform = cameraEntity->GetComponent<Transform>();
 
 	Transform* transform = mBoss.GetComponent<Transform>();
 	transform->position = { .x = cameraTransform->position.x - 120.0f, .y = cameraTransform->position.y + Constant::Get().GetHalfHeight() - 200.0f};
@@ -3263,14 +3227,15 @@ void MainScene::BossSetClip()
 
 void MainScene::initializeAttackCollider()
 {
-	for (Entity& monsterEntity : mMonsters)
+	const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+	for (Entity* monsterEntity : monsterEntities)
 	{
-		if (not monsterEntity.HasComponent<Monster>())
+		if (not monsterEntity->HasComponent<MonsterTag>())
 		{
 			continue;
 		}
 
-		const Monster* monster = monsterEntity.GetComponent<Monster>();
+		const Monster* monster = monsterEntity->GetComponent<Monster>();
 		if (monster->attackType != eAttackType::Melee)
 		{
 			continue;
@@ -3281,8 +3246,8 @@ void MainScene::initializeAttackCollider()
 			continue;
 		}
 
-		const Animator* anim = monsterEntity.GetComponent<Animator>();
-		const ColliderState* state = monsterEntity.GetComponent<ColliderState>();
+		const Animator* anim = monsterEntity->GetComponent<Animator>();
+		const ColliderState* state = monsterEntity->GetComponent<ColliderState>();
 
 		if (anim->frameIndex == state->attackAnimIndex)
 		{
@@ -3292,7 +3257,7 @@ void MainScene::initializeAttackCollider()
 				if (attackEntity.HasComponent<MonsterAttackCollider>())
 				{
 					if (MonsterAttackCollider* attackCollider = attackEntity.GetComponent<MonsterAttackCollider>(); 
-						attackCollider->ownerEntity == &monsterEntity)
+						attackCollider->ownerEntity == monsterEntity)
 					{
 						alreadyHasCollider = true;
 						break;
@@ -3324,7 +3289,7 @@ void MainScene::initializeAttackCollider()
 			targetAttackEntity->SetRemoved(false);
 
 			MonsterAttackCollider attack{};
-			attack.ownerEntity = &monsterEntity;
+			attack.ownerEntity = monsterEntity;
 			targetAttackEntity->AddComponent(attack);
 
 			Damage damage{};
@@ -3419,14 +3384,15 @@ void MainScene::attackCollision()
 
 void MainScene::removeAttackCollider()
 {
-	for (const Entity& monsterEntity : mMonsters)
+	const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+	for (const Entity* monsterEntity : monsterEntities)
 	{
-		if (not monsterEntity.HasComponent<Monster>())
+		if (not monsterEntity->HasComponent<Monster>())
 		{
 			continue;
 		}
 
-		const Monster* monster = monsterEntity.GetComponent<Monster>();
+		const Monster* monster = monsterEntity->GetComponent<Monster>();
 		if (monster->attackType != eAttackType::Melee)
 		{
 			continue;
@@ -3437,8 +3403,8 @@ void MainScene::removeAttackCollider()
 			continue;
 		}
 
-		const Animator* anim = monsterEntity.GetComponent<Animator>();
-		const ColliderState* state = monsterEntity.GetComponent<ColliderState>();
+		const Animator* anim = monsterEntity->GetComponent<Animator>();
+		const ColliderState* state = monsterEntity->GetComponent<ColliderState>();
 
 		if (anim->frameIndex == state->attackAnimIndex + 2)
 		{
@@ -3456,7 +3422,7 @@ void MainScene::removeAttackCollider()
 				}
 
 				MonsterAttackCollider* attackCollider = attackEntity.GetComponent<MonsterAttackCollider>();
-				if (attackCollider->ownerEntity != &monsterEntity)
+				if (attackCollider->ownerEntity != monsterEntity)
 				{
 					continue;
 				}
@@ -3473,14 +3439,15 @@ void MainScene::removeAttackCollider()
 template<uint32_t T>
 void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const eMonsterType type, const uint32_t spawnFrameIndex)
 {
-	for (const Entity& monsterEntity : mMonsters)
+	const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+	for (const Entity* monsterEntity : monsterEntities)
 	{
-		if (not monsterEntity.HasComponent<Monster>())
+		if (not monsterEntity->HasComponent<MonsterTag>())
 		{
 			continue;
 		}
 
-		Monster* monster = monsterEntity.GetComponent<Monster>();
+		Monster* monster = monsterEntity->GetComponent<Monster>();
 		if (monster->type != type)
 		{
 			continue;
@@ -3491,18 +3458,15 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 			continue;
 		}
 
-		if (const Active* monsterActive = monsterEntity.GetComponent<Active>();
-			not monsterActive)
-		{
-			continue;
-		}
-
-		const Animator* monsterAnim = monsterEntity.GetComponent<Animator>();
+		const Animator* monsterAnim = monsterEntity->GetComponent<Animator>();
 		if (monsterAnim->clipState != &mArcherClips[uint32_t(Monster::eState::Attack)])
 		{
 			continue;
 		}
 			
+		const Entity* playerEntity = getEntity<PlayerTag>();
+		const Transform* playerTransform = playerEntity->GetComponent<Transform>();
+
 		if (monsterAnim->frameIndex == spawnFrameIndex)
 		{
 			for (const Entity& rangeEntity : entities)
@@ -3530,20 +3494,19 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 					constexpr float monsterLeftOffsetX = 20.0f;
 					constexpr float monsterRightOffsetX = 80.0f;
 
-					//const Transform* playerTransform = mPlayer.GetComponent<Transform>();
-					const Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
-					//const Point diff = playerTransform->position - monsterTransform->position;
+					const Transform* monsterTransform = monsterEntity->GetComponent<Transform>();
+					const Point diff = playerTransform->position - monsterTransform->position;
 
-					//const Direction* monsterDirection = monsterEntity.GetComponent<Direction>();
-					//Direction* rangedDirection = rangeEntity.GetComponent<Direction>();
-					//rangedDirection->value = monsterDirection->value;
+					const Direction* monsterDirection = monsterEntity->GetComponent<Direction>();
+					Direction* rangedDirection = rangeEntity.GetComponent<Direction>();
+					rangedDirection->value = monsterDirection->value;
 
 					Transform* transform = rangeEntity.GetComponent<Transform>();
-					//transform->flip = (rangedDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+					transform->flip = (rangedDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 
-					//float degree = std::atan2(rangedDirection->value.y, rangedDirection->value.x) * (180.0f / 3.141592f);
-					//degree -= 90.0f;
-					//transform->angle = -degree;
+					float degree = std::atan2(rangedDirection->value.y, rangedDirection->value.x) * (180.0f / 3.141592f);
+					degree -= 90.0f;
+					transform->angle = -degree;
 
 					// Offset을 계산한다.
 					if (transform->flip == SDL_FLIP_NONE)
@@ -3572,13 +3535,13 @@ void MainScene::spawnRangedAttack(const std::array<Entity, T>& entities, const e
 		}
 		else if (monsterAnim->frameIndex >= monsterAnim->clipState->GetLastFrameIndex() - 1)
 		{
-			Transform* monsterTransform = monsterEntity.GetComponent<Transform>();
-			//const Transform* playerTransform = mPlayer.GetComponent<Transform>();
-
-			//const Point difference = playerTransform->position - monsterTransform->position;
-			//Direction* direction = monsterEntity.GetComponent<Direction>();
-			//direction->value = Math::NormalizeVector(difference);
-			//monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+			Transform* monsterTransform = monsterEntity->GetComponent<Transform>();
+			const Point difference = playerTransform->position - monsterTransform->position;
+			
+			Direction* direction = monsterEntity->GetComponent<Direction>();
+			direction->value = Math::NormalizeVector(difference);
+			
+			monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 
 			monster->isRangeAttack = false;
 		}
@@ -3638,31 +3601,34 @@ void MainScene::rangedAttackMove(const std::array<Entity, T>& entities, const fl
 
 void MainScene::playerToMonsterCollision()
 {
-	for (const Entity& monsterEntity : mMonsters)
+	const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+	for (const Entity* monsterEntity : monsterEntities)
 	{
-		if (monsterEntity.HasComponent<Active>())
+		if (monsterEntity->HasComponent<Active>())
 		{
-			if (const Active* active = monsterEntity.GetComponent<Active>();
+			if (const Active* active = monsterEntity->GetComponent<Active>();
 				not active->isValue)
 			{
 				continue;
 			}
 		}
 
-		const Entity& playerEntity = getPlayerEntity();
-		if (isCollisionEnter(playerEntity, monsterEntity))
+		const Entity* playerEntity = getEntity<PlayerTag>();
+		if (isCollisionEnter(*playerEntity, *monsterEntity))
 		{
-			Hp* playerHp = playerEntity.GetComponent<Hp>();
-			const Damage* damage = monsterEntity.GetComponent<Damage>();
+			Hp* playerHp = playerEntity->GetComponent<Hp>();
+			const Damage* damage = monsterEntity->GetComponent<Damage>();
 			playerHp->value -= damage->value;
 
 			std::string name = "Hp: " + std::to_string(playerHp->value);
-			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+
+			const Entity* hpEntity = getEntity<PlayerHpBarTag>();
+			Label* playerLabel = hpEntity->GetComponent<Label>();
 			playerLabel->text = name;
 		}
-		else if (isCollisionStay(playerEntity, monsterEntity))
+		else if (isCollisionStay(*playerEntity, *monsterEntity))
 		{
-			Knockback* knockback = playerEntity.GetComponent<Knockback>();
+			Knockback* knockback = playerEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
 		}
 	}
@@ -3681,20 +3647,21 @@ void MainScene::playerToMonsterAttackCollision()
 			}
 		}
 
-		const Entity& playerEntity = getPlayerEntity();
-		if (isCollisionEnter(playerEntity, attack))
+		const Entity* playerEntity = getEntity<PlayerTag>();
+		if (isCollisionEnter(*playerEntity, attack))
 		{
-			Hp* playerHp = playerEntity.GetComponent<Hp>();
+			Hp* playerHp = playerEntity->GetComponent<Hp>();
 			const Damage* damage = attack.GetComponent<Damage>();
 			playerHp->value -= damage->value;
 
 			std::string name = "Hp: " + std::to_string(playerHp->value);
-			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+			const Entity* hpEntity = getEntity<PlayerHpBarTag>();
+			Label* playerLabel = hpEntity->GetComponent<Label>();
 			playerLabel->text = name;
 		}
-		else if (isCollisionStay(playerEntity, attack))
+		else if (isCollisionStay(*playerEntity, attack))
 		{
-			Knockback* knockback = playerEntity.GetComponent<Knockback>();
+			Knockback* knockback = playerEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
 		}
 	}
@@ -3713,20 +3680,21 @@ void MainScene::playerToArrowCollision()
 			}
 		}
 
-		const Entity& playerEntity = getPlayerEntity();
-		if (isCollisionEnter(playerEntity, arrowEntity))
+		const Entity* playerEntity = getEntity<PlayerTag>();
+		if (isCollisionEnter(*playerEntity, arrowEntity))
 		{
-			Hp* playerHp = playerEntity.GetComponent<Hp>();
+			Hp* playerHp = playerEntity->GetComponent<Hp>();
 			const Damage* damage = arrowEntity.GetComponent<Damage>();
 			playerHp->value -= damage->value;
 
 			std::string name = "Hp: " + std::to_string(playerHp->value);
-			Label* playerLabel = mUIPlayerHp.GetComponent<Label>();
+			const Entity* hpEntity = getEntity<PlayerHpBarTag>();
+			Label* playerLabel = hpEntity->GetComponent<Label>();
 			playerLabel->text = name;
 		}
-		else if (isCollisionStay(playerEntity, arrowEntity))
+		else if (isCollisionStay(*playerEntity, arrowEntity))
 		{
-			Knockback* knockback = playerEntity.GetComponent<Knockback>();
+			Knockback* knockback = playerEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
 
 			Active* active = arrowEntity.GetComponent<Active>();
@@ -3740,34 +3708,36 @@ void MainScene::playerToArrowCollision()
 
 void MainScene::swordSkillToMonsterCollision()
 {
-	for (Entity& monsterEntity : mMonsters)
+	const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+	for (Entity* monsterEntity : monsterEntities)
 	{
-		if (const Active* active = monsterEntity.GetComponent<Active>();
+		if (const Active* active = monsterEntity->GetComponent<Active>();
 			not active)
 		{
 			continue;
 		}
 
-		const Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
+		const Monster::eState monsterState = monsterEntity->GetComponent<Monster>()->state;
 		if (monsterState != Monster::eState::Run
 			and monsterState != Monster::eState::Attack)
 		{
 			continue;
 		}
 
-		if (isCollisionEnter(mSwordSkill, monsterEntity))
+		const Entity* swordSkillEntity = getEntity<SwordSkillTag>();
+		if (isCollisionEnter(*swordSkillEntity, *monsterEntity))
 		{
-			Hp* hp = monsterEntity.GetComponent<Hp>();
+			Hp* hp = monsterEntity->GetComponent<Hp>();
 			hp->value -= 1;
 			
-			const Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
-			Transform* hpBarTransform = hpBarEntity.GetComponent<Transform>();
+			const Entity* hpBarEntity = getEntities<MonsterHpBarTag>()[hp->hpBarIndex];
+			Transform* hpBarTransform = hpBarEntity->GetComponent<Transform>();
 			const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
 			hpBarTransform->scale.width = currentWidth;
 		}
-		else if (isCollisionStay(mSwordSkill, monsterEntity))
+		else if (isCollisionStay(*swordSkillEntity, *monsterEntity))
 		{
-			Knockback* knockback = monsterEntity.GetComponent<Knockback>();
+			Knockback* knockback = monsterEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
 		}
 	}
@@ -3775,39 +3745,41 @@ void MainScene::swordSkillToMonsterCollision()
 
 void MainScene::bulletToMonsterCollision()
 {
-	for (Entity& monsterEntity : mMonsters)
+	const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+	for (Entity* monsterEntity : monsterEntities)
 	{
-		if (const Active* active = monsterEntity.GetComponent<Active>();
+		if (const Active* active = monsterEntity->GetComponent<Active>();
 			not active)
 		{
 			continue;
 		}
 
-		const Monster::eState monsterState = monsterEntity.GetComponent<Monster>()->state;
+		const Monster::eState monsterState = monsterEntity->GetComponent<Monster>()->state;
 		if (monsterState != Monster::eState::Run
 			and monsterState != Monster::eState::Attack)
 		{
 			continue;
 		}
 
-		for (Entity& bulletEntity : mBullets)
+		const std::vector<Entity*> entities = getEntities<BulletTag>();
+		for (Entity* bulletEntity : entities)
 		{
-			if (isCollisionEnter(bulletEntity, monsterEntity))
+			if (isCollisionEnter(*bulletEntity, *monsterEntity))
 			{
-				Hp* hp = monsterEntity.GetComponent<Hp>();
+				Hp* hp = monsterEntity->GetComponent<Hp>();
 				hp->value -= 2;
 
-				const Entity& hpBarEntity = mMonsterHpBars[hp->hpBarIndex];
-				Transform* transform = hpBarEntity.GetComponent<Transform>();
+				const Entity* hpBarEntity = getEntities<MonsterHpBarTag>()[hp->hpBarIndex];
+				Transform* transform = hpBarEntity->GetComponent<Transform>();
 				const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
 				transform->scale.width = currentWidth;
 
-				Active* bulletActive = bulletEntity.GetComponent<Active>();
+				Active* bulletActive = bulletEntity->GetComponent<Active>();
 				bulletActive->isValue = false;
 			}
-			else if (isCollisionStay(bulletEntity, monsterEntity))
+			else if (isCollisionStay(*bulletEntity, *monsterEntity))
 			{
-				Knockback* knockback = monsterEntity.GetComponent<Knockback>();
+				Knockback* knockback = monsterEntity->GetComponent<Knockback>();
 				knockback->isValue = true;
 			}
 		}
@@ -3840,9 +3812,27 @@ Point MainScene::getScreenMousePosition() const
 		.y = centerOffset.y - mousePosition.y
 	};
 
-	screenPosition += mMainCamera.GetComponent<Transform>()->position;
+	const Entity* entity = getEntity<Camera>();
+	screenPosition += entity->GetComponent<Transform>()->position;
 
 	return screenPosition;
+}
+
+void MainScene::initializeGun()
+{
+	constexpr Point CENTER = { .x = -0.25f,.y = -0.25f };
+
+	const Entity* entity = getEntity<GunTag>();
+
+	Transform* transform = entity->GetComponent<Transform>();
+	transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+	transform->center = CENTER;
+
+	Image* image = entity->GetComponent<Image>();
+	image->texture = &mGunTexture;
+
+	Active* active = entity->GetComponent<Active>();
+	active->isValue = true;
 }
 
 void MainScene::updateGun()
@@ -3853,11 +3843,12 @@ void MainScene::updateGun()
 		.y = 14.0f
 	};
 
-	Transform* transform = mGun.GetComponent<Transform>();
-	Direction* direction = mGun.GetComponent<Direction>();
+	const Entity* entity = getEntity<GunTag>();
+	Transform* transform = entity->GetComponent<Transform>();
+	Direction* direction = entity->GetComponent<Direction>();
 
-	const Entity& playerEntity = getPlayerEntity();
-	const Transform* playerTransform = playerEntity.GetComponent<Transform>();
+	const Entity* playerEntity = getEntity<PlayerTag>();
+	const Transform* playerTransform = playerEntity->GetComponent<Transform>();
 	const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
 
 	float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
@@ -3882,17 +3873,32 @@ void MainScene::updateGun()
 	direction->value = mouseToPlayer / length;
 }
 
-void MainScene::updateSword()
+void MainScene::initializeSword()
 {
-	if (const Active* active = mSwordSkill.GetComponent<Active>();
+	const Entity* entity = getEntity<SwordTag>();
+
+	Transform* transform = entity->GetComponent<Transform>();
+	transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+	transform->center = { .x = 0.0f,.y = -0.33f };
+
+	Animator* animator = entity->GetComponent<Animator>();
+	animator->clipState = &mSwordClip;
+
+	Active* active = entity->GetComponent<Active>();
+	active->isValue = true;
+}
+
+void MainScene::updateSword()
+{		
+	const Entity* swordSkillEntity = getEntity<SwordSkillTag>();
+	if (const Active* active = swordSkillEntity->GetComponent<Active>();
 		active->isValue)
 	{
 		return;
 	}
 
-	const Entity& playerEntity = getPlayerEntity();
-
-	const Transform* playerTransform = playerEntity.GetComponent<Transform>();
+	const Entity* playerEntity = getEntity<PlayerTag>();
+	const Transform* playerTransform = playerEntity->GetComponent<Transform>();
 
 	const Point offset =
 	{
@@ -3900,9 +3906,10 @@ void MainScene::updateSword()
 		.y = 80.0f
 	};
 
+	const Entity* entity = getEntity<SwordTag>();
 	const Point targetPosition = offset + playerTransform->position;
 
-	Transform* transform = mSword.GetComponent<Transform>();
+	Transform* transform = entity->GetComponent<Transform>();
 	transform->position = Math::LerpVector(transform->position, targetPosition, 0.16f);
 	transform->angle = 0.0f;
 }
@@ -3912,18 +3919,20 @@ void MainScene::updateSwordStates(const float deltaTime)
 	constexpr float ANGLE_OFFSET = 90.0f;
 	constexpr float END_SWING_TIME = 1.0f;
 
-	if (const Active* active = mSwordSkill.GetComponent<Active>();
+	const Entity* swordSkillEntity = getEntity<SwordSkillTag>();
+	if (const Active* active = swordSkillEntity->GetComponent<Active>();
 		not active->isValue)
 	{
 		return;
 	}
 
-	const Direction* skillDirection = mSwordSkill.GetComponent<Direction>();
+	const Entity* entity = getEntity<SwordTag>();
+
+	const Transform* skillTransform = swordSkillEntity->GetComponent<Transform>();
+	const Direction* skillDirection = swordSkillEntity->GetComponent<Direction>();
 	const Point velocity = skillDirection->value * 20.0f;
 
-	const Transform* skillTransform = mSwordSkill.GetComponent<Transform>();
-
-	Transform* transform = mSword.GetComponent<Transform>();
+	Transform* transform = entity->GetComponent<Transform>();
 	transform->angle = skillTransform->angle;	
 	transform->position = skillTransform->position + velocity * deltaTime;
 	transform->flip = (skillDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;

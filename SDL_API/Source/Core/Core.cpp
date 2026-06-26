@@ -90,7 +90,7 @@ void Core::updateAnimator(const EntityWorld* entityWorld, const float deltaTime)
 {
 	assert(entityWorld != nullptr);
 
-	for (const Entity* entity : entityWorld->GetAllEntites())
+	for (const Entity* entity : entityWorld->GetAllEntities())
 	{
 		if (not entity->HasComponent<Animator>())
 		{
@@ -156,7 +156,7 @@ Transform* Core::cameraSystem(const EntityWorld* entityWorld)
 
 	Transform* cameraTransform = nullptr;
 
-	for (const Entity* entity : entityWorld->GetAllEntites())
+	for (const Entity* entity : entityWorld->GetAllEntities())
 	{
 		if (not entity->HasComponent<Camera>()
 			or not entity->GetComponent<Transform>())
@@ -251,7 +251,7 @@ void Core::drawImages(const EntityWorld* entityWorld)
 {
 	assert(entityWorld != nullptr);
 
-	for (const Entity* entity : entityWorld->GetAllEntites())
+	for (const Entity* entity : entityWorld->GetAllEntities())
 	{
 		if (not entity->HasComponent<Transform>()
 			or not entity->HasComponent<Image>())
@@ -303,7 +303,7 @@ void Core::colliderImageRenderingSystem(const EntityWorld* entityWorld)
 {
 	assert(entityWorld != nullptr);
 
-	for (const Entity* entity : entityWorld->GetAllEntites())
+	for (const Entity* entity : entityWorld->GetAllEntities())
 	{
 		if (not entity->HasComponent<Transform>()
 			or not entity->HasComponent<CollisionDetector>()
@@ -397,11 +397,11 @@ void Core::labelRenderingSystem(const EntityWorld* entityWorld)
 {
 	assert(entityWorld != nullptr);
 
-	for (const Entity* entity : entityWorld->GetAllEntites())
+	for (const Entity* entity : entityWorld->GetAllEntities())
 	{
 		if (not entity->HasComponent<Transform>()
 			or not entity->HasComponent<Label>()
-			or entity->HasComponent<UI>())
+			or entity->HasComponent<Ui>())
 		{
 			continue;
 		}
@@ -470,11 +470,11 @@ void Core::labelUIRenderingSystem(const EntityWorld* entityWorld)
 {
 	assert(entityWorld != nullptr);
 
-	for (const Entity* entity : entityWorld->GetAllEntites())
+	for (const Entity* entity : entityWorld->GetAllEntities())
 	{
 		if (not entity->HasComponent<Transform>()
 			or not entity->HasComponent<Label>()
-			or not entity->HasComponent<UI>())
+			or not entity->HasComponent<Ui>())
 		{
 			continue;
 		}

@@ -24,6 +24,7 @@ public:
 
 public:
 	EntityWorld* GetEntityWorld();
+	const EntityWorld* GetEntityWorld() const;
 	void _SetHelper(Helper* helper);
 
 private:
