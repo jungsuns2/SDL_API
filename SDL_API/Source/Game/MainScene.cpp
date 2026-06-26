@@ -217,7 +217,6 @@ bool MainScene::Update(const float deltaTime)
 	// 몬스터를 업데이트한다.
 	updateMonsterStates(deltaTime);
 	updateHpMonsters(deltaTime);
-	//monsterDeadParticle(deltaTime);
 	monsterMove(deltaTime);
 	monsterHpBarMove();
 
@@ -1198,36 +1197,6 @@ void MainScene::initialize_Entity()
 
 			DebugColor debugColor{};
 			entity.AddComponent(debugColor);
-
-			GetEntityWorld()->AddEntity(&entity);
-		}
-	}
-
-	// Dead Particle
-	{
-		constexpr float SIZE = 0.3f;
-
-		for (Entity& entity : mDeadParticle)
-		{
-			Particle particle{};
-			entity.AddComponent(particle);
-
-			Direction direction{};
-			entity.AddComponent(direction);
-
-			Transform transform{};
-			transform.scale = { .width = SIZE, .height = SIZE };
-			entity.AddComponent(transform);
-
-			Image image{};
-			image.texture = &mRedRectTexture;
-			entity.AddComponent(image);
-
-			Active active{};
-			entity.AddComponent(active);
-
-			Color color{};
-			entity.AddComponent(color);
 
 			GetEntityWorld()->AddEntity(&entity);
 		}
@@ -2499,71 +2468,6 @@ void MainScene::updateHpMonsters(const float deltaTime)
 	}
 }
 
-void MainScene::monsterDeadParticle(const float deltaTime)
-{
-	//for (Entity& entity : mMonsters)
-	//{
-	//	if (entity.GetComponent<Active>()->isValue)
-	//	{
-	//		continue;
-	//	}
-
-	//	Hp* hp = entity.GetComponent<Hp>();
-	//	if (hp->value > 0.0f)
-	//	{
-	//		continue;
-	//	}
-
-	//	Monster* monster = entity.GetComponent<Monster>();
-	//	Transform* monsterTransform = entity.GetComponent<Transform>();
-
-	//	for (Entity& deadParticle : mDeadParticle)
-	//	{
-	//		Particle* particle = deadParticle.GetComponent<Particle>();
-	//		Direction* direction = deadParticle.GetComponent<Direction>();
-	//		Point& dir = direction->value;
-
-	//		dir = getScreenMousePosition() - monsterTransform->position;
-	//		dir = Math::NormalizeVector(dir);
-	//		dir = Math::RotatePoint(dir, getRandom(-60.0f, 60.0f));
-
-	//		Transform* transform = deadParticle.GetComponent<Transform>();
-	//		transform->position = monsterTransform->position;
-
-	//		Active* active = entity.GetComponent<Active>();
-	//		active->isValue = true;
-	//	}
-
-	//	Active* monsterActive = entity.GetComponent<Active>();
-	//	monsterActive->isValue = false;
-	//}
-
-	//for (Entity& entity : mDeadParticle)
-	//{
-	//	Active* active = entity.GetComponent<Active>();
-	//	if (not active)
-	//	{
-	//		continue;
-	//	}
-
-	//	DamageTimer* damage = entity.GetComponent<DamageTimer>();
-	//	damage->deadTimer -= deltaTime;
-
-	//	if (damage->deadTimer <= 0.0f)
-	//	{
-	//		active->isValue = false;
-	//		continue;
-	//	}
-
-	//	Transform* transform = entity.GetComponent<Transform>();
-	//	Particle* particle = entity.GetComponent<Particle>();
-	//	Direction* direction = entity.GetComponent<Direction>();
-
-	//	constexpr float SPPED = 3.0f;
-	//	transform->position += direction->value * SPPED * deltaTime;
-	//}
-}
-
 void MainScene::monsterMove(const float deltaTime)
 {
 	const std::vector<Entity*> entities = getEntities<MonsterTag>();
@@ -3262,7 +3166,6 @@ void MainScene::spawnAttackCollider()
 				}
 			}
 
-			// TODO: 특정 몬스터의 개수에 맞게 만들기
 			Entity* attackAntity = GetEntityWorld()->AddEntity(new Entity());
 
 			MonsterAttackCollider attack{};

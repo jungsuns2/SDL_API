@@ -144,7 +144,6 @@ private:
 	void spawnMonster(const SpawnMonsterDesc& desc);
 	void updateMonsterStates(const float deltaTime);
 	void updateHpMonsters(const float deltaTime);
-	void monsterDeadParticle(const float deltaTime);
 	void monsterMove(const float deltaTime);
 	void monsterHpBarMove();
 	void setDirectionOffset(Entity* setEntity, const Entity& entity0);
@@ -203,7 +202,6 @@ private:
 
 	Entity** mTiles = nullptr;
 
-	std::array<Entity, 6> mDeadParticle{};
 	std::array<Entity, 40> mArrows{};
 
 	Entity mBoss{};
