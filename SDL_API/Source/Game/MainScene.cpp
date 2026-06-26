@@ -1995,17 +1995,6 @@ void MainScene::spawnMonsterGroup(const MonsterGroup& group)
 		.x = getRandom(tileRect.left + TILE_OFFSET.x, tileRect.right - TILE_OFFSET.x),
 		.y = getRandom(tileRect.bottom + TILE_OFFSET.y, tileRect.top - TILE_OFFSET.y)
 	};
-
-	if (group.type == eMonsterType::Boss)
-	{
-		initializeBossBack();
-		initializeBoss();
-		initializeBossHands();
-
-		spawnBoss();
-
-		return;
-	}
 	
 	for (uint32_t i = 0; i < group.count; ++i)
 	{
@@ -2039,52 +2028,57 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 {
 	constexpr float SIZE = 0.7f;
 
+	constexpr Point BACK_OFFSET = { .x = 20.0f, .y = 70.0f };
+	constexpr Point LEFT_OFFSET = { .x = 20.0f, .y = 0.0f };
+	constexpr Point RIGHT_OFFSET = { .x = 200.0f, .y = 120.0f };
+
 	const uint32_t index = desc.index;
 	const eMonsterType type = desc.type;
 	const float x = desc.x;
 	const float y = desc.y;
 
-	// 몬스터 컴포넌트를 추가합니다.
+	if (type == eMonsterType::Boss)
 	{
-		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-		newEntity->AddComponent(MonsterTag());
-		newEntity->AddComponent(Monster());
-		newEntity->AddComponent(AttackPattern());
-		newEntity->AddComponent(Transform());
-		newEntity->AddComponent(Image());
-		newEntity->AddComponent(Animator());
-		newEntity->AddComponent(Direction());
-		newEntity->AddComponent(DamageTimer());
-		newEntity->AddComponent(Hp());
-		newEntity->AddComponent(Damage());
-		newEntity->AddComponent(Active());
-		newEntity->AddComponent(Color());
-		newEntity->AddComponent(BoxCollider());
-		newEntity->AddComponent(ColliderState());
-		newEntity->AddComponent(DebugActive());
-		newEntity->AddComponent(DebugColor());
-		newEntity->AddComponent(Knockback());
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(BossBackTag());
+		entity->AddComponent(Transform());
+		entity->AddComponent(Image());
+		entity->AddComponent(Animator());
+		entity->AddComponent(Direction());
+		entity->AddComponent(Active());
+
+		Transform* transform = entity->GetComponent<Transform>();
+		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+
+		Animator* animator = entity->GetComponent<Animator>();
+		animator->clipState = &mBossBackClip;
+	}
+
+	// 몬스터 컴포넌트를 추가합니다.
+	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+	{
+		entity->AddComponent(Monster());
+		entity->AddComponent(AttackPattern());
+		entity->AddComponent(Transform());
+		entity->AddComponent(Image());
+		entity->AddComponent(Animator());
+		entity->AddComponent(Direction());
+		entity->AddComponent(DamageTimer());
+		entity->AddComponent(Hp());
+		entity->AddComponent(Damage());
+		entity->AddComponent(Active());
+		entity->AddComponent(Color());
+		entity->AddComponent(BoxCollider());
+		entity->AddComponent(ColliderState());
+		entity->AddComponent(DebugActive());
+		entity->AddComponent(DebugColor());
+		entity->AddComponent(Knockback());
 
 		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
 		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-		newEntity->AddComponent(collider);
-	}
-
-	// 체력바 컴포넌트를 추가합니다.
-	{
-		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-		newEntity->AddComponent(MonsterHpBarTag());
-		newEntity->AddComponent(Transform());
-		newEntity->AddComponent(Offset());
-		newEntity->AddComponent(Image());
-		newEntity->AddComponent(Active());
+		entity->AddComponent(collider);
 	}
 	
-	const std::vector<Entity*> entities = getEntities<MonsterTag>();
-	const Entity* entity = entities[index];
-	MonsterTag* tag = entity->GetComponent<MonsterTag>();
-	assert(tag and "이미 사용되고 있는 몬스터입니다.");
-
 	Monster* monster = entity->GetComponent<Monster>();
 	monster->type = type;
 	monster->state = Monster::eState::Spawn;
@@ -2109,17 +2103,20 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	
 	AttackPattern* pattern = entity->GetComponent<AttackPattern>();
 	
-	// 몬스터 체력바
-	const std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
-	const Entity* hpBarEntity = hpBarEntities[index];
-	MonsterHpBarTag* hpBarTag = hpBarEntity->GetComponent<MonsterHpBarTag>();
-	assert(hpBarTag and "이미 사용되고 있는 체력바입니다.");
-
+	// 체력바 컴포넌트를 추가합니다.
+	Entity* hpBarEntity = GetEntityWorld()->AddEntity(new Entity());
+	hpBarEntity->AddComponent(MonsterHpBarTag());
+	hpBarEntity->AddComponent(Transform());
+	hpBarEntity->AddComponent(Offset());
+	hpBarEntity->AddComponent(Image());
+	hpBarEntity->AddComponent(Active());
+	
 	Offset* hpBarOffset = hpBarEntity->GetComponent<Offset>();
-
+	
 	switch (monster->type)
 	{
 	case eMonsterType::BigWhite:
+		entity->AddComponent(MonsterTag());
 		hp->max = 2;
 		damage->value = 1;
 		pattern->type = AttackPattern::eType::None;
@@ -2154,6 +2151,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		break;
 
 	case eMonsterType::SkelDog:
+		entity->AddComponent(MonsterTag());
 		hp->max = 1;
 		damage->value = 1;
 		pattern->type = AttackPattern::eType::Rush;
@@ -2168,6 +2166,72 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		colliderState->attackOffset = { .x = 0.0f, .y = -5.0f };
 		colliderState->attackAnimIndex = 5;
 		hpBarOffset->value = { .x = 0.0f, .y = -40.0f };
+		break;
+
+	case eMonsterType::Boss:
+	{
+		entity->AddComponent(BossTag());
+		
+		const Entity* cameraEntity = getEntity<Camera>();
+		const Transform* cameraTransform = cameraEntity->GetComponent<Transform>();
+		transform->position = { .x = cameraTransform->position.x - 120.0f, .y = cameraTransform->position.y + Constant::Get().GetHalfHeight() - 200.0f };
+
+		hp->max = 100;
+		damage->value = 10;
+		pattern->type = AttackPattern::eType::CycloneFan;
+		pattern->timer = 0.0f;
+		monster->attackType = eAttackType::Range;
+		monster->speed = 300.0f;
+		monster->attackDistance = 1.0f;
+		monster->clips = mBossClips.data();
+		colliderState->runSize = { .width = 55.0f, .height = 75.0f };
+		colliderState->runOffset = { .x = 18.0f, .y = -15.0f };
+		colliderState->attackSize = { .width = 1.0f, .height = 1.0f };
+		colliderState->attackOffset = { .x = 0.0f, .y = 0.0f };
+		colliderState->attackAnimIndex = 5;
+
+		const Entity* backEntity = getEntity<BossBackTag>();
+		Transform* backTransform = backEntity->GetComponent<Transform>();
+		backTransform->position = { .x = transform->position.x + BACK_OFFSET.x, .y = transform->position.y - BACK_OFFSET.y };
+
+		// Left Hand
+		{
+			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+			entity->AddComponent(BossLeftHandTag());
+			entity->AddComponent(Transform());
+			entity->AddComponent(Image());
+			entity->AddComponent(Animator());
+			entity->AddComponent(Direction());
+			entity->AddComponent(Active());
+
+			Transform* transform = entity->GetComponent<Transform>();
+			transform->position.x = LEFT_OFFSET.x - Constant::Get().GetHalfWidth();
+			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+
+			Animator* animator = entity->GetComponent<Animator>();
+			animator->clipState = &mBossLeftHandClip;
+		}
+
+		// Right Hand
+		{
+			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+			entity->AddComponent(BossRightHandTag());
+			entity->AddComponent(Transform());
+			entity->AddComponent(Image());
+			entity->AddComponent(Animator());
+			entity->AddComponent(Direction());
+			entity->AddComponent(Active());
+
+			Transform* transform = entity->GetComponent<Transform>();
+			transform->position.x = Constant::Get().GetHalfWidth() - RIGHT_OFFSET.x;
+			transform->position.y = Constant::Get().GetHalfHeight() - RIGHT_OFFSET.y;
+			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+			transform->flip = SDL_FLIP_HORIZONTAL;
+
+			Animator* animator = entity->GetComponent<Animator>();
+			animator->clipState = &mBossRightHandClip;
+		}
+	}
 		break;
 
 	default:
@@ -2480,18 +2544,8 @@ void MainScene::monsterHpBarMove()
 	const std::vector<Entity*> entities = getEntities<MonsterTag>();
 	for (const Entity* monsterEntity : entities)
 	{
-		if (not monsterEntity->HasComponent<MonsterTag>())
-		{
-			continue;
-		}
-
-		const Monster* monster = monsterEntity->GetComponent<Monster>();
-		if (monster->type == eMonsterType::Boss)
-		{
-			continue;
-		}
-
-		if (monster->state == Monster::eState::Spawn
+		if (const Monster* monster = monsterEntity->GetComponent<Monster>(); 
+			monster->state == Monster::eState::Spawn
 			or monster->state == Monster::eState::Dead)
 		{
 			continue;
@@ -2570,143 +2624,6 @@ void MainScene::monsterSetClip()
 			break;
 		}
 	}
-}
-
-void MainScene::initializeBoss()
-{
-	Boss boss{};
-	mBoss.AddComponent(boss);
-
-	Monster monster{};
-	mBoss.AddComponent(monster);
-
-	AttackPattern pattern{};
-	mBoss.AddComponent(pattern);
-
-	Transform transform{};
-	mBoss.AddComponent(transform);
-
-	Image image{};
-	mBoss.AddComponent(image);
-
-	Animator animator{};
-	animator.clipState = &mBossBackClip;
-	mBoss.AddComponent(animator);
-
-	Direction direction{};
-	mBoss.AddComponent(direction);
-
-	DamageTimer damageTimer{};
-	mBoss.AddComponent(damageTimer);
-
-	Hp hp{};
-	mBoss.AddComponent(hp);
-
-	Damage damage{};
-	mBoss.AddComponent(damage);
-
-	Active active{};
-	mBoss.AddComponent(active);
-
-	Color color{};
-	mBoss.AddComponent(color);
-
-	CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Monster));
-	collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-	mBoss.AddComponent(collider);
-
-	BoxCollider boxCollider{};
-	mBoss.AddComponent(boxCollider);
-
-	ColliderState colliderState{};
-	mBoss.AddComponent(colliderState);
-
-	DebugActive debugActive{};
-	mBoss.AddComponent(debugActive);
-
-	DebugColor debugColor{};
-	mBoss.AddComponent(debugColor);
-
-	Knockback knockback{};
-	mBoss.AddComponent(knockback);
-
-	GetEntityWorld()->AddEntity(&mBoss);
-}
-
-void MainScene::initializeBossHands()
-{
-	constexpr Point LEFT_OFFSET = { .x = 20.0f, .y = 0.0f };
-	constexpr Point RIGHT_OFFSET = { .x = 200.0f, .y = 120.0f };
-
-	// Left
-	{
-		Transform transform{};
-		transform.position.x = LEFT_OFFSET.x - Constant::Get().GetHalfWidth();
-		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-		mBossLeftHand.AddComponent(transform);
-
-		Image image{};
-		mBossLeftHand.AddComponent(image);
-
-		Animator animator{};
-		animator.clipState = &mBossLeftHandClip;
-		mBossLeftHand.AddComponent(animator);
-
-		Direction direction{};
-		mBossLeftHand.AddComponent(direction);
-
-		Active active{};
-		mBossLeftHand.AddComponent(active);
-
-		GetEntityWorld()->AddEntity(&mBossLeftHand);
-	}
-
-	// Right
-	{
-		Transform transform{};
-		transform.position.x = Constant::Get().GetHalfWidth() - RIGHT_OFFSET.x;
-		transform.position.y = Constant::Get().GetHalfHeight() - RIGHT_OFFSET.y;
-		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-		transform.flip = SDL_FLIP_HORIZONTAL;
-		mBossRightHand.AddComponent(transform);
-
-		Image image{};
-		mBossRightHand.AddComponent(image);
-
-		Animator animator{};
-		animator.clipState = &mBossRightHandClip;
-		mBossRightHand.AddComponent(animator);
-
-		Direction direction{};
-		mBossRightHand.AddComponent(direction);
-
-		Active active{};
-		mBossRightHand.AddComponent(active);
-
-		GetEntityWorld()->AddEntity(&mBossRightHand);
-	}
-}
-
-void MainScene::initializeBossBack()
-{	
-	Transform transform{};
-	transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-	mBossBack.AddComponent(transform);
-
-	Image image{};
-	mBossBack.AddComponent(image);
-
-	Animator animator{};
-	animator.clipState = &mBossBackClip;
-	mBossBack.AddComponent(animator);
-
-	Direction direction{};
-	mBossBack.AddComponent(direction);
-
-	Active active{};
-	mBossBack.AddComponent(active);
-
-	GetEntityWorld()->AddEntity(&mBossBack);
 }
 
 void MainScene::initializeCycloneFan()
@@ -2790,7 +2707,8 @@ void MainScene::spawnCycloneFan(const float deltaTime)
 			Active* active = entity.GetComponent<Active>();
 			active->isValue = true;
 
-			const Point bossPosition = mBoss.GetComponent<Transform>()->position;
+			const Entity* bossEntity = getEntity<BossTag>();
+			const Point bossPosition = bossEntity->GetComponent<Transform>()->position;
 
 			RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
 			rangedAttack->isFiring = true;
@@ -2808,90 +2726,23 @@ void MainScene::spawnCycloneFan(const float deltaTime)
 	}
 }
 
-void MainScene::spawnBoss()
-{
-	constexpr float SIZE = 0.7f;
-	constexpr Point BACK_OFFSET = { .x = 20.0f, .y = 70.0f };
-
-	Monster* monster = mBoss.GetComponent<Monster>();
-	monster->type = eMonsterType::Boss;
-	monster->state = Monster::eState::Spawn;
-	monster->attackType = eAttackType::Range;
-	monster->speed = 300.0f;
-	monster->attackDistance = 1.0f;
-	monster->clips = mBossClips.data();
-
-	const Entity* cameraEntity = getEntity<Camera>();
-	const Transform* cameraTransform = cameraEntity->GetComponent<Transform>();
-
-	Transform* transform = mBoss.GetComponent<Transform>();
-	transform->position = { .x = cameraTransform->position.x - 120.0f, .y = cameraTransform->position.y + Constant::Get().GetHalfHeight() - 200.0f};
-	transform->scale = { .width = SIZE, .height = SIZE };
-
-	Transform* backTransform = mBossBack.GetComponent<Transform>();
-	backTransform->position = { .x = transform->position.x + BACK_OFFSET.x, .y = transform->position.y - BACK_OFFSET.y };
-
-	Active* active = mBoss.GetComponent<Active>();
-	active->isValue = true;
-
-	Hp* hp = mBoss.GetComponent<Hp>();
-	hp->max = 100;
-	hp->value = hp->max;
-
-	Damage* damage = mBoss.GetComponent<Damage>();
-	damage->value = 10;
-
-	Animator* anim = mBoss.GetComponent<Animator>();
-	anim->frameIndex = 0;
-	anim->elapsedTime = 0.0f;
-
-	AttackPattern* pattern = mBoss.GetComponent<AttackPattern>();
-	pattern->type = AttackPattern::eType::CycloneFan;
-	pattern->timer = 0.0f;
-
-	ColliderState* colliderState = mBoss.GetComponent<ColliderState>();
-	colliderState->runSize = { .width = 55.0f, .height = 75.0f };
-	colliderState->runOffset = { .x = 18.0f, .y = -15.0f };
-	colliderState->attackSize = { .width = 1.0f, .height = 1.0f };
-	colliderState->attackOffset = { .x = 0.0f, .y = 0.0f };
-	colliderState->attackAnimIndex = 5;
-
-	BoxCollider* boxCollider = mBoss.GetComponent<BoxCollider>();
-	boxCollider->size = { .width = SIZE, .height = SIZE };
-	boxCollider->offset = { .x = 0.0f, .y = 0.0f };
-
-	DamageTimer* damageTimer = mBoss.GetComponent<DamageTimer>();
-	damageTimer->deadTimer = 0.0f;
-
-	// HpBar
-	{
-		// TODO: HpBar 초기화 하고 주석 풀기
-		//Active* active = mBossHpBar.GetComponent<Active>();
-		//active->isValue = false;
-
-		//Transform* transform = mBossHpBar.GetComponent<Transform>();
-		//const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
-		//transform->scale = { .width = currentWidth, .height = 0.2f };
-	}
-}
-
 void MainScene::updateBossStates(const float deltaTime)
 {
 	constexpr float BOSS_ATTACKTIME = 2.0f;
-
-	if (not mBoss.HasComponent<Boss>())
+	
+	const Entity* entity = getEntity<BossTag>();
+	if (entity == nullptr)
 	{
 		return;
 	}
 
-	const ColliderState* colliderState = mBoss.GetComponent<ColliderState>();
-	const Direction* direction = mBoss.GetComponent<Direction>();
+	const ColliderState* colliderState = entity->GetComponent<ColliderState>();
+	const Direction* direction = entity->GetComponent<Direction>();
 
-	BoxCollider* boxCollider = mBoss.GetComponent<BoxCollider>();
+	BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
+	AttackPattern* pattern = entity->GetComponent<AttackPattern>();
 
-	AttackPattern* pattern = mBoss.GetComponent<AttackPattern>();
-
-	Monster* monster = mBoss.GetComponent<Monster>();
+	Monster* monster = entity->GetComponent<Monster>();
 	switch (monster->state)
 	{
 	case Monster::eState::Spawn:
@@ -2899,19 +2750,24 @@ void MainScene::updateBossStates(const float deltaTime)
 		monster->spawnBlinkTimer += deltaTime;
 		if (monster->spawnBlinkTimer >= 0.5f)
 		{
-			Transform* monsterTransform = mBoss.GetComponent<Transform>();
+			Transform* monsterTransform = entity->GetComponent<Transform>();
 			monsterTransform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 			
 			monster->state = Monster::eState::Idle;
 
-			Active* leftActive = mBossLeftHand.GetComponent<Active>();
-			Active* rightActive = mBossRightHand.GetComponent<Active>();
-			Active* backActive = mBossBack.GetComponent<Active>();
+			const Entity* leftHandEntity = getEntity<BossLeftHandTag>();
+			Active* leftActive = leftHandEntity->GetComponent<Active>();
 			leftActive->isValue = true;
+
+			const Entity* rightHandEntity = getEntity<BossRightHandTag>();
+			Active* rightActive = rightHandEntity->GetComponent<Active>();
 			rightActive->isValue = true;
+
+			const Entity* backEntity = getEntity<BossBackTag>();
+			Active* backActive = backEntity->GetComponent<Active>();
 			backActive->isValue = true;
 			
-			Active* active = mBoss.GetComponent<Active>();
+			Active* active = entity->GetComponent<Active>();
 			active->isValue = true;
 
 			monster->spawnBlinkTimer = 0.0f;
@@ -2925,7 +2781,7 @@ void MainScene::updateBossStates(const float deltaTime)
 		boxCollider->offset = colliderState->runOffset;
 		boxCollider->size = colliderState->runSize;
 
-		AttackPattern* pattern = mBoss.GetComponent<AttackPattern>();
+		AttackPattern* pattern = entity->GetComponent<AttackPattern>();
 		pattern->timer += deltaTime;
 		if (pattern->timer >= BOSS_ATTACKTIME)
 		{
@@ -2947,7 +2803,7 @@ void MainScene::updateBossStates(const float deltaTime)
 		}
 
 		const Clip& attackClip = monster->clips[uint32_t(Monster::eState::Attack)];
-		const Animator& anim = *mBoss.GetComponent<Animator>();
+		const Animator& anim = *entity->GetComponent<Animator>();
 		if (anim.clipState == &attackClip
 			and anim.frameIndex >= attackClip.GetLastFrameIndex() - 1)
 		{
@@ -2978,7 +2834,7 @@ void MainScene::updateBossStates(const float deltaTime)
 		break;
 	}
 	
-	Hp* hp = mBoss.GetComponent<Hp>();
+	Hp* hp = entity->GetComponent<Hp>();
 	if (hp->value > 0)
 	{
 		return;
@@ -2986,18 +2842,10 @@ void MainScene::updateBossStates(const float deltaTime)
 
 	hp->value = 0;
 
-	Active* active = mBoss.GetComponent<Active>();
+	Active* active = entity->GetComponent<Active>();
 	active->isValue = false;
 
 	monster->state = Monster::eState::Dead;
-
-	if (mBossHpBar.HasComponent<Active>())
-	{
-		if (Active* hpBarActive = mBossHpBar.GetComponent<Active>())
-		{
-			hpBarActive->isValue = false;
-		}
-	}
 }
 
 void MainScene::updateCycloneFan(const float deltaTime)
@@ -3051,13 +2899,14 @@ void MainScene::updateCycloneFan(const float deltaTime)
 
 void MainScene::BossSetClip()
 {	
-	if (not mBoss.HasComponent<Boss>())
+	const Entity* entity = getEntity<BossTag>();
+	if (entity == nullptr)
 	{
 		return;
 	}
 
-	Animator* animator = mBoss.GetComponent<Animator>();
-	Monster* monster = mBoss.GetComponent<Monster>();
+	Animator* animator = entity->GetComponent<Animator>();
+	Monster* monster = entity->GetComponent<Monster>();
 
 	switch (monster->state)
 	{

@@ -156,17 +156,12 @@ private:
 	void setDirectionOffset(Entity* setEntity, const Entity& entity0);
 	void monsterSetClip();
 
-	void initializeBossBack();
-	void initializeBoss();
-	void spawnBoss();
 	void updateBossStates(const float deltaTime);
 	void BossSetClip();
 
 	void initializeCycloneFan();
 	void spawnCycloneFan(const float deltaTime);
 	void updateCycloneFan(const float deltaTime);
-
-	void initializeBossHands();
 
 	void spawnAttackCollider();
 	void updateAttackCollision();
@@ -208,11 +203,6 @@ private:
 
 	Entity** mTiles = nullptr;
 
-	Entity mBoss{};
-	Entity mBossHpBar{};
-	Entity mBossLeftHand{};
-	Entity mBossRightHand{};
-	Entity mBossBack{};
 	std::array<Entity, 10> mCycloneFans{};
 	
 	Font mUIFont{};

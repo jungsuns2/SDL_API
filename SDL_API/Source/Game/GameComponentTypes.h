@@ -84,6 +84,30 @@ struct MonsterTag : public Component
 	MonsterTag() : Component(&_ID) {}
 };
 
+struct BossTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossTag() : Component(&_ID) {}
+};
+
+struct BossBackTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossBackTag() : Component(&_ID) {}
+};
+
+struct BossLeftHandTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossLeftHandTag() : Component(&_ID) {}
+};
+
+struct BossRightHandTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossRightHandTag() : Component(&_ID) {}
+};
+
 struct MonsterHpBarTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
@@ -289,12 +313,6 @@ struct Shadow : public Component
 	Shadow() : Component(&_ID) {}
 
 	float timer = 0.0f;
-};
-
-struct Boss : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	Boss() : Component(&_ID) {}
 };
 
 struct CycloneFan : public Component
