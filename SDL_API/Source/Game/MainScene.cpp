@@ -234,7 +234,7 @@ bool MainScene::Update(const float deltaTime)
 	monsterHpBarMove();
 
 	// 원거리 몬스터의 공격을 초기화와 업데이트한다.
-	spawnRangedAttack<MonsterArrowTag>
+ 	spawnRangedAttack<MonsterArrowTag>
 	(
 		SpawnRangeAttackDesc
 		{
@@ -1811,7 +1811,7 @@ void MainScene::spawnBullets(const float deltaTime)
 		active->isValue = true;
 
 		RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
-		rangedAttack->distance = 300.0f;
+		rangedAttack->distance = 200.0f;
 		rangedAttack->startPosition = gunTransform->position;
 
 		Transform* transform = newEntity->GetComponent<Transform>();
@@ -1866,27 +1866,20 @@ void MainScene::updateBulletStates(const float deltaTime)
 		}
 	}
 
-	const std::vector<Entity*> entities = getEntities<BulletTag>();
-	for (Entity* entity : entities)
+	for (const std::vector<Entity*> entities = getEntities<BulletTag>(); 
+		Entity* entity : entities)
 	{
-		if (const Active* active = entity->GetComponent<Active>();
-			not active->isValue)
+		if (entity == nullptr)
 		{
 			continue;
 		}
 
-		RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
-		if (not rangedAttack->isFiring)
-		{
-			continue;
-		}
+		const RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
 
 		Transform* transform = entity->GetComponent<Transform>();
 		if (Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
 		{
-			Active* active = entity->GetComponent<Active>();
-			active->isValue = false;
-			rangedAttack->isFiring = false;
+			entity->SetRemove();
 		}
 	}
 }
@@ -2048,6 +2041,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		break;
 
 	case eMonsterType::Archer:
+		entity->AddComponent(MonsterTag());
 		hp->max = 3;
 		damage->value = 2;
 		pattern->type = AttackPattern::eType::None;
@@ -2154,6 +2148,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	}
 
 	Animator* anim = entity->GetComponent<Animator>();
+	anim->clipState = monster->clips;
 	anim->frameIndex = 0;
 	anim->elapsedTime = 0.0f;
 
@@ -2167,7 +2162,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		Image* image = hpBarEntity->GetComponent<Image>();
 		image->texture = &mRedRectTexture;
 
-		Active* hpBarActive = hpBarEntity->GetComponent<Active>();
+ 		Active* hpBarActive = hpBarEntity->GetComponent<Active>();
 		hpBarActive->isValue = false;
 
 		Transform* hpBartransform = hpBarEntity->GetComponent<Transform>();
@@ -2181,12 +2176,7 @@ void MainScene::updateMonsterStates(const float deltaTime)
 	const std::vector<Entity*> entities = getEntities<MonsterTag>();
 	for (Entity* entity : entities)
 	{
-		if (not entity->HasComponent<MonsterTag>())
-		{
-			continue;
-		}
-
-		if (not entity->GetComponent<Active>()->isValue)
+		if (entity == nullptr)
 		{
 			continue;
 		}
@@ -2490,11 +2480,11 @@ void MainScene::setDirectionOffset(Entity* setEntity, const Entity& entity)
 }
 
 void MainScene::monsterSetClip()
-{
-	const std::vector<Entity*> entities = getEntities<MonsterTag>();
-	for (Entity* entity : entities)
+{	
+	for (const std::vector<Entity*> entities = getEntities<MonsterTag>(); 
+		Entity* entity : entities)
 	{
-		if (not entity->HasComponent<MonsterTag>())
+		if (entity == nullptr)
 		{
 			continue;
 		}
@@ -2593,7 +2583,6 @@ void MainScene::spawnWingBullet(const float wingOffsetAngle, const uint32_t inde
 	const Point bossPosition = bossEntity->GetComponent<Transform>()->position;
 	RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
 	rangedAttack->distance = 600.0f;
-	rangedAttack->isFiring = true;
 	rangedAttack->startPosition = bossPosition;
 
 	Transform* transform = entity->GetComponent<Transform>();
@@ -3013,10 +3002,10 @@ void MainScene::spawnRangedAttack(const SpawnRangeAttackDesc& desc)
 	Texture* texture = desc.texture;
 	const uint32_t spawnFrameIndex = desc.spawnFrameIndex;
 
-	for (const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+	for (const auto monsterEntities = getEntities<MonsterTag>();
 		const Entity* monsterEntity : monsterEntities)
 	{
-		if (not monsterEntity->HasComponent<MonsterTag>())
+		if (monsterEntity == nullptr)
 		{
 			continue;
 		}
@@ -3064,7 +3053,6 @@ void MainScene::spawnRangedAttack(const SpawnRangeAttackDesc& desc)
 
 				RangedAttack* rangedAttack = arrowEntity->GetComponent<RangedAttack>();
 				rangedAttack->distance = monster->attackDistance;
-				rangedAttack->isFiring = true;
 
 				const Direction* monsterDirection = monsterEntity->GetComponent<Direction>();
 				Direction* direction = arrowEntity->GetComponent<Direction>();
@@ -3154,22 +3142,15 @@ void MainScene::rangedAttackState()
 	for (const auto entities = getEntities<T>();
 		Entity* entity : entities)
 	{
-		if (Active* active = entity->GetComponent<Active>();
-			not active->isValue)
+		if (entity == nullptr)
 		{
 			continue;
 		}
 
-		RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
-		if (not rangedAttack->isFiring)
-		{
-			continue;
-		}
-
+		const RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
 		Transform* transform = entity->GetComponent<Transform>();
 		if (Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
 		{
-			rangedAttack->isFiring = false;
 			entity->SetRemove();
 		}
 	}
@@ -3180,8 +3161,7 @@ void MainScene::rangedAttackMove(const float speed, const float deltaTime)
 	for (const auto entities = getEntities<MonsterRangedAttackTag>();
 		Entity* entity : entities)
 	{
-		if (Active* active = entity->GetComponent<Active>(); 
-			not active->isValue)
+		if (entity == nullptr)
 		{
 			continue;
 		}
@@ -3294,11 +3274,7 @@ void MainScene::playerToArrowCollision()
 			Knockback* knockback = playerEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
 
-			Active* active = arrowEntity->GetComponent<Active>();
-			active->isValue = false;
-
-			RangedAttack* arrow = arrowEntity->GetComponent<RangedAttack>();
-			arrow->isFiring = false;
+			arrowEntity->SetRemove();
 		}
 	}
 }
@@ -3321,7 +3297,7 @@ void MainScene::swordSkillToMonsterCollision()
 			continue;
 		}
 
-		const Entity* swordSkillEntity = getEntity<SwordSkillTag>();
+		Entity* swordSkillEntity = getEntity<SwordSkillTag>();
 		if (isCollisionEnter(*swordSkillEntity, *monsterEntity))
 		{
 			Hp* hp = monsterEntity->GetComponent<Hp>();
@@ -3336,6 +3312,8 @@ void MainScene::swordSkillToMonsterCollision()
 		{
 			Knockback* knockback = monsterEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
+
+			swordSkillEntity->SetRemove();
 		}
 	}
 }
@@ -3370,14 +3348,13 @@ void MainScene::bulletToMonsterCollision()
 				Transform* transform = hpBarEntity->GetComponent<Transform>();
 				const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
 				transform->scale.width = currentWidth;
-
-				Active* bulletActive = bulletEntity->GetComponent<Active>();
-				bulletActive->isValue = false;
 			}
 			else if (isCollisionStay(*bulletEntity, *monsterEntity))
 			{
 				Knockback* knockback = monsterEntity->GetComponent<Knockback>();
 				knockback->isValue = true;
+
+				bulletEntity->SetRemove();
 			}
 		}
 	}

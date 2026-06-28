@@ -72,16 +72,16 @@ constexpr std::array<MonsterGroup, 12> MONSTER_GROUPS =
 		.count = 1,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
-	}, 
+	},
 
 	// 5
-	MonsterGroup
+		MonsterGroup
 	{
 		.type = eMonsterType::Archer,
-		.count = 2, 
+		.count = 2,
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
-	}, 
+	},
 
 	// 6
 	MonsterGroup

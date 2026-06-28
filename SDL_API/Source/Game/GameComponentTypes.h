@@ -241,7 +241,6 @@ struct RangedAttack : public Component
 	RangedAttack() : Component(&_ID) {}
 
 	float distance = 0.0f;
-	bool isFiring = false;
 	Point startPosition = { .x = 0.0f, .y = 0.0f };
 };
 
