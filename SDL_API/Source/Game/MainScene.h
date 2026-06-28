@@ -159,7 +159,6 @@ private:
 	void updateBossStates(const float deltaTime);
 	void BossSetClip();
 
-	void initializeCycloneFan();
 	void spawnCycloneFan(const float deltaTime);
 	void updateCycloneFan(const float deltaTime);
 
@@ -202,8 +201,6 @@ private:
 	uint32_t mMonsterIndex = 0;
 
 	Entity** mTiles = nullptr;
-
-	std::array<Entity, 10> mCycloneFans{};
 	
 	Font mUIFont{};
 	Font mHpFont{};

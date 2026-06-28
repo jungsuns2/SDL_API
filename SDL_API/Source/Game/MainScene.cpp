@@ -1159,8 +1159,8 @@ void MainScene::initialize_Entity()
 
 		mCycloneFanState =
 		{
-			.maxCount = uint32_t(mCycloneFans.size()),
-			.count = uint32_t(mCycloneFans.size()),
+			.maxCount = 10,
+			.count = 10,
 			.fireTimer = 0.0f,
 			.reloadTimer = 0.0f
 		};
@@ -2627,60 +2627,45 @@ void MainScene::monsterSetClip()
 	}
 }
 
-void MainScene::initializeCycloneFan()
+void MainScene::spawnCycloneFan(const float deltaTime)
 {
-	for (Entity& entity : mCycloneFans)
+	constexpr float FIRE_TIME = 0.12f;
+
+	for (uint32_t i = 0; i < mCycloneFanState.maxCount; ++i)
 	{
-		if (entity.HasComponent<CycloneFan>())
+		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+		if (newEntity->HasComponent<CycloneFanTag>())
 		{
 			continue;
 		}
 
-		CycloneFan fan{};
-		entity.AddComponent(fan);
+		newEntity->AddComponent(CycloneFanTag());
+		newEntity->AddComponent(RangedAttack());
+		newEntity->AddComponent(Direction());
+		newEntity->AddComponent(Transform());
+		newEntity->AddComponent(Image());
+		newEntity->AddComponent(Animator());
+		newEntity->AddComponent(Active());
+		newEntity->AddComponent(BoxCollider());
+		newEntity->AddComponent(DebugActive());
+		newEntity->AddComponent(DebugColor());
 
-		RangedAttack rangedAttack{};
-		rangedAttack.distance = 600.0f;
-		entity.AddComponent(rangedAttack);
+		RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
+		rangedAttack->distance = 600.0f;
 
-		Direction direction{};
-		entity.AddComponent(direction);
+		Transform* transform = newEntity->GetComponent<Transform>();
+		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 
-		Transform transform{};
-		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-		entity.AddComponent(transform);
-
-		Image image{};
-		entity.AddComponent(image);
-
-		Animator animator{};
-		animator.clipState = &mCycloneFanClip;
-		entity.AddComponent(animator);
-
-		Active active{};
-		entity.AddComponent(active);
+		Animator* animator = newEntity->GetComponent<Animator>();
+		animator->clipState = &mCycloneFanClip;
 
 		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::CycloneFan));
 		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
-		entity.AddComponent(collider);
+		newEntity->AddComponent(collider);
 
-		BoxCollider boxCollider{};
-		boxCollider.size = { .width = float(mCycloneFanTextures[0].GetWidth()), .height = float(mCycloneFanTextures[0].GetHeight()) };
-		entity.AddComponent(boxCollider);
-
-		DebugActive debugActive{};
-		entity.AddComponent(debugActive);
-
-		DebugColor debugColor{};
-		entity.AddComponent(debugColor);
-
-		GetEntityWorld()->AddEntity(&entity);
+		BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
+		boxCollider->size = { .width = float(mCycloneFanTextures[0].GetWidth()), .height = float(mCycloneFanTextures[0].GetHeight()) };
 	}
-}
-
-void MainScene::spawnCycloneFan(const float deltaTime)
-{
-	constexpr float FIRE_TIME = 0.12f;
 
 	if (mCycloneFanState.count <= 0)
 	{
@@ -2690,14 +2675,15 @@ void MainScene::spawnCycloneFan(const float deltaTime)
 	mCycloneFanState.fireTimer += deltaTime;
 	if (mCycloneFanState.fireTimer >= FIRE_TIME)
 	{
-		for (Entity& entity : mCycloneFans)
+		for (auto entities = getEntities<CycloneFanTag>();
+			Entity* entity : entities)
 		{
-			if (entity.IsRemove())
+			if (entity->IsRemove())
 			{
 				continue;
 			}
 
-			if (const RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
+			if (const RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
 				rangedAttack->isFiring)
 			{
 				continue;
@@ -2705,23 +2691,24 @@ void MainScene::spawnCycloneFan(const float deltaTime)
 
 			--mCycloneFanState.count;
 
-			Active* active = entity.GetComponent<Active>();
+			Active* active = entity->GetComponent<Active>();
 			active->isValue = true;
 
 			const Entity* bossEntity = getEntity<BossTag>();
 			const Point bossPosition = bossEntity->GetComponent<Transform>()->position;
 
-			RangedAttack* rangedAttack = entity.GetComponent<RangedAttack>();
+			RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
 			rangedAttack->isFiring = true;
 			rangedAttack->startPosition = bossPosition;
 
-			Transform* transform = entity.GetComponent<Transform>();
+			Transform* transform = entity->GetComponent<Transform>();
 			transform->position = bossPosition;
 
-			Direction* direction = entity.GetComponent<Direction>();
+			Direction* direction = entity->GetComponent<Direction>();
 			direction->value.y = -1.0f;
 
 			mCycloneFanState.fireTimer = 0.0f;
+			
 			break;
 		}
 	}
@@ -2797,7 +2784,6 @@ void MainScene::updateBossStates(const float deltaTime)
 	{
 		if (pattern->type == AttackPattern::eType::CycloneFan)
 		{
-			initializeCycloneFan();
 			spawnCycloneFan(deltaTime);
 			updateCycloneFan(deltaTime);
 			break;
@@ -2863,28 +2849,30 @@ void MainScene::updateCycloneFan(const float deltaTime)
 		}
 	}
 
-	for (Entity& entity : mCycloneFans)
+	for (auto entities = getEntities<CycloneFanTag>();
+		Entity* entity : entities)
 	{
-		if (entity.IsRemove())
+		if (entity->IsRemove())
 		{
 			continue;
 		}
 
-		const Direction* direction = entity.GetComponent<Direction>();
+		const Direction* direction = entity->GetComponent<Direction>();
 		const Point velocity = direction->value * SPEED;
 
-		Transform* transform = entity.GetComponent<Transform>();
+		Transform* transform = entity->GetComponent<Transform>();
 		transform->position += velocity * deltaTime;
 	}
 
-	for (Entity& entity : mCycloneFans)
+	for (auto entities = getEntities<CycloneFanTag>();
+		Entity * entity : entities)
 	{
-		if (entity.IsRemove())
+		if (entity->IsRemove())
 		{
 			continue;
 		}
 
-		Transform* transform = entity.GetComponent<Transform>();
+		Transform* transform = entity->GetComponent<Transform>();
 		if (transform->position.x >= getCameraRect().left
 			and transform->position.x <= getCameraRect().right
 			and transform->position.y >= getCameraRect().bottom
@@ -2893,8 +2881,8 @@ void MainScene::updateCycloneFan(const float deltaTime)
 			continue;
 		}
 		
-		entity.SetRemove();
-		entity.RemovedComponent();
+		entity->SetRemove();
+		entity->RemovedComponent();
 	}
 }
 

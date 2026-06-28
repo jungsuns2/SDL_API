@@ -130,8 +130,12 @@ struct MonsterAttackColliderTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	MonsterAttackColliderTag() : Component(&_ID) {}
+};
 
-	Entity* ownerEntity = nullptr;
+struct CycloneFanTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	CycloneFanTag() : Component(&_ID) {}
 };
 
 struct Player : public Component
@@ -321,10 +325,4 @@ struct Shadow : public Component
 	Shadow() : Component(&_ID) {}
 
 	float timer = 0.0f;
-};
-
-struct CycloneFan : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	CycloneFan() : Component(&_ID) {}
 };
