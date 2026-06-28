@@ -126,6 +126,9 @@ private:
 	void initializeWaveStage();
 
 	void initializePlayer();
+	void playerDash(const Point& moveDirection, const float deltaTime);
+	void playerSpawnShadow(const float deltaTime);
+	void playerUpdateShadow(const float deltaTime);
 	void playerState(const float deltaTime);
 	void playerMove(const float deltaTime);
 	void playerSetClip();
@@ -142,7 +145,6 @@ private:
 	void updateSwordSkill(const float deltaTime);
 	void updateSwordSkillStates(const float deltaTime);
 
-	void initializeBullets();
 	void spawnBullets(const float deltaTime);
 	void updateBullets(const float deltaTime);
 	void updateBulletStates(const float deltaTime);
@@ -200,7 +202,7 @@ private:
 	GameWaveState mGameWaveState{};
 
 	uint32_t mMonsterIndex = 0;
-
+	int32_t mDashShadowOffsetIndex = -1;
 	Entity** mTiles = nullptr;
 	
 	Font mUIFont{};

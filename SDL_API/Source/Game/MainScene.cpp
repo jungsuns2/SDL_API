@@ -20,7 +20,14 @@ void MainScene::Initialize()
 	initializeSwordSkill();
 
 	initializeGun();
-	initializeBullets();
+	
+	mBulletState =
+	{
+		.maxCount = 30,
+		.count = 30,
+		.fireTimer = 0.0f,
+		.reloadTimer = 0.0f
+	};
 
 	initializeUI();
 
@@ -989,21 +996,6 @@ void MainScene::initialize_Entity()
 		entity->AddComponent(Color());
 	}
 
-	// Dash Shadow
-	{
-		for (std::array<Entity*, 5> entities{}; 
-			Entity* entity : entities)
-		{
-			Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-			newEntity->AddComponent(ShadowTag());
-			newEntity->AddComponent(Shadow());
-			newEntity->AddComponent(Transform());
-			newEntity->AddComponent(Image());
-			newEntity->AddComponent(Active());
-			newEntity->AddComponent(Color());
-		}
-	}
-
 	// Player Left Hand
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
@@ -1362,24 +1354,119 @@ void MainScene::initializePlayer()
 		Active* active = entity->GetComponent<Active>();
 		active->isValue = true;
 	}
+}
 
-	// Dash Shadow
+void MainScene::playerDash(const Point& moveDirection, const float deltaTime)
+{
+	constexpr float MAX_DASH_SPEED = 800.0f;
+	constexpr float DASH_ACC = 30.0f;
+
+	const Entity* playerEntity = getEntity<PlayerTag>();
+	Dash* dash = playerEntity->GetComponent<Dash>();
+
+	if (Input::Get().GetKeyDown(SDL_SCANCODE_SPACE))
 	{
-		const std::vector<Entity*> entities = getEntities<ShadowTag>();
-		for (auto& entity : entities)
+		if (dash->count > 0)
 		{
-			Transform* transform = entity->GetComponent<Transform>();
-			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-
-			Image* image = entity->GetComponent<Image>();
-			image->texture = &mPlayerShadowTexture;
-
-			Active* active = entity->GetComponent<Active>();
-			active->isValue = false;
-
-			Color* color = entity->GetComponent<Color>();
-			color->a = 0;
+			--dash->count;
+			dash->isValue = true;
 		}
+	}
+
+	if (dash->isValue)
+	{
+		dash->moveSpeed = std::min(dash->moveSpeed + DASH_ACC, MAX_DASH_SPEED);
+		const Point velocity = moveDirection * dash->moveSpeed * deltaTime;
+
+		if (dash->moveSpeed >= MAX_DASH_SPEED)
+		{
+			dash->moveSpeed = 0.0f;
+			dash->isValue = false;
+
+			dash->isShadow = true;
+		}
+
+		Transform* transform = playerEntity->GetComponent<Transform>();
+		transform->position += velocity;
+
+		dash->startPosition = transform->position;
+		dash->direction = moveDirection;
+	}
+
+	if (dash->count < dash->maxCount)
+	{
+		dash->countTimer += deltaTime;
+		if (dash->countTimer >= 2.0f)
+		{
+			++dash->count;
+			dash->countTimer = 0.0f;
+		}
+	}
+}
+
+void MainScene::playerSpawnShadow(const float deltaTime)
+{
+	constexpr Point OFFSET = { .x = 50.0f, .y = 30.0f };
+	constexpr Point INTERVAL_POSITION = { .x = 30.0f, .y = 30.0f };
+	
+	const Entity* playerEntity = getEntity<PlayerTag>();
+	Dash* dash = playerEntity->GetComponent<Dash>();
+	if (dash->isShadow)
+	{
+		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+		{
+			newEntity->AddComponent(ShadowTag());
+			newEntity->AddComponent(Shadow());
+			newEntity->AddComponent(Transform());
+			newEntity->AddComponent(Image());
+			newEntity->AddComponent(Active());
+			newEntity->AddComponent(Color());
+		}
+
+		Image* image = newEntity->GetComponent<Image>();
+		image->texture = &mPlayerShadowTexture;
+
+		Transform* shadowTransform = newEntity->GetComponent<Transform>();
+		shadowTransform->position = dash->startPosition;
+		shadowTransform->position.x -= dash->direction.x * (++mDashShadowOffsetIndex) * 5.0f;
+		shadowTransform->position.y += OFFSET.y - dash->direction.y * (++mDashShadowOffsetIndex) * 5.0f;
+		shadowTransform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		shadowTransform->flip = (dash->direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+		Active* active = newEntity->GetComponent<Active>();
+		active->isValue = true;
+
+		Color* color = newEntity->GetComponent<Color>();
+		color->a = 255;
+	}
+}
+
+void MainScene::playerUpdateShadow(const float deltaTime)
+{
+	constexpr float DASH_TIME = 0.08f;
+
+	for (const auto entities = getEntities<ShadowTag>();
+		Entity * entity : entities)
+	{
+		Color* color = entity->GetComponent<Color>();
+		const float currentAlpha = static_cast<float>(color->a) - (500.0f * deltaTime);
+		color->a = static_cast<uint8_t>(currentAlpha);
+
+		if (currentAlpha <= 0.0f)
+		{
+			mDashShadowOffsetIndex = -1;
+			color->a = 0;
+			entity->SetRemove();
+		}
+	}
+
+	const Entity* playerEntity = getEntity<PlayerTag>();
+	Dash* dash = playerEntity->GetComponent<Dash>();
+	dash->shadowTimer -= deltaTime;
+	if (dash->shadowTimer <= 0.0f)
+	{
+		dash->isShadow = false;
+		dash->shadowTimer = DASH_TIME;
 	}
 }
 
@@ -1475,116 +1562,12 @@ void MainScene::playerMove(const float deltaTime)
 		moveVelocity = moveDirection * velocity;
 	}
 
-	// Dash
-	{
-		constexpr float MAX_DASH_SPEED = 800.0f;
-		constexpr float DASH_ACC = 30.0f;
-
-		const Entity* playerEntity = getEntity<PlayerTag>();
-		Dash* dash = playerEntity->GetComponent<Dash>();
-
-		if (Input::Get().GetKeyDown(SDL_SCANCODE_SPACE))
-		{
-			if (dash->count > 0)
-			{
-				--dash->count;
-				dash->isValue = true;
-			}
-		}
-
-		if (dash->isValue)
-		{
-			dash->moveSpeed = std::min(dash->moveSpeed + DASH_ACC, MAX_DASH_SPEED);
-			const Point velocity = moveDirection * dash->moveSpeed * deltaTime;
-
-			if (dash->moveSpeed >= MAX_DASH_SPEED)
-			{
-				dash->moveSpeed = 0.0f;
-				dash->isValue = false;
-				
-				dash->isShadow = true;
-			}
-
-			Transform* transform = playerEntity->GetComponent<Transform>();
-			transform->position += velocity;
-
-			dash->startPosition = transform->position;
-			dash->direction = moveDirection;
-		}
-
-		if (dash->count < dash->maxCount)
-		{
-			dash->countTimer += deltaTime;
-			if (dash->countTimer >= 2.0f)
-			{
-				++dash->count;
-				dash->countTimer = 0.0f;
-			}
-		}		
-	}
+	playerDash(moveDirection, deltaTime);
 
 	// Dash Shadow
 	{
-		constexpr Point OFFSET = { .x = 50.0f, .y = 30.0f };
-		constexpr Point INTERVAL_POSITION = { .x = 30.0f, .y = 30.0f };
-
-		// 잔상 색을 업데이트한다.
-		std::vector<Entity*> entities = getEntities<ShadowTag>();
-		for (const Entity* entity : entities)
-		{
-			Active* active = entity->GetComponent<Active>();
-			if (not active->isValue)
-			{
-				continue;
-			}
-
-			Color* color = entity->GetComponent<Color>();
-			const float currentAlpha = static_cast<float>(color->a) - (500.0f * deltaTime);
-			color->a = static_cast<uint8_t>(currentAlpha);
-
-			if (currentAlpha <= 0.0f)
-			{
-				color->a = 0;
-				active->isValue = false;
-			}
-		}
-
-		// 잔상 좌표를 업데이트한다.
-		const Entity* playerEntity = getEntity<PlayerTag>();
-		Dash* dash = playerEntity->GetComponent<Dash>();
-		if (dash->isShadow)
-		{
-			std::vector<Entity*> shadowEntities = getEntities<ShadowTag>();
-			static int32_t index = -1;
-			for (Entity* shadowEntity : shadowEntities)
-			{
-				Active* active = shadowEntity->GetComponent<Active>();
-				Color* color = shadowEntity->GetComponent<Color>();
-
-				if (not active->isValue and color->a == 0)
-				{
-					active->isValue = true;
-					color->a = 255;
-
-					Transform* shadowTransform = shadowEntity->GetComponent<Transform>();
-					shadowTransform->position = dash->startPosition;
-					shadowTransform->position.x -= dash->direction.x * (++index) * 5.0f;
-					shadowTransform->position.y += OFFSET.y - dash->direction.y * (++index) * 5.0f;
-					shadowTransform->flip = (dash->direction.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
-
-					break;
-				}
-			}
-
-			dash->shadowTimer += deltaTime;
-			if (dash->shadowTimer >= 0.2f)
-			{
-				index = -1;
-
-				dash->isShadow = false;
-				dash->shadowTimer = 0.0f;
-			}
-		}		
+		playerSpawnShadow(deltaTime);
+		playerUpdateShadow(deltaTime);
 	}
 
 	// Knockback
@@ -1809,17 +1792,6 @@ void MainScene::updateSwordSkillStates(const float deltaTime)
 			effect->coolTime = SWING_COOLTIME;
 		}
 	}
-}
-
-void MainScene::initializeBullets()
-{
-	mBulletState =
-	{
-		.maxCount = 30,
-		.count = 30,
-		.fireTimer = 0.0f,
-		.reloadTimer = 0.0f
-	};
 }
 
 void MainScene::spawnBullets(const float deltaTime)
