@@ -94,6 +94,7 @@ bool MainScene::Update(const float deltaTime)
 	// Wave를 업데이트한다.
 	{
 		// 현재 웨이브 상태를 업데이트한다.
+		// 다음 웨이브를 위해 값을 초기화한다.
 		mGameWaveState.waveTimer -= deltaTime;
 		if (mGameWaveState.waveTimer <= 0.0f)
 		{
@@ -107,31 +108,30 @@ bool MainScene::Update(const float deltaTime)
 			mGameWaveState.remainingMonsterGroupSpawnTimer = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
 			mGameWaveState.labelShowElapsedTimer = 0.0f;
 
-			// 다음 웨이브를 위해 값을 초기화한다.
 			mMonsterIndex = 0;
 
+			// 몬스터를 갱신한다.
 			for (const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>(); 
-				const Entity* entity : monsterEntities)
+				Entity* entity : monsterEntities)
 			{
 				Monster* monster = entity->GetComponent<Monster>();
 				monster->state = Monster::eState::Dead;
 
-				Active* active = entity->GetComponent<Active>();
-				active->isValue = false;
+				entity->SetRemove();
 			}
 
+			// 몬스터 체력바를 갱신한다.
 			for (const std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
 				Entity* entity : hpBarEntities)
 			{
-				Active* active = entity->GetComponent<Active>();
-				active->isValue = false;
+				entity->SetRemove();
 			}
 
-			for (const std::array<Entity*, 5> entities{};
-				Entity* entity : entities)
+			// 몬스터 충돌체를 갱신한다.
+			for (const std::vector<Entity*> attackColliders = getEntities<MonsterAttackColliderTag>();
+			Entity* entity : attackColliders)
 			{
-				Active* active = entity->GetComponent<Active>();
-				active->isValue = false;
+				entity->SetRemove();
 			}
 
 			// 플레이어 총알을 갱신한다.
@@ -418,6 +418,7 @@ void MainScene::initialize_Resource()
 				.durationTime = 0.12f,
 				.center = IDLE_OFFSETS[index++]
 			};
+
 			mPlayerClips[uint32_t(Player::eState::Idle)].AddClip(frame);
 		}
 
@@ -1189,7 +1190,7 @@ void MainScene::input()
 			debugActive->isValue = mIsDebugActive;
 		}
 
-		for (const std::vector<Entity*> entities = getEntities<MonsterAttackCollider>();
+		for (const std::vector<Entity*> entities = getEntities<MonsterAttackColliderTag>();
 			Entity* attackEntity : entities)
 		{
 			if (not attackEntity->HasComponent<DebugActive>())
@@ -2966,7 +2967,7 @@ void MainScene::spawnAttackCollider()
 
 		if (anim->frameIndex == state->attackAnimIndex)
 		{
-			for (const std::vector<Entity*> entities = getEntities<MonsterAttackCollider>();
+			for (const std::vector<Entity*> entities = getEntities<MonsterAttackColliderTag>();
 				Entity* attackEntity : entities)
 			{
 				if (MonsterAttackCollider* attackCollider = attackEntity->GetComponent<MonsterAttackCollider>(); 
@@ -2982,6 +2983,7 @@ void MainScene::spawnAttackCollider()
 			attack.ownerEntity = monsterEntity;
 			attackAntity->AddComponent(attack);
 
+			attackAntity->AddComponent(MonsterAttackColliderTag());
 			attackAntity->AddComponent(Damage());
 			attackAntity->AddComponent(Transform());
 			attackAntity->AddComponent(Direction());
@@ -3002,7 +3004,7 @@ void MainScene::spawnAttackCollider()
 
 void MainScene::updateAttackCollision()
 {
-	for (const std::vector<Entity*> entities = getEntities<MonsterAttackCollider>();
+	for (const std::vector<Entity*> entities = getEntities<MonsterAttackColliderTag>();
 		Entity* attackEntity : entities)
 	{
 		if (not attackEntity->HasComponent<MonsterAttackCollider>())
@@ -3086,7 +3088,7 @@ void MainScene::removeAttackCollider()
 
 		if (anim->frameIndex == state->attackAnimIndex + 2)
 		{
-			for (const std::vector<Entity*> entities = getEntities<MonsterAttackCollider>(); 
+			for (const std::vector<Entity*> entities = getEntities<MonsterAttackColliderTag>();
 				Entity* attackEntity : entities)
 			{
 				if (not attackEntity->HasComponent<MonsterAttackCollider>())
@@ -3344,7 +3346,7 @@ void MainScene::playerToMonsterCollision()
 
 void MainScene::playerToMonsterAttackCollision()
 {
-	for (const std::vector<Entity*> entities = getEntities<MonsterAttackCollider>();
+	for (const std::vector<Entity*> entities = getEntities<MonsterAttackColliderTag>();
 		Entity * attackEntity : entities)
 	{
 		if (attackEntity->HasComponent<Active>())

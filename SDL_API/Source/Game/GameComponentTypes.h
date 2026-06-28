@@ -126,6 +126,14 @@ struct MonsterRangedAttackTag : public Component
 	MonsterRangedAttackTag() : Component(&_ID) {}
 };
 
+struct MonsterAttackColliderTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	MonsterAttackColliderTag() : Component(&_ID) {}
+
+	Entity* ownerEntity = nullptr;
+};
+
 struct Player : public Component
 {
 	enum class eState
