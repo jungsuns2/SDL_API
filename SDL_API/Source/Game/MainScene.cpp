@@ -17,10 +17,15 @@ void MainScene::Initialize()
 	initializePlayer();
 
 	initializeSword();
-	initializeSwordSkill();
 
 	initializeGun();
 	
+	mSwordSkillState =
+	{
+		.isSpawn = false,
+		.coolTimer = 0.0f
+	};
+
 	mBulletState =
 	{
 		.maxCount = 30,
@@ -1068,29 +1073,7 @@ void MainScene::initialize_Entity()
 	}
 
 	// Sword Skill
-	{
-		const float SIZE = 2.5f;
-
-		mSwordSkillClip.SetLoop(true);
-
-		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-		entity->AddComponent(SwordSkillTag());
-		entity->AddComponent(Effect());
-		entity->AddComponent(RangedAttack());
-		entity->AddComponent(Direction());
-		entity->AddComponent(Transform());
-		entity->AddComponent(Image());
-		entity->AddComponent(Animator());
-		entity->AddComponent(Active());
-		entity->AddComponent(Color());
-		entity->AddComponent(BoxCollider());
-		entity->AddComponent(DebugActive());
-		entity->AddComponent(DebugColor());
-
-		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::SwordSkill));
-		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-		entity->AddComponent(collider);
-	}
+	mSwordSkillClip.SetLoop(true);
 
 	// Bullet
 	{
@@ -1684,70 +1667,65 @@ void MainScene::playerSetClip()
 	
 }
 
-void MainScene::initializeSwordSkill()
-{
-	const float SIZE = 2.5f;
-
-	const Entity* entity = getEntity<SwordSkillTag>();
-
-	RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
-	rangedAttack->distance = 200.0f;
-
-	Transform* transform = entity->GetComponent<Transform>();
-	transform->scale = { .width = SIZE, .height = SIZE };
-
-	Animator* animator = entity->GetComponent<Animator>();
-	animator->clipState = &mSwordSkillClip;
-
-	BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
-	boxCollider->size = { .width = float(mSwordSkillTextures[5].GetWidth()), .height = float(mSwordSkillTextures[5].GetHeight()) };
-}
-
 void MainScene::spawnSwordSkill()
 {
-	const Entity* entity = getEntity<SwordSkillTag>();
-	Active* active = entity->GetComponent<Active>();
-
-	if (Effect* effect = entity->GetComponent<Effect>();
-		Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT)
-		and not active->isValue
-		and not effect->isDisabled)
+	if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT)
+		and not mSwordSkillState.isSpawn)
 	{
-		Animator* effectAnim = entity->GetComponent<Animator>();
+		mSwordSkillState.isSpawn = true;
+
+		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+		newEntity->AddComponent(SwordSkillTag());
+		newEntity->AddComponent(RangedAttack());
+		newEntity->AddComponent(Direction());
+		newEntity->AddComponent(Transform());
+		newEntity->AddComponent(Image());
+		newEntity->AddComponent(Animator());
+		newEntity->AddComponent(Active());
+		newEntity->AddComponent(Color());
+		newEntity->AddComponent(BoxCollider());
+		newEntity->AddComponent(DebugActive());
+		newEntity->AddComponent(DebugColor());
+
+		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::SwordSkill));
+		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
+		newEntity->AddComponent(collider);
+
+		Animator* effectAnim = newEntity->GetComponent<Animator>();
+		effectAnim->clipState = &mSwordSkillClip;
 		effectAnim->frameIndex = 0;
 		effectAnim->elapsedTime = 0.0f;
 
+		Active* active = newEntity->GetComponent<Active>();
 		active->isValue = true;
 
 		const Entity* playerEntity = getEntity<PlayerTag>();
 		const Transform* playerTransform = playerEntity->GetComponent<Transform>();
 
-		RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
+		RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
+		rangedAttack->distance = 300.0f;
 		rangedAttack->startPosition = playerTransform->position;
 
-		Transform* effectTransform = entity->GetComponent<Transform>();
-		effectTransform->position = playerTransform->position;
-
 		const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
-		Direction* effectDirection = entity->GetComponent<Direction>();
+		Direction* effectDirection = newEntity->GetComponent<Direction>();
 		effectDirection->value = Math::NormalizeVector(mouseToPlayer);
 
+		Transform* transform = newEntity->GetComponent<Transform>();
+		transform->position = playerTransform->position;
+		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 		float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
 		degree -= 90.0f;
-		effectTransform->angle = -degree;
-
-		effectTransform->flip = (effectDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+		transform->angle = -degree;
+		transform->flip = (effectDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 	}
 }
 
 void MainScene::updateSwordSkill(const float deltaTime)
 {
 	constexpr float SPEED = 900.0f;
-	constexpr float SWING_COOLTIME = 0.7f;
 
 	const Entity* entity = getEntity<SwordSkillTag>();
-	if (const Active* active = entity->GetComponent<Active>();
-		not active->isValue)
+	if (entity == nullptr)
 	{
 		return;
 	}
@@ -1763,34 +1741,27 @@ void MainScene::updateSwordSkillStates(const float deltaTime)
 {
 	constexpr float SWING_COOLTIME = 0.7f;
 
-	const Entity* entity = getEntity<SwordSkillTag>();
-	Effect* effect = entity->GetComponent<Effect>();
-	Active* active = entity->GetComponent<Active>();
-
-	if (active->isValue)
+	if (mSwordSkillState.isSpawn)
 	{
-		Transform* transform = entity->GetComponent<Transform>();
-		if (const RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
-			Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
+		mSwordSkillState.coolTimer -= deltaTime;
+		if (mSwordSkillState.coolTimer <= 0.0f)
 		{
-			Animator* effectAnim = entity->GetComponent<Animator>();
-			effectAnim->frameIndex = 0;
-			effectAnim->elapsedTime = 0.0f;
-
-			active->isValue = false;
-			effect->isDisabled = true;
-
-			effect->coolTime = SWING_COOLTIME;
+			mSwordSkillState.isSpawn = false;
+			mSwordSkillState.coolTimer = SWING_COOLTIME;
 		}
 	}
-	else
+
+	Entity* entity = getEntity<SwordSkillTag>();
+	if (entity == nullptr)
 	{
-		effect->coolTime -= deltaTime;
-		if (effect->coolTime <= 0.0f)
-		{
-			effect->isDisabled = false;
-			effect->coolTime = SWING_COOLTIME;
-		}
+		return;
+	}
+
+	Transform* transform = entity->GetComponent<Transform>();
+	if (const RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
+		Math::GetVectorLength(transform->position - rangedAttack->startPosition) >= rangedAttack->distance)
+	{
+		entity->SetRemove();
 	}
 }
 
@@ -3516,13 +3487,6 @@ void MainScene::initializeSword()
 
 void MainScene::updateSword()
 {		
-	const Entity* swordSkillEntity = getEntity<SwordSkillTag>();
-	if (const Active* active = swordSkillEntity->GetComponent<Active>();
-		active->isValue)
-	{
-		return;
-	}
-
 	const Entity* playerEntity = getEntity<PlayerTag>();
 	const Transform* playerTransform = playerEntity->GetComponent<Transform>();
 
@@ -3546,8 +3510,7 @@ void MainScene::updateSwordStates(const float deltaTime)
 	constexpr float END_SWING_TIME = 1.0f;
 
 	const Entity* swordSkillEntity = getEntity<SwordSkillTag>();
-	if (const Active* active = swordSkillEntity->GetComponent<Active>();
-		not active->isValue)
+	if (swordSkillEntity == nullptr)
 	{
 		return;
 	}

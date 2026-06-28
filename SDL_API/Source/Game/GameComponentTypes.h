@@ -235,15 +235,6 @@ struct Knockback : public Component
 	Point direction{};
 };
 
-struct Effect : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	Effect() : Component(&_ID) {}
-
-	bool isDisabled = false;
-	float coolTime{};
-};
-
 struct RangedAttack : public Component
 {
 	static constexpr uint32_t _ID = 0;

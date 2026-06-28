@@ -50,6 +50,12 @@ struct BulletState
 	float reloadTimer;
 };
 
+struct SwordSkillState
+{
+	bool isSpawn;
+	float coolTimer;
+};
+
 class EntityWorld;
 
 class MainScene final : public Scene
@@ -140,7 +146,6 @@ private:
 	void updateSword();
 	void updateSwordStates(const float deltaTime);
 
-	void initializeSwordSkill();
 	void spawnSwordSkill();
 	void updateSwordSkill(const float deltaTime);
 	void updateSwordSkillStates(const float deltaTime);
@@ -193,13 +198,15 @@ private:
 	bool mIsUpdate = true;
 	bool mIsDebugActive = false;
 
-	uint32_t mTileMaxCount{};
-	float mTilePositionOffset{};
+	uint32_t mTileMaxCount = 0;
+	float mTilePositionOffset = 0.0f;
 
 	BulletState mBulletState{};
 	BulletState mCycloneFanState{};
 
 	GameWaveState mGameWaveState{};
+
+	SwordSkillState mSwordSkillState{};
 
 	uint32_t mMonsterIndex = 0;
 	int32_t mDashShadowOffsetIndex = -1;
