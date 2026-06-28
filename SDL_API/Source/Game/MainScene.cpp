@@ -1104,27 +1104,6 @@ void MainScene::initialize_Entity()
 	{
 		mBulletClip.SetLoop(true);
 
-		for (const std::array<Entity*, 10> entities{}; 
-			Entity* entity : entities)
-		{
-			Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-			newEntity->AddComponent(BulletTag());
-			newEntity->AddComponent(RangedAttack());
-			newEntity->AddComponent(Direction());
-			newEntity->AddComponent(Transform());
-			newEntity->AddComponent(Image());
-			newEntity->AddComponent(Animator());
-			newEntity->AddComponent(Active());
-			newEntity->AddComponent(Color());
-			newEntity->AddComponent(BoxCollider());
-			newEntity->AddComponent(DebugActive());
-			newEntity->AddComponent(DebugColor());
-
-			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Bullet));
-			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-			newEntity->AddComponent(collider);
-		}
-
 		const Entity* bulletCountEntity = getEntity<BulletCountTag>();
 		Label* label = bulletCountEntity->GetComponent<Label>();
 		label->text = std::to_string(mBulletState.maxCount) + "/" + std::to_string(mBulletState.maxCount);
@@ -1841,81 +1820,72 @@ void MainScene::initializeBullets()
 		.fireTimer = 0.0f,
 		.reloadTimer = 0.0f
 	};
-
-	const std::vector<Entity*> entities = getEntities<BulletTag>();
-	for (const Entity* entity : entities)
-	{
-		RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
-		rangedAttack->distance = 300.0f;
-
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-
-		Animator* animator = entity->GetComponent<Animator>();
-		animator->clipState = &mBulletClip;
-
-		BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
-		boxCollider->size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
-	}
 }
 
 void MainScene::spawnBullets(const float deltaTime)
 {
 	constexpr float FIRE_TIME = 0.8f;
 
-	const Entity* gunEntity = getEntity<GunTag>();
-	const Transform* gunTransform = gunEntity->GetComponent<Transform>();
-
 	if (mBulletState.count <= 0)
 	{
 		return;
 	}
 
-	const std::vector<Entity*> entities = getEntities<BulletTag>();
+	const Entity* gunEntity = getEntity<GunTag>();
+	const Transform* gunTransform = gunEntity->GetComponent<Transform>();
 
-	mBulletState.fireTimer += deltaTime;
-	for (const Entity* entity : entities)
+	mBulletState.fireTimer -= deltaTime;
+	if (mBulletState.fireTimer <= 0.0f)
 	{
-		Active* active = entity->GetComponent<Active>();
-		if (active->isValue)
+		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
 		{
-			continue;
+			newEntity->AddComponent(BulletTag());
+			newEntity->AddComponent(RangedAttack());
+			newEntity->AddComponent(Direction());
+			newEntity->AddComponent(Transform());
+			newEntity->AddComponent(Image());
+			newEntity->AddComponent(Animator());
+			newEntity->AddComponent(Active());
+			newEntity->AddComponent(Color());
+			newEntity->AddComponent(BoxCollider());
+			newEntity->AddComponent(DebugActive());
+			newEntity->AddComponent(DebugColor());
+
+			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Bullet));
+			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
+			newEntity->AddComponent(collider);
 		}
 
-		RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
-		if (rangedAttack->isFiring)
-		{
-			continue;
-		}
+		Animator* animator = newEntity->GetComponent<Animator>();
+		animator->clipState = &mBulletClip;
+		animator->frameIndex = 0;
+		animator->elapsedTime = 0.0f;
 
-		if (mBulletState.fireTimer >= FIRE_TIME)
-		{
-			active->isValue = true;
-			rangedAttack->isFiring = true;
+		BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
+		boxCollider->size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
 
-			Animator* anim = entity->GetComponent<Animator>();
-			anim->frameIndex = 0;
-			anim->elapsedTime = 0.0f;
+		Active* active = newEntity->GetComponent<Active>();
+		active->isValue = true;
 
-			rangedAttack->startPosition = gunTransform->position;
+		RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
+		rangedAttack->distance = 300.0f;
+		rangedAttack->startPosition = gunTransform->position;
 
-			Transform* transform = entity->GetComponent<Transform>();
-			transform->position = gunTransform->position;
+		Transform* transform = newEntity->GetComponent<Transform>();
+		transform->position = gunTransform->position;
+		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 
-			const Point difference = getScreenMousePosition() - gunTransform->position;
-			Direction* direction = entity->GetComponent<Direction>();
-			direction->value = Math::NormalizeVector(difference);
+		const Point difference = getScreenMousePosition() - gunTransform->position;
+		Direction* direction = newEntity->GetComponent<Direction>();
+		direction->value = Math::NormalizeVector(difference);
 
-			--mBulletState.count;
+		const Entity* bulletCountEntity = getEntity<BulletCountTag>();
+		Label* label = bulletCountEntity->GetComponent<Label>();
+		const std::string strLabel = (mBulletState.count < 10) ? "0" + std::to_string(mBulletState.count) : std::to_string(mBulletState.count);
+		label->text = strLabel + "/" + std::to_string(mBulletState.maxCount);
 
-			const Entity* bulletCountEntity = getEntity<BulletCountTag>();
-			Label* label = bulletCountEntity->GetComponent<Label>();
-			const std::string strLabel = (mBulletState.count < 10) ? "0" + std::to_string(mBulletState.count) : std::to_string(mBulletState.count);
-			label->text = strLabel + "/" + std::to_string(mBulletState.maxCount);
-
-			mBulletState.fireTimer = 0.0f;
-			break;
-		}
+		--mBulletState.count;
+		mBulletState.fireTimer = FIRE_TIME;
 	}
 }
 
