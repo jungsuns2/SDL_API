@@ -160,6 +160,7 @@ private:
 	void BossSetClip();
 
 	void spawnCycloneFan(const float deltaTime);
+	void spawnWingBullet(const float wingOffsetAngle, const uint32_t index);
 	void updateCycloneFan(const float deltaTime);
 
 	void spawnAttackCollider();

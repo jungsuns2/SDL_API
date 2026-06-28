@@ -1159,8 +1159,8 @@ void MainScene::initialize_Entity()
 
 		mCycloneFanState =
 		{
-			.maxCount = 10,
-			.count = 10,
+			.maxCount = 15,
+			.count = 15,
 			.fireTimer = 0.0f,
 			.reloadTimer = 0.0f
 		};
@@ -1954,7 +1954,7 @@ void MainScene::updateBulletStates(const float deltaTime)
 	}
 
 	const std::vector<Entity*> entities = getEntities<BulletTag>();
-	for (const Entity* entity : entities)
+	for (Entity* entity : entities)
 	{
 		if (const Active* active = entity->GetComponent<Active>();
 			not active->isValue)
@@ -2631,87 +2631,71 @@ void MainScene::spawnCycloneFan(const float deltaTime)
 {
 	constexpr float FIRE_TIME = 0.12f;
 
-	for (uint32_t i = 0; i < mCycloneFanState.maxCount; ++i)
-	{
-		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-		if (newEntity->HasComponent<CycloneFanTag>())
-		{
-			continue;
-		}
-
-		newEntity->AddComponent(CycloneFanTag());
-		newEntity->AddComponent(RangedAttack());
-		newEntity->AddComponent(Direction());
-		newEntity->AddComponent(Transform());
-		newEntity->AddComponent(Image());
-		newEntity->AddComponent(Animator());
-		newEntity->AddComponent(Active());
-		newEntity->AddComponent(BoxCollider());
-		newEntity->AddComponent(DebugActive());
-		newEntity->AddComponent(DebugColor());
-
-		RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
-		rangedAttack->distance = 600.0f;
-
-		Transform* transform = newEntity->GetComponent<Transform>();
-		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-
-		Animator* animator = newEntity->GetComponent<Animator>();
-		animator->clipState = &mCycloneFanClip;
-
-		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::CycloneFan));
-		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
-		newEntity->AddComponent(collider);
-
-		BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
-		boxCollider->size = { .width = float(mCycloneFanTextures[0].GetWidth()), .height = float(mCycloneFanTextures[0].GetHeight()) };
-	}
-
 	if (mCycloneFanState.count <= 0)
 	{
 		return;
 	}
 
-	mCycloneFanState.fireTimer += deltaTime;
-	if (mCycloneFanState.fireTimer >= FIRE_TIME)
+	mCycloneFanState.fireTimer -= deltaTime;
+	if (mCycloneFanState.fireTimer <= 0.0f)
 	{
-		for (auto entities = getEntities<CycloneFanTag>();
-			Entity* entity : entities)
-		{
-			if (entity->IsRemove())
-			{
-				continue;
-			}
+		const uint32_t bulletIndex = (mCycloneFanState.maxCount - mCycloneFanState.count) % 15;
+		spawnWingBullet(0.0f, bulletIndex);
+		spawnWingBullet(-90.0f, bulletIndex);
+		spawnWingBullet(-180.0f, bulletIndex);
+		spawnWingBullet(-270.0f, bulletIndex);
 
-			if (const RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
-				rangedAttack->isFiring)
-			{
-				continue;
-			}
-
-			--mCycloneFanState.count;
-
-			Active* active = entity->GetComponent<Active>();
-			active->isValue = true;
-
-			const Entity* bossEntity = getEntity<BossTag>();
-			const Point bossPosition = bossEntity->GetComponent<Transform>()->position;
-
-			RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
-			rangedAttack->isFiring = true;
-			rangedAttack->startPosition = bossPosition;
-
-			Transform* transform = entity->GetComponent<Transform>();
-			transform->position = bossPosition;
-
-			Direction* direction = entity->GetComponent<Direction>();
-			direction->value.y = -1.0f;
-
-			mCycloneFanState.fireTimer = 0.0f;
-			
-			break;
-		}
+		--mCycloneFanState.count;
+		mCycloneFanState.fireTimer = FIRE_TIME;		
 	}
+}
+
+void MainScene::spawnWingBullet(const float wingOffsetAngle, const uint32_t index)
+{
+	constexpr float ROTATE_ANGLE = -7.0f;
+
+	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+	entity->AddComponent(CycloneFanTag());
+	entity->AddComponent(RangedAttack());
+	entity->AddComponent(Direction());
+	entity->AddComponent(Transform());
+	entity->AddComponent(Image());
+	entity->AddComponent(Animator());
+	entity->AddComponent(Active());
+	entity->AddComponent(BoxCollider());
+	entity->AddComponent(DebugActive());
+	entity->AddComponent(DebugColor());
+
+	Animator* animator = entity->GetComponent<Animator>();
+	animator->clipState = &mCycloneFanClip;
+
+	CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::CycloneFan));
+	collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
+	entity->AddComponent(collider);
+
+	BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
+	boxCollider->size = { .width = float(mCycloneFanTextures[0].GetWidth()), .height = float(mCycloneFanTextures[0].GetHeight()) };
+
+	const Entity* bossEntity = getEntity<BossTag>();
+	const Point bossPosition = bossEntity->GetComponent<Transform>()->position;
+	RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
+	rangedAttack->distance = 600.0f;
+	rangedAttack->isFiring = true;
+	rangedAttack->startPosition = bossPosition;
+
+	Transform* transform = entity->GetComponent<Transform>();
+	transform->position = bossPosition;
+	transform->position.x += 20.0f;
+	transform->position.y -= 55.0f;
+	transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+
+	Active* active = entity->GetComponent<Active>();
+	active->isValue = true;
+
+	const Point rotateDirection = { .x = 1.0f, .y = 0.0f };
+	const Point rotateResult = Math::RotatePoint(rotateDirection, wingOffsetAngle + index * ROTATE_ANGLE);
+	Direction* direction = entity->GetComponent<Direction>();
+	direction->value = rotateResult;
 }
 
 void MainScene::updateBossStates(const float deltaTime)
@@ -2864,7 +2848,7 @@ void MainScene::updateCycloneFan(const float deltaTime)
 		transform->position += velocity * deltaTime;
 	}
 
-	for (auto entities = getEntities<CycloneFanTag>();
+	for (const auto entities = getEntities<CycloneFanTag>();
 		Entity * entity : entities)
 	{
 		if (entity->IsRemove())
