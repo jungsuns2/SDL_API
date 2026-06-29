@@ -184,6 +184,23 @@ struct Monster : public Component
 	float spawnBlinkTimer = 0.0f;
 };
 
+struct BossHand : public Component
+{
+	enum class eState
+	{
+		Idle,
+		Attack,
+		Count
+	};
+
+	static constexpr uint32_t _ID = 0;
+	BossHand() : Component(&_ID) {}
+
+	eState state{};
+	Clip* clips = nullptr;
+};
+
+
 struct Tile : public Component
 {
 	enum class eType

@@ -268,7 +268,9 @@ bool MainScene::Update(const float deltaTime)
 
 	playerSetClip();
 	monsterSetClip();
-	BossSetClip();
+	bossSetClip();
+	bossLeftHandSetClip();
+	bossRightHandSetClip();
 
 	return mIsUpdate;
 }
@@ -345,7 +347,7 @@ void MainScene::Finalize()
 			texture.Finalize();
 		}
 
-		for (Texture& texture : mBossLeftHandTextures)
+		for (Texture& texture : mBossHandTextures)
 		{
 			texture.Finalize();
 		}
@@ -356,6 +358,11 @@ void MainScene::Finalize()
 		}
 
 		for (Texture& texture : mCycloneFanTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mAttackHandTextures)
 		{
 			texture.Finalize();
 		}
@@ -814,11 +821,11 @@ void MainScene::initialize_Resource()
 			index = 0;
 		}
 
-		// Left Hand
+		// Idle Hand
 		{
-			for (Texture& texture : mBossLeftHandTextures)
+			for (Texture& texture : mBossHandTextures)
 			{
-				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/" + std::to_string(index++) + ".png");
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/Idle/" + std::to_string(index++) + ".png");
 
 				Clip::Frame frame =
 				{
@@ -826,17 +833,17 @@ void MainScene::initialize_Resource()
 					.durationTime = 0.12f,
 				};
 
-				mBossLeftHandClip.AddClip(frame);
+				mBossHandClips[uint32_t(BossHand::eState::Idle)].AddClip(frame);
 			}
 
 			index = 0;
 		}
 
-		// Right Hand
+		// Attack Hand
 		{
-			for (Texture& texture : mBossLeftHandTextures)
+			for (Texture& texture : mAttackHandTextures)
 			{
-				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/" + std::to_string(index++) + ".png");
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/Attack/" + std::to_string(index++) + ".png");
 
 				Clip::Frame frame =
 				{
@@ -844,13 +851,13 @@ void MainScene::initialize_Resource()
 					.durationTime = 0.12f,
 				};
 
-				mBossRightHandClip.AddClip(frame);
+				mBossHandClips[uint32_t(BossHand::eState::Attack)].AddClip(frame);
 			}
 
 			index = 0;
 		}
 
-		// Boss Back
+		// Back
 		{
 			for (Texture& texture : mBossBackTextures)
 			{
@@ -868,7 +875,7 @@ void MainScene::initialize_Resource()
 			index = 0;
 		}
 
-		// Boss CycloneFan
+		// CycloneFan
 		{
 			for (Texture& texture : mCycloneFanTextures)
 			{
@@ -1104,8 +1111,8 @@ void MainScene::initialize_Entity()
 		mBossClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mBossClips[uint32_t(Monster::eState::Attack)].SetLoop(false);
 
-		mBossLeftHandClip.SetLoop(true);
-		mBossRightHandClip.SetLoop(true);
+		mBossHandClips[uint32_t(BossHand::eState::Idle)].SetLoop(true);
+		mBossHandClips[uint32_t(BossHand::eState::Attack)].SetLoop(true);
 
 		mBossBackClip.SetLoop(true);
 
@@ -1113,8 +1120,8 @@ void MainScene::initialize_Entity()
 
 		mCycloneFanState =
 		{
-			.maxCount = 15,
-			.count = 15,
+			.maxCount = 30,
+			.count = 30,
 			.fireTimer = 0.0f,
 			.reloadTimer = 0.0f
 		};
@@ -2106,29 +2113,40 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		{
 			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 			entity->AddComponent(BossLeftHandTag());
+			entity->AddComponent(BossHand());
 			entity->AddComponent(Transform());
 			entity->AddComponent(Image());
 			entity->AddComponent(Animator());
 			entity->AddComponent(Direction());
 			entity->AddComponent(Active());
+
+			BossHand* hand = entity->GetComponent<BossHand>();
+			hand->state = BossHand::eState::Idle;
+			hand->clips = mBossHandClips.data();
 
 			Transform* transform = entity->GetComponent<Transform>();
 			transform->position.x = LEFT_OFFSET.x - Constant::Get().GetHalfWidth();
 			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 
 			Animator* animator = entity->GetComponent<Animator>();
-			animator->clipState = &mBossLeftHandClip;
+			animator->clipState = mBossHandClips.data();
+
 		}
 
 		// Right Hand
 		{
 			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 			entity->AddComponent(BossRightHandTag());
+			entity->AddComponent(BossHand());
 			entity->AddComponent(Transform());
 			entity->AddComponent(Image());
 			entity->AddComponent(Animator());
 			entity->AddComponent(Direction());
 			entity->AddComponent(Active());
+
+			BossHand* hand = entity->GetComponent<BossHand>();
+			hand->state = BossHand::eState::Attack;
+			hand->clips = mBossHandClips.data();
 
 			Transform* transform = entity->GetComponent<Transform>();
 			transform->position.x = Constant::Get().GetHalfWidth() - RIGHT_OFFSET.x;
@@ -2137,7 +2155,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 			transform->flip = SDL_FLIP_HORIZONTAL;
 
 			Animator* animator = entity->GetComponent<Animator>();
-			animator->clipState = &mBossRightHandClip;
+			animator->clipState = mBossHandClips.data();
 		}
 	}
 		break;
@@ -2542,7 +2560,7 @@ void MainScene::spawnCycloneFan(const float deltaTime)
 	mCycloneFanState.fireTimer -= deltaTime;
 	if (mCycloneFanState.fireTimer <= 0.0f)
 	{
-		const uint32_t bulletIndex = (mCycloneFanState.maxCount - mCycloneFanState.count) % 15;
+		const uint32_t bulletIndex = (mCycloneFanState.maxCount - mCycloneFanState.count) % mCycloneFanState.maxCount;
 		spawnWingBullet(0.0f, bulletIndex);
 		spawnWingBullet(-90.0f, bulletIndex);
 		spawnWingBullet(-180.0f, bulletIndex);
@@ -2778,7 +2796,7 @@ void MainScene::updateCycloneFan(const float deltaTime)
 	}
 }
 
-void MainScene::BossSetClip()
+void MainScene::bossSetClip()
 {	
 	const Entity* entity = getEntity<BossTag>();
 	if (entity == nullptr)
@@ -2813,6 +2831,60 @@ void MainScene::BossSetClip()
 
 	case Monster::eState::Dead:
 		__noop;
+		break;
+
+	default:
+		assert(false and "지원하지 않는 애니메이션입니다.");
+		break;
+	}
+}
+
+void MainScene::bossLeftHandSetClip()
+{
+	const Entity* entity = getEntity<BossLeftHandTag>();
+	if (entity == nullptr)
+	{
+		return;
+	}
+
+	Animator* animator = entity->GetComponent<Animator>();
+	BossHand* hand = entity->GetComponent<BossHand>();
+
+	switch (hand->state)
+	{
+	case BossHand::eState::Idle:
+		animator->SetClip(&hand->clips[uint32_t(BossHand::eState::Idle)]);
+		break;
+
+	case BossHand::eState::Attack:
+		animator->SetClip(&hand->clips[uint32_t(BossHand::eState::Attack)]);
+		break;
+
+	default:
+		assert(false and "지원하지 않는 애니메이션입니다.");
+		break;
+	}
+}
+
+void MainScene::bossRightHandSetClip()
+{
+	const Entity* entity = getEntity<BossRightHandTag>();
+	if (entity == nullptr)
+	{
+		return;
+	}
+
+	Animator* animator = entity->GetComponent<Animator>();
+	BossHand* hand = entity->GetComponent<BossHand>();
+
+	switch (hand->state)
+	{
+	case BossHand::eState::Idle:
+		animator->SetClip(&hand->clips[uint32_t(BossHand::eState::Idle)]);
+		break;
+
+	case BossHand::eState::Attack:
+		animator->SetClip(&hand->clips[uint32_t(BossHand::eState::Attack)]);
 		break;
 
 	default:
