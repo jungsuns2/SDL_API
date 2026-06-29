@@ -1102,7 +1102,7 @@ void MainScene::initialize_Entity()
 		mBossClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
 		mBossClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mBossClips[uint32_t(Monster::eState::Run)].SetLoop(true);
-		mBossClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
+		mBossClips[uint32_t(Monster::eState::Attack)].SetLoop(false);
 
 		mBossLeftHandClip.SetLoop(true);
 		mBossRightHandClip.SetLoop(true);
@@ -2602,7 +2602,7 @@ void MainScene::spawnWingBullet(const float wingOffsetAngle, const uint32_t inde
 
 void MainScene::updateBossStates(const float deltaTime)
 {
-	constexpr float BOSS_ATTACKTIME = 2.0f;
+	constexpr float BOSS_ATTACKTIME = 3.0f;
 	
 	const Entity* entity = getEntity<BossTag>();
 	if (entity == nullptr)
@@ -2668,20 +2668,26 @@ void MainScene::updateBossStates(const float deltaTime)
 
 	case Monster::eState::Attack:
 	{
+		const Clip& attackClip = monster->clips[uint32_t(Monster::eState::Attack)];
+		Animator& anim = *entity->GetComponent<Animator>();
+
 		if (pattern->type == AttackPattern::eType::CycloneFan)
 		{
-			spawnCycloneFan(deltaTime);
-			updateCycloneFan(deltaTime);
-			break;
+			if (anim.clipState == &attackClip
+				and anim.frameIndex >= 3)
+			{
+				spawnCycloneFan(deltaTime);
+
+				anim.frameIndex = anim.clipState->GetLastFrameIndex() - 1;
+
+				if (mCycloneFanState.count <= 0)
+				{
+					anim.frameIndex = 0;
+				}
+			}
 		}
 
-		const Clip& attackClip = monster->clips[uint32_t(Monster::eState::Attack)];
-		const Animator& anim = *entity->GetComponent<Animator>();
-		if (anim.clipState == &attackClip
-			and anim.frameIndex >= attackClip.GetLastFrameIndex() - 1)
-		{
-			// TODO: 입 계속 열어두게 하기
-		}
+		updateCycloneFan(deltaTime);
 
 		break;
 	}
