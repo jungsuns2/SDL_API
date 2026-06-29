@@ -165,8 +165,7 @@ private:
 
 	void updateBossStates(const float deltaTime);
 	void bossSetClip();
-	void bossLeftHandSetClip();
-	void bossRightHandSetClip();
+	void bossHandsSetClip();
 
 	void spawnCycloneFan(const float deltaTime);
 	void spawnWingBullet(const float wingOffsetAngle, const uint32_t index);
@@ -225,7 +224,8 @@ private:
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBossClips{};
 	Clip mBossBackClip{};
 	Clip mCycloneFanClip{};
-	std::array<Clip, uint32_t(BossHand::eState::Count)> mBossHandClips{};
+	std::array<Clip, uint32_t(BossHand::eState::Count)> mBossLeftHandClips{};
+	std::array<Clip, uint32_t(BossHand::eState::Count)> mBossRightHandClips{};
 
 	Clip mSwordClip{};
 	Clip mSwordSkillClip{};
