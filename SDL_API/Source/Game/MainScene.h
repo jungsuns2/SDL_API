@@ -42,6 +42,12 @@ struct GameWaveState
 	float labelShowElapsedTimer;
 };
 
+struct SwordSkillState
+{
+	bool isSpawn;
+	float coolTimer;
+};
+
 struct BulletState
 {
 	uint32_t maxCount;
@@ -50,10 +56,21 @@ struct BulletState
 	float reloadTimer;
 };
 
-struct SwordSkillState
+struct CycloneFanState
 {
+	uint32_t maxCount;
+	uint32_t count;
+	float fireTimer;
+	float reloadTimer;
+	bool isUpdate;
+};
+
+struct HandSkillState
+{
+	Entity* entity;
 	bool isSpawn;
-	float coolTimer;
+	bool isAttack;
+	float attackTimer;
 };
 
 class EntityWorld;
@@ -70,6 +87,7 @@ public:
 		Bullet,
 		Arrow,
 		CycloneFan,
+		HandSkill,
 		Wall,
 		Count
 	};
@@ -167,9 +185,13 @@ private:
 	void bossSetClip();
 	void bossHandsSetClip();
 
-	void spawnCycloneFan(const float deltaTime);
 	void spawnWingBullet(const float wingOffsetAngle, const uint32_t index);
+	void spawnCycloneFan(const float deltaTime);
 	void updateCycloneFan(const float deltaTime);
+	
+	void spawnHandSkill();
+	void updateHandSkill();
+	void handSkillSetClip();
 
 	void spawnAttackCollider();
 	void updateAttackCollision();
@@ -194,6 +216,7 @@ private:
 	Point getScreenMousePosition() const;
 
 	float getRandom(const float min, const float max);
+	uint32_t getRandom(const uint32_t min, const uint32_t max);
 
 private:
 	bool mIsUpdate = true;
@@ -202,12 +225,13 @@ private:
 	uint32_t mTileMaxCount = 0;
 	float mTilePositionOffset = 0.0f;
 
-	BulletState mBulletState{};
-	BulletState mCycloneFanState{};
-
 	GameWaveState mGameWaveState{};
-
+	
 	SwordSkillState mSwordSkillState{};
+	BulletState mBulletState{};
+
+	CycloneFanState mCycloneFanState{};
+	HandSkillState mHandSkillState{};
 
 	uint32_t mMonsterIndex = 0;
 	int32_t mDashShadowOffsetIndex = -1;
@@ -224,8 +248,9 @@ private:
 	std::array<Clip, uint32_t(Monster::eState::Count)> mBossClips{};
 	Clip mBossBackClip{};
 	Clip mCycloneFanClip{};
-	std::array<Clip, uint32_t(BossHand::eState::Count)> mBossLeftHandClips{};
-	std::array<Clip, uint32_t(BossHand::eState::Count)> mBossRightHandClips{};
+	std::array<Clip, uint32_t(BossHand::eState::Count)> mBossHandClips{};
+	Clip mBossHandStartSkillClip{};
+	Clip mBossHandCenterSkillClip{};
 
 	Clip mSwordClip{};
 	Clip mSwordSkillClip{};
@@ -255,7 +280,9 @@ private:
 	std::array<Texture, 10> mBossHandTextures{};
 	std::array<Texture, 10> mBossBackTextures{};
 	std::array<Texture, 2> mCycloneFanTextures{};
-	std::array<Texture, 18> mAttackHandTextures{};
+	std::array<Texture, 18> mBossAttackHandTextures{};
+	std::array<Texture, 7> mBossHandCenterSkillTextures{};
+	std::array<Texture, 7> mBossHandSkillTextures{};
 
 	std::array<Texture, 12> mSwordTextures{};
 	std::array<Texture, 8> mSwordSkillTextures{};

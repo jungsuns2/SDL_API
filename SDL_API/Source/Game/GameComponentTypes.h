@@ -84,16 +84,16 @@ struct MonsterTag : public Component
 	MonsterTag() : Component(&_ID) {}
 };
 
-struct BossTag : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	BossTag() : Component(&_ID) {}
-};
-
 struct BossBackTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	BossBackTag() : Component(&_ID) {}
+};
+
+struct BossTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossTag() : Component(&_ID) {}
 };
 
 struct BossLeftHandTag : public Component
@@ -106,6 +106,18 @@ struct BossRightHandTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	BossRightHandTag() : Component(&_ID) {}
+};
+
+struct BossHandSkillTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossHandSkillTag() : Component(&_ID) {}
+};
+
+struct BossHandCenterSkillTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossHandCenterSkillTag() : Component(&_ID) {}
 };
 
 struct MonsterHpBarTag : public Component
@@ -200,7 +212,6 @@ struct BossHand : public Component
 	Clip* clips = nullptr;
 };
 
-
 struct Tile : public Component
 {
 	enum class eType
@@ -268,7 +279,7 @@ struct AttackPattern : public Component
 		None,
 		Rush,
 		CycloneFan,
-		Hands,
+		HandSkill,
 		Count
 	};
 

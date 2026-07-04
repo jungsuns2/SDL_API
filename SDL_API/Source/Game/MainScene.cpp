@@ -11,6 +11,8 @@ constexpr float PRIMARY_SIZE = 3.0f;
 
 void MainScene::Initialize()
 {
+	srand(static_cast<unsigned int>(time(NULL)));
+
 	initialize_Resource();
 	initialize_Entity();
 
@@ -103,68 +105,101 @@ bool MainScene::Update(const float deltaTime)
 	updateCamera();
 	input();
 
-	// Wave를 업데이트한다.
+	// Update Wave
 	{
-		// 현재 웨이브 상태를 업데이트한다.
-		// 다음 웨이브를 위해 값을 초기화한다.
-		mGameWaveState.waveTimer -= deltaTime;
-		if (mGameWaveState.waveTimer <= 0.0f)
+		// 웨이브 정보를 잠시 동안 라벨로 표시한다.
 		{
-			if (++mGameWaveState.index >= WAVES.size())
+			mGameWaveState.labelShowElapsedTimer += deltaTime;
+
+			const Entity* entity = getEntity<WaveStageTag>();
+			if (Active* active = entity->GetComponent<Active>(); 
+				active->isValue and mGameWaveState.labelShowElapsedTimer >= 2.0f)
 			{
-				assert(false and "구현 예정.");
-			}
-
-			mGameWaveState.waveTimer = WAVES[mGameWaveState.index].elapsedTime;
-			mGameWaveState.groupIndex = 0;
-			mGameWaveState.remainingMonsterGroupSpawnTimer = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
-			mGameWaveState.labelShowElapsedTimer = 0.0f;
-
-			mMonsterIndex = 0;
-
-			// 몬스터를 갱신한다.
-			for (const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>(); 
-				Entity* entity : monsterEntities)
-			{
-				Monster* monster = entity->GetComponent<Monster>();
-				monster->state = Monster::eState::Dead;
-
-				entity->SetRemove();
-			}
-
-			// 몬스터 체력바를 갱신한다.
-			for (const std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
-				Entity* entity : hpBarEntities)
-			{
-				entity->SetRemove();
-			}
-
-			// 몬스터 충돌체를 갱신한다.
-			for (const std::vector<Entity*> attackColliders = getEntities<MonsterAttackColliderTag>();
-			Entity* entity : attackColliders)
-			{
-				entity->SetRemove();
-			}
-
-			// 플레이어 총알을 갱신한다.
-			{
-				const Entity* bulletCountEntity = getEntity<BulletCountTag>();
-				Label* label = bulletCountEntity->GetComponent<Label>();
-				label->text = std::to_string(mBulletState.count) + "/" + std::to_string(mBulletState.maxCount);
-			}
-
-			// 라벨 정보를 갱신한다.
-			{
-				const Entity* entity = getEntity<WaveStageTag>();
-;				Label* label = entity->GetComponent<Label>();
-				const std::string name = std::to_string(mGameWaveState.index + 1) + " Wave";
-				label->text = name;
-
-				Active* active = entity->GetComponent<Active>();
-				active->isValue = true;
+				mGameWaveState.labelShowElapsedTimer = 0.0f;
+				active->isValue = false;
 			}
 		}
 
+		// 현재 웨이브 상태를 업데이트한다.
+		// 다음 웨이브를 위해 값을 초기화한다.
+		const Entity* waveEntity = getEntity<WaveStageTag>();
+		if (const Active* waveActive = waveEntity->GetComponent<Active>();
+			not waveActive->isValue)
+		{
+			mGameWaveState.waveTimer -= deltaTime;
+			if (mGameWaveState.waveTimer <= 0.0f)
+			{
+				if (++mGameWaveState.index >= WAVES.size())
+				{
+					assert(false and "구현 예정.");
+				}
+
+				mGameWaveState.waveTimer = WAVES[mGameWaveState.index].elapsedTime;
+				mGameWaveState.groupIndex = 0;
+				mGameWaveState.remainingMonsterGroupSpawnTimer = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
+				mGameWaveState.labelShowElapsedTimer = 0.0f;
+
+				mMonsterIndex = 0;
+
+				// 몬스터를 갱신한다.
+				for (const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+					Entity * entity : monsterEntities)
+				{
+					Monster* monster = entity->GetComponent<Monster>();
+					monster->state = Monster::eState::Dead;
+
+					entity->SetRemove();
+				}
+
+				// 몬스터 체력바를 갱신한다.
+				for (const std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
+					Entity * entity : hpBarEntities)
+				{
+					entity->SetRemove();
+				}
+
+				// 몬스터 충돌체를 갱신한다.
+				for (const std::vector<Entity*> attackColliders = getEntities<MonsterAttackColliderTag>();
+					Entity * entity : attackColliders)
+				{
+					entity->SetRemove();
+				}
+
+				// 플레이어 총알을 갱신한다.
+				{
+					const Entity* bulletCountEntity = getEntity<BulletCountTag>();
+					Label* label = bulletCountEntity->GetComponent<Label>();
+					label->text = std::to_string(mBulletState.count) + "/" + std::to_string(mBulletState.maxCount);
+				}
+
+				// 라벨 정보를 갱신한다.
+				{
+					const Entity* entity = getEntity<WaveStageTag>();
+					Label* label = entity->GetComponent<Label>();
+					const std::string name = std::to_string(mGameWaveState.index + 1) + " Wave";
+					label->text = name;
+
+					Active* active = entity->GetComponent<Active>();
+					active->isValue = true;
+				}
+			}
+		}
+		
+		// Update Wave Timer Label
+		{
+			const Entity* entity = getEntity<WaveTimerTag>();
+			Label* label = entity->GetComponent<Label>();
+			const uint32_t seconds = uint32_t(mGameWaveState.waveTimer) % 60;
+			const uint32_t minutes = uint32_t(mGameWaveState.waveTimer) / 60;
+
+			const std::string fseconds = (seconds >= 10) ? std::to_string(seconds) : "0" + std::to_string(seconds);
+			const std::string fMinutes = (minutes >= 10) ? std::to_string(minutes) : "0" + std::to_string(minutes);
+
+			const std::string name = "Timer: " + fMinutes + ":" + fseconds;
+			label->text = name;
+		}
+
+		// Update Monster Spawn
 		{
 			const WaveDesc& waveDesc = WAVES[mGameWaveState.index];
 			const uint32_t monsterGroupIndex = waveDesc.monsterGroupIndicies[mGameWaveState.groupIndex];
@@ -181,36 +216,8 @@ bool MainScene::Update(const float deltaTime)
 				mGameWaveState.remainingMonsterGroupSpawnTimer = waveDesc.monsterGroupSpawnIntervalTime;
 			}
 		}
-
-		// 다음 웨이브가 되면 잠시 동안 라벨을 표시한다.
-		{
-			mGameWaveState.labelShowElapsedTimer += deltaTime;
-
-			const Entity* entity = getEntity<WaveStageTag>();
-			Active* active = entity->GetComponent<Active>();
-			if (active->isValue and mGameWaveState.labelShowElapsedTimer >= 2.0f)
-			{
-				mGameWaveState.labelShowElapsedTimer = 0.0f;
-				active->isValue = false;
-			}
-		}
-
-		// Upeate Wave Timer Label
-		{
-			const Entity* entity = getEntity<WaveTimerTag>();
-			Label* label = entity->GetComponent<Label>();
-			const uint32_t seconds = uint32_t(mGameWaveState.waveTimer) % 60;
-			const uint32_t minutes = uint32_t(mGameWaveState.waveTimer) / 60;
-
-			const std::string fseconds = (seconds >= 10) ? std::to_string(seconds) : "0" + std::to_string(seconds);
-			const std::string fMinutes = (minutes >= 10) ? std::to_string(minutes) : "0" + std::to_string(minutes);
-
-			const std::string name = "Timer: " + fMinutes + ":" + fseconds;
-			label->text = name;
-		}
 	}
 
-	// 플레이어를 업데이트한다.
 	playerState(deltaTime);
 	playerMove(deltaTime);
 
@@ -227,7 +234,6 @@ bool MainScene::Update(const float deltaTime)
 	updateBullets(deltaTime);
 	updateBulletStates(deltaTime);
 
-	// 몬스터를 업데이트한다.
 	updateMonsterStates(deltaTime);
 	updateHpMonsters(deltaTime);
 	monsterMove(deltaTime);
@@ -246,30 +252,27 @@ bool MainScene::Update(const float deltaTime)
 	rangedAttackState<MonsterArrowTag>();
 	rangedAttackMove(300.0f, deltaTime);
 
-	// 보스를 업데이트한다.
 	updateBossStates(deltaTime);
 
-	// 충돌을 업데이트한다.
-	{
-		spawnAttackCollider();
-		updateAttackCollision();
-		removeAttackCollider();
+	spawnAttackCollider();
+	updateAttackCollision();
+	removeAttackCollider();
 
-		playerToMonsterCollision();
-		playerToMonsterAttackCollision();
-		playerToArrowCollision();
+	playerToMonsterCollision();
+	playerToMonsterAttackCollision();
+	playerToArrowCollision();
 
-		//swordSkillToMonsterCollision();
-		//bulletToMonsterCollision();
+	//swordSkillToMonsterCollision();
+	//bulletToMonsterCollision();
 
-		mPreviousCollidedEntityPairs = mCollidedEntityPairs;
-		mCollidedEntityPairs.clear();
-	}
+	mPreviousCollidedEntityPairs = mCollidedEntityPairs;
+	mCollidedEntityPairs.clear();
 
 	playerSetClip();
 	monsterSetClip();
 	bossSetClip();
 	bossHandsSetClip();
+	handSkillSetClip();
 
 	return mIsUpdate;
 }
@@ -361,7 +364,17 @@ void MainScene::Finalize()
 			texture.Finalize();
 		}
 
-		for (Texture& texture : mAttackHandTextures)
+		for (Texture& texture : mBossAttackHandTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mBossHandSkillTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mBossHandCenterSkillTextures)
 		{
 			texture.Finalize();
 		}
@@ -753,6 +766,24 @@ void MainScene::initialize_Resource()
 
 	// Boss
 	{
+		// Back
+		{
+			for (Texture& texture : mBossBackTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Back/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mBossBackClip.AddClip(frame);
+			}
+
+			index = 0;
+		}
+
 		// Spwan
 		{
 			for (Texture& texture : mSpwanTextures)
@@ -822,7 +853,7 @@ void MainScene::initialize_Resource()
 			index = 0;
 		}
 
-		// Idle Left Hand
+		// Idle Hand
 		{
 			for (Texture& texture : mBossHandTextures)
 			{
@@ -834,15 +865,15 @@ void MainScene::initialize_Resource()
 					.durationTime = 0.12f,
 				};
 
-				mBossLeftHandClips[uint32_t(BossHand::eState::Idle)].AddClip(frame);
+				mBossHandClips[uint32_t(BossHand::eState::Idle)].AddClip(frame);
 			}
 
 			index = 0;
 		}
 
-		// Attack Left Hand
+		// Attack Hand
 		{
-			for (Texture& texture : mAttackHandTextures)
+			for (Texture& texture : mBossAttackHandTextures)
 			{
 				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/Attack/" + std::to_string(index++) + ".png");
 
@@ -852,17 +883,17 @@ void MainScene::initialize_Resource()
 					.durationTime = 0.12f,
 				};
 
-				mBossLeftHandClips[uint32_t(BossHand::eState::Attack)].AddClip(frame);
+				mBossHandClips[uint32_t(BossHand::eState::Attack)].AddClip(frame);
 			}
 
 			index = 0;
 		}
 
-		// Idle Right Hand
+		// Attack Hand Skill
 		{
-			for (Texture& texture : mBossHandTextures)
+			for (Texture& texture : mBossHandSkillTextures)
 			{
-				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/Idle/" + std::to_string(index++) + ".png");
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/Skill/Start/" + std::to_string(index++) + ".png");
 
 				Clip::Frame frame =
 				{
@@ -870,17 +901,17 @@ void MainScene::initialize_Resource()
 					.durationTime = 0.12f,
 				};
 
-				mBossRightHandClips[uint32_t(BossHand::eState::Idle)].AddClip(frame);
+				mBossHandStartSkillClip.AddClip(frame);
 			}
 
 			index = 0;
 		}
 
-		// Attack Right Hand
+		// Attack Hand Center Skill
 		{
-			for (Texture& texture : mAttackHandTextures)
+			for (Texture& texture : mBossHandCenterSkillTextures)
 			{
-				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/Attack/" + std::to_string(index++) + ".png");
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Hand/Skill/Center/" + std::to_string(index++) + ".png");
 
 				Clip::Frame frame =
 				{
@@ -888,25 +919,7 @@ void MainScene::initialize_Resource()
 					.durationTime = 0.12f,
 				};
 
-				mBossRightHandClips[uint32_t(BossHand::eState::Attack)].AddClip(frame);
-			}
-
-			index = 0;
-		}
-
-		// Back
-		{
-			for (Texture& texture : mBossBackTextures)
-			{
-				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Back/" + std::to_string(index++) + ".png");
-
-				Clip::Frame frame =
-				{
-					.texture = &texture,
-					.durationTime = 0.12f,
-				};
-
-				mBossBackClip.AddClip(frame);
+				mBossHandCenterSkillClip.AddClip(frame);
 			}
 
 			index = 0;
@@ -1143,18 +1156,18 @@ void MainScene::initialize_Entity()
 		mSkelDogClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mSkelDogClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
 
+		mBossBackClip.SetLoop(true);
+
 		mBossClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
 		mBossClips[uint32_t(Monster::eState::Idle)].SetLoop(true);
 		mBossClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mBossClips[uint32_t(Monster::eState::Attack)].SetLoop(false);
 
-		mBossLeftHandClips[uint32_t(BossHand::eState::Idle)].SetLoop(true);
-		mBossLeftHandClips[uint32_t(BossHand::eState::Attack)].SetLoop(true);
+		mBossHandClips[uint32_t(BossHand::eState::Idle)].SetLoop(true);
+		mBossHandClips[uint32_t(BossHand::eState::Attack)].SetLoop(true);
 
-		mBossRightHandClips[uint32_t(BossHand::eState::Idle)].SetLoop(true);
-		mBossRightHandClips[uint32_t(BossHand::eState::Attack)].SetLoop(true);
-
-		mBossBackClip.SetLoop(true);
+		mBossHandStartSkillClip.SetLoop(true);
+		mBossHandCenterSkillClip.SetLoop(true);
 
 		mCycloneFanClip.SetLoop(true);
 
@@ -1163,7 +1176,13 @@ void MainScene::initialize_Entity()
 			.maxCount = 30,
 			.count = 30,
 			.fireTimer = 0.0f,
-			.reloadTimer = 0.0f
+			.reloadTimer = 0.0f,
+			.isUpdate = false
+		};
+
+		mHandSkillState =
+		{
+			.isSpawn = false
 		};
 	}
 }
@@ -1695,21 +1714,21 @@ void MainScene::playerSetClip()
 
 	switch (player->state)
 	{
-	case Player::eState::Idle:
-		animator->SetClip(&mPlayerClips[uint32_t(Player::eState::Idle)]);
-		break;
+		case Player::eState::Idle:
+			animator->SetClip(&mPlayerClips[uint32_t(Player::eState::Idle)]);
+			break;
 
-	case Player::eState::Run:
-		animator->SetClip(&mPlayerClips[uint32_t(Player::eState::Run)]);
-		break;
+		case Player::eState::Run:
+			animator->SetClip(&mPlayerClips[uint32_t(Player::eState::Run)]);
+			break;
 
-	case Player::eState::Dead:
-		animator->SetClip(&mPlayerClips[uint32_t(Player::eState::Dead)]);
-		break;
+		case Player::eState::Dead:
+			animator->SetClip(&mPlayerClips[uint32_t(Player::eState::Dead)]);
+			break;
 
-	default:
-		assert(false);
-		break;
+		default:
+			assert(false and "지원하지 않는 애니메이션입니다.");
+			break;
 	}
 	
 }
@@ -2162,7 +2181,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 
 			BossHand* hand = entity->GetComponent<BossHand>();
 			hand->state = BossHand::eState::Idle;
-			hand->clips = mBossLeftHandClips.data();
+			hand->clips = mBossHandClips.data();
 
 			Transform* transform = entity->GetComponent<Transform>();
 			transform->position.x = LEFT_OFFSET.x - Constant::Get().GetHalfWidth();
@@ -2185,8 +2204,8 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 			entity->AddComponent(Active());
 
 			BossHand* hand = entity->GetComponent<BossHand>();
-			hand->state = BossHand::eState::Attack;
-			hand->clips = mBossRightHandClips.data();
+			hand->state = BossHand::eState::Idle;
+			hand->clips = mBossHandClips.data();
 
 			Transform* transform = entity->GetComponent<Transform>();
 			transform->position.x = Constant::Get().GetHalfWidth() - RIGHT_OFFSET.x;
@@ -2660,7 +2679,9 @@ void MainScene::spawnWingBullet(const float wingOffsetAngle, const uint32_t inde
 
 void MainScene::updateBossStates(const float deltaTime)
 {
-	constexpr float BOSS_ATTACKTIME = 3.0f;
+	constexpr float ATTACKTIME = 3.0f;
+	constexpr float RIGHTSKILLTIME = 6.0f;
+	constexpr float LEFTSKILLTIME = 9.0f;
 	
 	const Entity* entity = getEntity<BossTag>();
 	if (entity == nullptr)
@@ -2687,6 +2708,10 @@ void MainScene::updateBossStates(const float deltaTime)
 			
 			monster->state = Monster::eState::Idle;
 
+			const Entity* backEntity = getEntity<BossBackTag>();
+			Active* backActive = backEntity->GetComponent<Active>();
+			backActive->isValue = true;
+
 			const Entity* leftHandEntity = getEntity<BossLeftHandTag>();
 			Active* leftActive = leftHandEntity->GetComponent<Active>();
 			leftActive->isValue = true;
@@ -2694,10 +2719,6 @@ void MainScene::updateBossStates(const float deltaTime)
 			const Entity* rightHandEntity = getEntity<BossRightHandTag>();
 			Active* rightActive = rightHandEntity->GetComponent<Active>();
 			rightActive->isValue = true;
-
-			const Entity* backEntity = getEntity<BossBackTag>();
-			Active* backActive = backEntity->GetComponent<Active>();
-			backActive->isValue = true;
 			
 			Active* active = entity->GetComponent<Active>();
 			active->isValue = true;
@@ -2713,15 +2734,85 @@ void MainScene::updateBossStates(const float deltaTime)
 		boxCollider->offset = colliderState->runOffset;
 		boxCollider->size = colliderState->runSize;
 
-		AttackPattern* pattern = entity->GetComponent<AttackPattern>();
-		pattern->timer += deltaTime;
-		if (pattern->timer >= BOSS_ATTACKTIME)
+		switch (pattern->type)
 		{
-			monster->state = Monster::eState::Attack;
-			pattern->timer = 0.0f;
-		}
+			case AttackPattern::eType::CycloneFan:
+			{
+				pattern->timer += deltaTime;
+				if (pattern->timer >= ATTACKTIME)
+				{
+					monster->state = Monster::eState::Attack;
+					pattern->timer = 0.0f;
+				}
 
-		break;
+				break;
+			}
+				
+			case AttackPattern::eType::HandSkill:
+			{
+				if (not mHandSkillState.isAttack)
+				{
+					mHandSkillState.entity = (rand() % 2 == 0) ? getEntity<BossLeftHandTag>() : getEntity<BossRightHandTag>();
+					mHandSkillState.isAttack = true;
+
+					Animator* anim = mHandSkillState.entity->GetComponent<Animator>();
+					anim->frameIndex = 0;
+				}
+
+				BossHand* hand = mHandSkillState.entity->GetComponent<BossHand>();
+				hand->state = BossHand::eState::Attack;
+
+				Animator* handAnim = mHandSkillState.entity->GetComponent<Animator>();
+				if (handAnim->frameIndex == 9)
+				{
+					spawnHandSkill();
+				}
+
+				// 공격 재생시간을 설정한다.
+				{
+					const Entity* startEntity = getEntity<BossHandSkillTag>();
+					const Entity* centerEntity = getEntity<BossHandCenterSkillTag>();
+
+					if (startEntity and centerEntity)
+					{
+						const Clip& centerClip = *centerEntity->GetComponent<Animator>()->clipState;
+						Animator& centerAnim = *centerEntity->GetComponent<Animator>();
+
+						Animator& startAnim = *startEntity->GetComponent<Animator>();
+
+						mHandSkillState.attackTimer += deltaTime;
+						if (mHandSkillState.attackTimer < 2.0f)
+						{
+							if (handAnim->frameIndex > 13)
+							{
+								handAnim->frameIndex = 10;
+							}
+
+							if ((centerAnim.clipState == &centerClip and centerAnim.frameIndex > 2)
+								and (startAnim.frameIndex > 2))
+							{
+								startAnim.frameIndex = 0;
+								centerAnim.frameIndex = 0;
+							}
+						}
+					}
+				}
+
+				if (handAnim->frameIndex >= handAnim->clipState->GetLastFrameIndex() - 1)
+				{
+					hand->state = BossHand::eState::Idle;
+					pattern->type = AttackPattern::eType::CycloneFan;
+
+					mHandSkillState.isAttack = false;
+					mHandSkillState.entity = nullptr;
+				}
+
+				break;
+			}
+
+			default:
+				break;
+		}
 	}
 
 	case Monster::eState::Attack:
@@ -2741,12 +2832,12 @@ void MainScene::updateBossStates(const float deltaTime)
 				if (mCycloneFanState.count <= 0)
 				{
 					anim.frameIndex = 0;
+					monster->state = Monster::eState::Idle;
+					pattern->type = AttackPattern::eType::HandSkill;
 				}
 			}
 		}
-
-		updateCycloneFan(deltaTime);
-
+		
 		break;
 	}
 
@@ -2754,7 +2845,6 @@ void MainScene::updateBossStates(const float deltaTime)
 	{
 		boxCollider->size = colliderState->runSize;
 		boxCollider->offset = colliderState->runOffset;
-
 		break;
 	}
 
@@ -2771,6 +2861,9 @@ void MainScene::updateBossStates(const float deltaTime)
 		break;
 	}
 	
+	updateCycloneFan(deltaTime);
+	updateHandSkill();
+
 	Hp* hp = entity->GetComponent<Hp>();
 	if (hp->value > 0)
 	{
@@ -2833,6 +2926,153 @@ void MainScene::updateCycloneFan(const float deltaTime)
 		
 		entity->SetRemove();
 		entity->RemovedComponent();
+	}
+}
+
+void MainScene::spawnHandSkill()
+{
+	constexpr float START_POSITION_OFFSET = 20.0f;
+	constexpr float CENTER_POSITION_OFFSET = 360.0f;
+	constexpr float CENTER_WIDTH_SIZE = 20.0f;
+
+	if (mHandSkillState.isSpawn)
+	{
+		return;
+	}
+
+	for (auto entities = getEntities<BossHand>();
+		Entity * handEntity : entities)
+	{
+		if (const BossHand* hand = handEntity->GetComponent<BossHand>(); 
+			hand->state != BossHand::eState::Attack)
+		{
+			continue;
+		}
+
+		// Start
+		{
+			Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+			newEntity->AddComponent(BossHandSkillTag());
+			newEntity->AddComponent(Transform());
+			newEntity->AddComponent(Image());
+			newEntity->AddComponent(Animator());
+			newEntity->AddComponent(Active());
+			newEntity->AddComponent(BoxCollider());
+			newEntity->AddComponent(DebugActive());
+			newEntity->AddComponent(DebugColor());
+
+			Animator* animator = newEntity->GetComponent<Animator>();
+			animator->clipState = &mBossHandStartSkillClip;
+
+			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::HandSkill));
+			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
+			newEntity->AddComponent(collider);
+
+			BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
+			boxCollider->size = { .width = float(mBossHandSkillTextures[0].GetWidth()), .height = float(mBossHandSkillTextures[0].GetHeight()) };
+
+			const Transform* handTransform = handEntity->GetComponent<Transform>();
+			
+			Transform* transform = newEntity->GetComponent<Transform>();
+			transform->position = handTransform->position;
+			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+			transform->flip = handTransform->flip;
+
+			if (handTransform->flip == SDL_FLIP_NONE)
+			{
+				transform->position.x += START_POSITION_OFFSET;
+				transform->position.y += START_POSITION_OFFSET;
+			}
+			else if (handTransform->flip == SDL_FLIP_HORIZONTAL)
+			{
+				transform->position.x -= START_POSITION_OFFSET;
+				transform->position.y -= START_POSITION_OFFSET;
+			}
+			
+			Active* active = newEntity->GetComponent<Active>();
+			active->isValue = true;
+		}
+
+		// Center
+		{
+			Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+			newEntity->AddComponent(BossHandCenterSkillTag());
+			newEntity->AddComponent(Transform());
+			newEntity->AddComponent(Image());
+			newEntity->AddComponent(Animator());
+			newEntity->AddComponent(Active());
+			newEntity->AddComponent(BoxCollider());
+			newEntity->AddComponent(DebugActive());
+			newEntity->AddComponent(DebugColor());
+
+			Animator* animator = newEntity->GetComponent<Animator>();
+			animator->clipState = &mBossHandCenterSkillClip;
+
+			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::HandSkill));
+			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
+			newEntity->AddComponent(collider);
+
+			BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
+			boxCollider->size = { .width = float(mBossHandCenterSkillTextures[0].GetWidth()), .height = float(mBossHandCenterSkillTextures[0].GetHeight()) };
+
+			const Entity* skillEntity = getEntity<BossHandSkillTag>();
+			const Transform* skillTransform = skillEntity->GetComponent<Transform>();
+			
+			Transform* transform = newEntity->GetComponent<Transform>();
+			transform->position = skillTransform->position;
+			transform->scale = { .width = CENTER_WIDTH_SIZE, .height = PRIMARY_SIZE };
+			transform->flip = skillTransform->flip;
+
+			if (skillTransform->flip == SDL_FLIP_NONE)
+			{
+				transform->position.x += CENTER_POSITION_OFFSET;
+			}
+			else if (skillTransform->flip == SDL_FLIP_HORIZONTAL)
+			{
+				transform->position.x -= CENTER_POSITION_OFFSET;
+			}
+
+			Active* active = newEntity->GetComponent<Active>();
+			active->isValue = true;
+
+			mHandSkillState.isSpawn = true;
+
+			break;
+		}
+	}
+}
+
+void MainScene::updateHandSkill()
+{
+	Entity* startEntity = getEntity<BossHandSkillTag>();
+	Entity* centerEntity = getEntity<BossHandCenterSkillTag>();
+
+	if (startEntity and centerEntity)
+	{
+		if (Animator* animator = centerEntity->GetComponent<Animator>();
+			animator->frameIndex >= animator->clipState->GetLastFrameIndex() - 1)
+		{
+			startEntity->SetRemove();
+			centerEntity->SetRemove();
+
+			mHandSkillState.isSpawn = false;
+			mHandSkillState.attackTimer = 0.0f;
+		}
+	}
+}
+
+void MainScene::handSkillSetClip()
+{
+	const Entity* startEntity = getEntity<BossHandSkillTag>();
+	const Entity* centerEntity = getEntity<BossHandCenterSkillTag>();
+
+	if (startEntity and centerEntity)
+	{
+		Animator* startAnimator = startEntity->GetComponent<Animator>();
+		startAnimator->SetClip(&mBossHandStartSkillClip);
+
+		Animator* centerAnimator = centerEntity->GetComponent<Animator>();
+		centerAnimator->SetClip(&mBossHandCenterSkillClip);
 	}
 }
 
@@ -3088,9 +3328,9 @@ void MainScene::removeAttackCollider()
 template<typename T>
 void MainScene::spawnRangedAttack(const SpawnRangeAttackDesc& desc)
 {
-	constexpr float monsterLeftOffsetX = 20.0f;
-	constexpr float monsterRightOffsetX = 80.0f;
-	constexpr Point centerOffset = { .x = -0.4f, .y = 0.0f };
+	constexpr float MONSTER_LEFT_OFFSET_X = 20.0f;
+	constexpr float MONSTER_RIGHT_OFFSET_X = 80.0f;
+	constexpr Point CENTER_OFFSET = { .x = -0.4f, .y = 0.0f };
 
 	const eMonsterType type = desc.type;
 	Texture* texture = desc.texture;
@@ -3181,7 +3421,7 @@ void MainScene::spawnRangedAttack(const SpawnRangeAttackDesc& desc)
 
 			// Offset을 계산한다.
 			const Transform* monsterTransform = monsterEntity->GetComponent<Transform>();
-			const float centerOffsetX = centerOffset.x * (mArrowTexture.GetWidth() - 1.0f);
+			const float centerOffsetX = CENTER_OFFSET.x * (mArrowTexture.GetWidth() - 1.0f);
 
 			RangedAttack* rangedAttack = arrowEntity->GetComponent<RangedAttack>();
 			Transform* transform = arrowEntity->GetComponent<Transform>();
@@ -3189,18 +3429,18 @@ void MainScene::spawnRangedAttack(const SpawnRangeAttackDesc& desc)
 			if (transform->flip == SDL_FLIP_NONE)
 			{
 				rangedAttack->startPosition.x = monsterTransform->position.x
-					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
+					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + MONSTER_RIGHT_OFFSET_X;
 
 				transform->position.x = monsterTransform->position.x
-					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + monsterRightOffsetX;
+					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() + MONSTER_RIGHT_OFFSET_X;
 			}
 			else
 			{
 				rangedAttack->startPosition.x = monsterTransform->position.x
-					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
+					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - MONSTER_LEFT_OFFSET_X;
 
 				transform->position.x = monsterTransform->position.x
-					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - monsterLeftOffsetX;
+					+ (centerOffsetX - mArrowTexture.GetWidth()) * mArrowTexture.GetWidth() - MONSTER_LEFT_OFFSET_X;
 			}
 
 			rangedAttack->startPosition.y = monsterTransform->position.y;
@@ -3601,6 +3841,12 @@ void MainScene::updateSwordStates(const float deltaTime)
 float MainScene::getRandom(const float min, const float max)
 {
 	const float result = float(rand()) / RAND_MAX * (max - min) + min;
+	return result;
+}
+
+uint32_t MainScene::getRandom(const uint32_t min, const uint32_t max)
+{
+	const uint32_t result = uint32_t(rand()) / RAND_MAX * (max - min) + min;
 	return result;
 }
 
