@@ -92,6 +92,17 @@ public:
 		Count
 	};
 
+	enum class Layer
+	{
+		None,
+		Tile,
+		BossBack,
+		Monster,
+		Shadow,
+		Player,
+		Count
+	};
+
 public:
 	MainScene() = default;
 	MainScene(const MainScene&) = delete;

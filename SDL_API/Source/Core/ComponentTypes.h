@@ -26,6 +26,7 @@ struct Image final : public Component
 	Image() : Component(&_ID) {}
 
 	Texture* texture = nullptr;
+	uint32_t layer = 0;
 };
 
 struct Label final : public Component

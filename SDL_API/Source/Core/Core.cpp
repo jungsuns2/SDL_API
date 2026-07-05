@@ -6,7 +6,6 @@
 
 #include "Clip.h"
 #include "Collision.h"
-#include "Constant.h"
 
 void Core::Initialize(Scene* scene)
 {
@@ -65,6 +64,11 @@ bool Core::Update(const float deltaTime)
 	labelRenderingSystem(entityWorld);
 
 	SDL_RenderPresent(mRenderer); // 화면에 출력한다.
+	
+	for (uint32_t i = 0; i < Constant::MAX_LAYER; ++i)
+	{
+		mLayers[i].clear();
+	}
 
 	return true;
 }
@@ -272,6 +276,12 @@ void Core::drawImages(const EntityWorld* entityWorld)
 		const Image* image = entity->GetComponent<Image>();
 		const Texture* texture = image->texture;
 		assert(texture != nullptr and "image 컴포넌트에 설정된 texture가 유효하지 않습니다.");
+		
+		Color color{};
+		if (entity->HasComponent<Color>())
+		{
+			color = *entity->GetComponent<Color>();
+		}
 
 		SDL_FRect rect{};
 		SDL_FPoint angleCenter{};
@@ -287,15 +297,27 @@ void Core::drawImages(const EntityWorld* entityWorld)
 			}
 		);
 
-		Color color{};
-		if (entity->HasComponent<Color>())
+		LayerDesc desc =
 		{
-			color = *entity->GetComponent<Color>();
-		}
+			.transform = transform,
+			.texture = texture,
+			.color = color,
+			.rect = rect,
+			.angleCenter = angleCenter
+		};
 
-		SDL_SetTextureColorMod(texture->GetTexture(), color.r, color.g, color.b);
-		SDL_SetTextureAlphaMod(texture->GetTexture(), color.a);
-		SDL_RenderCopyExF(mRenderer, texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
+		assert(image->layer < Constant::MAX_LAYER and "최대 Layer 개수를 초과했습니다.");
+		mLayers[image->layer].push_back(desc);
+	}
+
+	for (uint32_t i = 0; i < Constant::MAX_LAYER; ++i)
+	{
+		for (const auto& layer : mLayers[i])
+		{
+			SDL_SetTextureColorMod(layer.texture->GetTexture(), layer.color.r, layer.color.g, layer.color.b);
+			SDL_SetTextureAlphaMod(layer.texture->GetTexture(), layer.color.a);
+			SDL_RenderCopyExF(mRenderer, layer.texture->GetTexture(), nullptr, &layer.rect, layer.transform->angle, &layer.angleCenter, layer.transform->flip);
+		}
 	}
 }
 

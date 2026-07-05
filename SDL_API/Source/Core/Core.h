@@ -1,6 +1,7 @@
 #pragma once
 #include "ComponentTypes.h"
 
+#include "Constant.h"
 #include "Helper.h"
 #include "Scene.h"
 #include "Texture.h"
@@ -18,6 +19,15 @@ struct DrawSystemDesc
 	const Scale textureScale;
 	Transform* transform;
 	SDL_FRect* rect;
+};
+
+struct LayerDesc
+{
+	const Transform* transform;
+	const Texture* texture;
+	const Color color;
+	const SDL_FRect rect;
+	const SDL_FPoint angleCenter;
 };
 
 class EntityWorld;
@@ -63,4 +73,5 @@ private:
 	Transform* mCameraTransform = nullptr;
 
 	Texture mColliderTexture{};
+	std::array<std::vector<LayerDesc>, Constant::MAX_LAYER> mLayers{};
 };

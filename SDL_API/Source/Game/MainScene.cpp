@@ -996,6 +996,7 @@ void MainScene::initialize_Entity()
 
 				Image image{};
 				image.texture = &tileTexture;
+				image.layer = static_cast<uint32_t>(Layer::Tile);
 				entity.AddComponent(image);
 
 				Active active{};
@@ -1357,6 +1358,9 @@ void MainScene::initializePlayer()
 		Transform* transform = entity->GetComponent<Transform>();
 		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 
+		Image* image = entity->GetComponent<Image>();
+		image->layer = static_cast<uint32_t>(Layer::Player);
+
 		Animator* animator = entity->GetComponent<Animator>();
 		animator->clipState = &mPlayerClips[uint32_t(Player::eState::Idle)];
 
@@ -1385,6 +1389,7 @@ void MainScene::initializePlayer()
 
 		Image* image = entity->GetComponent<Image>();
 		image->texture = &mPlayerHandTexture;
+		image->layer = static_cast<uint32_t>(Layer::Player);
 
 		Active* active = entity->GetComponent<Active>();
 		active->isValue = true;
@@ -1399,6 +1404,7 @@ void MainScene::initializePlayer()
 
 		Image* image = entity->GetComponent<Image>();
 		image->texture = &mPlayerHandTexture;
+		image->layer = static_cast<uint32_t>(Layer::Player);
 
 		Active* active = entity->GetComponent<Active>();
 		active->isValue = true;
@@ -1474,6 +1480,7 @@ void MainScene::playerSpawnShadow(const float deltaTime)
 
 		Image* image = newEntity->GetComponent<Image>();
 		image->texture = &mPlayerShadowTexture;
+		image->layer = static_cast<uint32_t>(Layer::Shadow);
 
 		Transform* shadowTransform = newEntity->GetComponent<Transform>();
 		shadowTransform->position = dash->startPosition;
@@ -1757,6 +1764,9 @@ void MainScene::spawnSwordSkill()
 		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
 		newEntity->AddComponent(collider);
 
+		Image* image = newEntity->GetComponent<Image>();
+		image->layer = static_cast<uint32_t>(Layer::Player);
+
 		Animator* effectAnim = newEntity->GetComponent<Animator>();
 		effectAnim->clipState = &mSwordSkillClip;
 		effectAnim->frameIndex = 0;
@@ -1864,6 +1874,9 @@ void MainScene::spawnBullets(const float deltaTime)
 			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
 			newEntity->AddComponent(collider);
 		}
+
+		Image* image = newEntity->GetComponent<Image>();
+		image->layer = static_cast<uint32_t>(Layer::Player);
 
 		Animator* animator = newEntity->GetComponent<Animator>();
 		animator->clipState = &mBulletClip;
@@ -2022,6 +2035,9 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 
 		Transform* transform = entity->GetComponent<Transform>();
 		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+
+		Image* image = entity->GetComponent<Image>();
+		image->layer = static_cast<uint32_t>(Layer::BossBack);
 
 		Animator* animator = entity->GetComponent<Animator>();
 		animator->clipState = &mBossBackClip;
@@ -2187,6 +2203,9 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 			transform->position.x = LEFT_OFFSET.x - Constant::Get().GetHalfWidth();
 			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 
+			Image* image = entity->GetComponent<Image>();
+			image->layer = static_cast<uint32_t>(Layer::BossBack);
+
 			Animator* animator = entity->GetComponent<Animator>();
 			animator->clipState = hand->clips;
 
@@ -2213,6 +2232,9 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 			transform->flip = SDL_FLIP_HORIZONTAL;
 
+			Image* image = entity->GetComponent<Image>();
+			image->layer = static_cast<uint32_t>(Layer::BossBack);
+
 			Animator* animator = entity->GetComponent<Animator>();
 			animator->clipState = hand->clips;
 		}
@@ -2223,6 +2245,9 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		assert(false and "지원하지 않는 몬스터 유형입니다.");
 		break;
 	}
+
+	Image* image = entity->GetComponent<Image>();
+	image->layer = static_cast<uint32_t>(Layer::Monster);
 
 	Animator* anim = entity->GetComponent<Animator>();
 	anim->clipState = monster->clips;
@@ -2238,6 +2263,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	{
 		Image* image = hpBarEntity->GetComponent<Image>();
 		image->texture = &mRedRectTexture;
+		image->layer = static_cast<uint32_t>(Layer::Monster);
 
  		Active* hpBarActive = hpBarEntity->GetComponent<Active>();
 		hpBarActive->isValue = false;
@@ -2634,46 +2660,49 @@ void MainScene::spawnWingBullet(const float wingOffsetAngle, const uint32_t inde
 {
 	constexpr float ROTATE_ANGLE = -7.0f;
 
-	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-	entity->AddComponent(CycloneFanTag());
-	entity->AddComponent(RangedAttack());
-	entity->AddComponent(Direction());
-	entity->AddComponent(Transform());
-	entity->AddComponent(Image());
-	entity->AddComponent(Animator());
-	entity->AddComponent(Active());
-	entity->AddComponent(BoxCollider());
-	entity->AddComponent(DebugActive());
-	entity->AddComponent(DebugColor());
+	Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+	newEntity->AddComponent(CycloneFanTag());
+	newEntity->AddComponent(RangedAttack());
+	newEntity->AddComponent(Direction());
+	newEntity->AddComponent(Transform());
+	newEntity->AddComponent(Image());
+	newEntity->AddComponent(Animator());
+	newEntity->AddComponent(Active());
+	newEntity->AddComponent(BoxCollider());
+	newEntity->AddComponent(DebugActive());
+	newEntity->AddComponent(DebugColor());
 
-	Animator* animator = entity->GetComponent<Animator>();
+	Image* image = newEntity->GetComponent<Image>();
+	image->layer = static_cast<uint32_t>(Layer::Monster);
+
+	Animator* animator = newEntity->GetComponent<Animator>();
 	animator->clipState = &mCycloneFanClip;
 
 	CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::CycloneFan));
 	collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
-	entity->AddComponent(collider);
+	newEntity->AddComponent(collider);
 
-	BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
+	BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
 	boxCollider->size = { .width = float(mCycloneFanTextures[0].GetWidth()), .height = float(mCycloneFanTextures[0].GetHeight()) };
 
 	const Entity* bossEntity = getEntity<BossTag>();
 	const Point bossPosition = bossEntity->GetComponent<Transform>()->position;
-	RangedAttack* rangedAttack = entity->GetComponent<RangedAttack>();
+	RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
 	rangedAttack->distance = 600.0f;
 	rangedAttack->startPosition = bossPosition;
 
-	Transform* transform = entity->GetComponent<Transform>();
+	Transform* transform = newEntity->GetComponent<Transform>();
 	transform->position = bossPosition;
 	transform->position.x += 20.0f;
 	transform->position.y -= 55.0f;
 	transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 
-	Active* active = entity->GetComponent<Active>();
+	Active* active = newEntity->GetComponent<Active>();
 	active->isValue = true;
 
 	const Point rotateDirection = { .x = 1.0f, .y = 0.0f };
 	const Point rotateResult = Math::RotatePoint(rotateDirection, wingOffsetAngle + index * ROTATE_ANGLE);
-	Direction* direction = entity->GetComponent<Direction>();
+	Direction* direction = newEntity->GetComponent<Direction>();
 	direction->value = rotateResult;
 }
 
@@ -2744,6 +2773,78 @@ void MainScene::updateBossStates(const float deltaTime)
 					monster->state = Monster::eState::Attack;
 					pattern->timer = 0.0f;
 				}
+<<<<<<< HEAD
+
+				break;
+			}
+				
+			case AttackPattern::eType::HandSkill:
+			{
+				if (not mHandSkillState.isAttack)
+				{
+					mHandSkillState.entity = (rand() % 2 == 0) ? getEntity<BossLeftHandTag>() : getEntity<BossRightHandTag>();
+					mHandSkillState.isAttack = true;
+
+					Animator* anim = mHandSkillState.entity->GetComponent<Animator>();
+					anim->frameIndex = 0;
+				}
+
+				BossHand* hand = mHandSkillState.entity->GetComponent<BossHand>();
+				hand->state = BossHand::eState::Attack;
+
+				Animator* handAnim = mHandSkillState.entity->GetComponent<Animator>();
+				if (handAnim->frameIndex == 9)
+				{
+					spawnHandSkill();
+				}
+
+				// 공격 재생시간을 설정한다.
+				{
+					const Entity* startEntity = getEntity<BossHandSkillTag>();
+					const Entity* centerEntity = getEntity<BossHandCenterSkillTag>();
+
+					if (startEntity and centerEntity)
+					{
+						const Clip& centerClip = *centerEntity->GetComponent<Animator>()->clipState;
+						Animator& centerAnim = *centerEntity->GetComponent<Animator>();
+
+						Animator& startAnim = *startEntity->GetComponent<Animator>();
+
+						mHandSkillState.attackTimer += deltaTime;
+						if (mHandSkillState.attackTimer < 2.0f)
+						{
+							if (handAnim->frameIndex > 13)
+							{
+								handAnim->frameIndex = 10;
+							}
+
+							if ((centerAnim.clipState == &centerClip and centerAnim.frameIndex > 2)
+								and (startAnim.frameIndex > 2))
+							{
+								startAnim.frameIndex = 0;
+								centerAnim.frameIndex = 0;
+							}
+						}
+					}
+				}
+
+				if (handAnim->frameIndex >= handAnim->clipState->GetLastFrameIndex() - 1)
+				{
+					hand->state = BossHand::eState::Idle;
+					pattern->type = AttackPattern::eType::CycloneFan;
+
+					mHandSkillState.isAttack = false;
+					mHandSkillState.entity = nullptr;
+				}
+
+				break;
+			}
+
+			default:
+				break;
+		}
+=======
+>>>>>>> fc2606e5587aea497f87332698add7a1ad9abca4
 
 				break;
 			}
@@ -2961,6 +3062,12 @@ void MainScene::spawnHandSkill()
 			newEntity->AddComponent(DebugActive());
 			newEntity->AddComponent(DebugColor());
 
+<<<<<<< HEAD
+			Image* image = newEntity->GetComponent<Image>();
+			image->layer = static_cast<uint32_t>(Layer::Monster);
+
+=======
+>>>>>>> fc2606e5587aea497f87332698add7a1ad9abca4
 			Animator* animator = newEntity->GetComponent<Animator>();
 			animator->clipState = &mBossHandStartSkillClip;
 
@@ -3005,6 +3112,12 @@ void MainScene::spawnHandSkill()
 			newEntity->AddComponent(DebugActive());
 			newEntity->AddComponent(DebugColor());
 
+<<<<<<< HEAD
+			Image* image = newEntity->GetComponent<Image>();
+			image->layer = static_cast<uint32_t>(Layer::Monster);
+
+=======
+>>>>>>> fc2606e5587aea497f87332698add7a1ad9abca4
 			Animator* animator = newEntity->GetComponent<Animator>();
 			animator->clipState = &mBossHandCenterSkillClip;
 
@@ -3020,6 +3133,10 @@ void MainScene::spawnHandSkill()
 			
 			Transform* transform = newEntity->GetComponent<Transform>();
 			transform->position = skillTransform->position;
+<<<<<<< HEAD
+			transform->position.y += 3.0f;
+=======
+>>>>>>> fc2606e5587aea497f87332698add7a1ad9abca4
 			transform->scale = { .width = CENTER_WIDTH_SIZE, .height = PRIMARY_SIZE };
 			transform->flip = skillTransform->flip;
 
@@ -3403,6 +3520,7 @@ void MainScene::spawnRangedAttack(const SpawnRangeAttackDesc& desc)
 
 				Image* image = arrowEntity->GetComponent<Image>();
 				image->texture = texture;
+				image->layer = static_cast<uint32_t>(Layer::Monster);
 
 				const Damage* monsterDamage = monsterEntity->GetComponent<Damage>();
 				Damage* damage = arrowEntity->GetComponent<Damage>();
@@ -3738,6 +3856,7 @@ void MainScene::initializeGun()
 
 	Image* image = entity->GetComponent<Image>();
 	image->texture = &mGunTexture;
+	image->layer = static_cast<uint32_t>(Layer::Player);
 
 	Active* active = entity->GetComponent<Active>();
 	active->isValue = true;
@@ -3788,6 +3907,9 @@ void MainScene::initializeSword()
 	Transform* transform = entity->GetComponent<Transform>();
 	transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 	transform->center = { .x = 0.0f,.y = -0.33f };
+
+	Image* image = entity->GetComponent<Image>();
+	image->layer = static_cast<uint32_t>(Layer::Player);
 
 	Animator* animator = entity->GetComponent<Animator>();
 	animator->clipState = &mSwordClip;
