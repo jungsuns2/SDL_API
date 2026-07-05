@@ -1247,7 +1247,7 @@ void MainScene::updateCamera()
 	clampToTile(transform, { .min = halfScreen.width, .max = halfScreen.width }, { .min = halfScreen.height, .max = halfScreen.height });
 }
 
-Rect& MainScene::getCameraRect() const
+Rect MainScene::getCameraRect() const
 {
 	constexpr Point OFFSET = { .x = 24.0f, .y = 23.0f };
 
@@ -2727,44 +2727,44 @@ void MainScene::updateBossStates(const float deltaTime)
 	Monster* monster = entity->GetComponent<Monster>();
 	switch (monster->state)
 	{
-	case Monster::eState::Spawn:
-	{
-		monster->spawnBlinkTimer += deltaTime;
-		if (monster->spawnBlinkTimer >= 0.5f)
+		case Monster::eState::Spawn:
 		{
-			Transform* monsterTransform = entity->GetComponent<Transform>();
-			monsterTransform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-			
-			monster->state = Monster::eState::Idle;
+			monster->spawnBlinkTimer += deltaTime;
+			if (monster->spawnBlinkTimer >= 0.5f)
+			{
+				Transform* monsterTransform = entity->GetComponent<Transform>();
+				monsterTransform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+				
+				monster->state = Monster::eState::Idle;
 
-			const Entity* backEntity = getEntity<BossBackTag>();
-			Active* backActive = backEntity->GetComponent<Active>();
-			backActive->isValue = true;
+				const Entity* backEntity = getEntity<BossBackTag>();
+				Active* backActive = backEntity->GetComponent<Active>();
+				backActive->isValue = true;
 
-			const Entity* leftHandEntity = getEntity<BossLeftHandTag>();
-			Active* leftActive = leftHandEntity->GetComponent<Active>();
-			leftActive->isValue = true;
+				const Entity* leftHandEntity = getEntity<BossLeftHandTag>();
+				Active* leftActive = leftHandEntity->GetComponent<Active>();
+				leftActive->isValue = true;
 
-			const Entity* rightHandEntity = getEntity<BossRightHandTag>();
-			Active* rightActive = rightHandEntity->GetComponent<Active>();
-			rightActive->isValue = true;
-			
-			Active* active = entity->GetComponent<Active>();
-			active->isValue = true;
+				const Entity* rightHandEntity = getEntity<BossRightHandTag>();
+				Active* rightActive = rightHandEntity->GetComponent<Active>();
+				rightActive->isValue = true;
+				
+				Active* active = entity->GetComponent<Active>();
+				active->isValue = true;
 
-			monster->spawnBlinkTimer = 0.0f;
+				monster->spawnBlinkTimer = 0.0f;
+			}
+
+			break;
 		}
 
-		break;
-	}
-
-	case Monster::eState::Idle:
-	{
-		boxCollider->offset = colliderState->runOffset;
-		boxCollider->size = colliderState->runSize;
-
-		switch (pattern->type)
+		case Monster::eState::Idle:
 		{
+			boxCollider->offset = colliderState->runOffset;
+			boxCollider->size = colliderState->runSize;
+
+			switch (pattern->type)
+			{
 			case AttackPattern::eType::CycloneFan:
 			{
 				pattern->timer += deltaTime;
@@ -2773,11 +2773,10 @@ void MainScene::updateBossStates(const float deltaTime)
 					monster->state = Monster::eState::Attack;
 					pattern->timer = 0.0f;
 				}
-<<<<<<< HEAD
 
 				break;
 			}
-				
+
 			case AttackPattern::eType::HandSkill:
 			{
 				if (not mHandSkillState.isAttack)
@@ -2842,79 +2841,10 @@ void MainScene::updateBossStates(const float deltaTime)
 
 			default:
 				break;
-		}
-=======
->>>>>>> fc2606e5587aea497f87332698add7a1ad9abca4
-
-				break;
-			}
-				
-			case AttackPattern::eType::HandSkill:
-			{
-				if (not mHandSkillState.isAttack)
-				{
-					mHandSkillState.entity = (rand() % 2 == 0) ? getEntity<BossLeftHandTag>() : getEntity<BossRightHandTag>();
-					mHandSkillState.isAttack = true;
-
-					Animator* anim = mHandSkillState.entity->GetComponent<Animator>();
-					anim->frameIndex = 0;
-				}
-
-				BossHand* hand = mHandSkillState.entity->GetComponent<BossHand>();
-				hand->state = BossHand::eState::Attack;
-
-				Animator* handAnim = mHandSkillState.entity->GetComponent<Animator>();
-				if (handAnim->frameIndex == 9)
-				{
-					spawnHandSkill();
-				}
-
-				// 공격 재생시간을 설정한다.
-				{
-					const Entity* startEntity = getEntity<BossHandSkillTag>();
-					const Entity* centerEntity = getEntity<BossHandCenterSkillTag>();
-
-					if (startEntity and centerEntity)
-					{
-						const Clip& centerClip = *centerEntity->GetComponent<Animator>()->clipState;
-						Animator& centerAnim = *centerEntity->GetComponent<Animator>();
-
-						Animator& startAnim = *startEntity->GetComponent<Animator>();
-
-						mHandSkillState.attackTimer += deltaTime;
-						if (mHandSkillState.attackTimer < 2.0f)
-						{
-							if (handAnim->frameIndex > 13)
-							{
-								handAnim->frameIndex = 10;
-							}
-
-							if ((centerAnim.clipState == &centerClip and centerAnim.frameIndex > 2)
-								and (startAnim.frameIndex > 2))
-							{
-								startAnim.frameIndex = 0;
-								centerAnim.frameIndex = 0;
-							}
-						}
-					}
-				}
-
-				if (handAnim->frameIndex >= handAnim->clipState->GetLastFrameIndex() - 1)
-				{
-					hand->state = BossHand::eState::Idle;
-					pattern->type = AttackPattern::eType::CycloneFan;
-
-					mHandSkillState.isAttack = false;
-					mHandSkillState.entity = nullptr;
-				}
-
-				break;
 			}
 
-			default:
-				break;
+			break;
 		}
-	}
 
 	case Monster::eState::Attack:
 	{
@@ -3062,12 +2992,9 @@ void MainScene::spawnHandSkill()
 			newEntity->AddComponent(DebugActive());
 			newEntity->AddComponent(DebugColor());
 
-<<<<<<< HEAD
 			Image* image = newEntity->GetComponent<Image>();
 			image->layer = static_cast<uint32_t>(Layer::Monster);
 
-=======
->>>>>>> fc2606e5587aea497f87332698add7a1ad9abca4
 			Animator* animator = newEntity->GetComponent<Animator>();
 			animator->clipState = &mBossHandStartSkillClip;
 
@@ -3112,12 +3039,9 @@ void MainScene::spawnHandSkill()
 			newEntity->AddComponent(DebugActive());
 			newEntity->AddComponent(DebugColor());
 
-<<<<<<< HEAD
 			Image* image = newEntity->GetComponent<Image>();
 			image->layer = static_cast<uint32_t>(Layer::Monster);
 
-=======
->>>>>>> fc2606e5587aea497f87332698add7a1ad9abca4
 			Animator* animator = newEntity->GetComponent<Animator>();
 			animator->clipState = &mBossHandCenterSkillClip;
 
@@ -3133,10 +3057,7 @@ void MainScene::spawnHandSkill()
 			
 			Transform* transform = newEntity->GetComponent<Transform>();
 			transform->position = skillTransform->position;
-<<<<<<< HEAD
 			transform->position.y += 3.0f;
-=======
->>>>>>> fc2606e5587aea497f87332698add7a1ad9abca4
 			transform->scale = { .width = CENTER_WIDTH_SIZE, .height = PRIMARY_SIZE };
 			transform->flip = skillTransform->flip;
 

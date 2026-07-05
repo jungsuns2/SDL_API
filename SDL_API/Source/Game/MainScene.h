@@ -120,7 +120,7 @@ private:
 
 	void input();
 	void updateCamera();
-	[[nodiscard]] Rect& getCameraRect() const;
+	[[nodiscard]] Rect getCameraRect() const;
 		
 	template <typename T>
 	Entity* getEntity() const
