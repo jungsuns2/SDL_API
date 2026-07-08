@@ -49,6 +49,8 @@ public:
 	void SetSceneType(Scene::eSceneType type);
 
 private:
+	void updateCollision(const EntityWorld* entityWorld);
+	
 	void updateAnimator(const EntityWorld* entityWorld, const float deltaTime);
 
 	Transform* cameraSystem(const EntityWorld* entityWorld);

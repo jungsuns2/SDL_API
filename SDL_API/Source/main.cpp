@@ -1,6 +1,8 @@
 #include "pch.h"
+
 #include "Core/Core.h"
 #include "Core/Input.h"
+
 #include "Game/MainScene.h"
 #include "Game/StartScene.h"
 #include "Game/StudyScene.h"

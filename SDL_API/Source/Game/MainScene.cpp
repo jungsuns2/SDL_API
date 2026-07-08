@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 
 #include "Core/Collision.h"
+#include "Core/CollisionMath.h"
 #include "Core/Constant.h"
 #include "Core/Helper.h"
 #include "Core/Input.h"
@@ -44,63 +45,6 @@ void MainScene::Initialize()
 
 bool MainScene::Update(const float deltaTime)
 {
-	// Core
-	{
-		for (const Entity* entity0 : GetEntityWorld()->GetAllEntities())
-		{
-			if (not entity0->HasComponent<Transform>()
-				or not entity0->HasComponent<CollisionDetector>())
-			{
-				continue;
-			}
-
-			CollisionDetector* collisionDetector0 = entity0->GetComponent<CollisionDetector>();
-			if (collisionDetector0->CollisionLayerMask.none())
-			{
-				continue;
-			}
-
-			for (const Entity* entity1 : GetEntityWorld()->GetAllEntities())
-			{
-				if (not entity1->HasComponent<Transform>()
-					or not entity1->HasComponent<CollisionDetector>())
-				{
-					continue;
-				}
-
-				if (entity0 == entity1)
-				{
-					continue;
-				}
-
-				CollisionDetector* collisionDetector1 = entity1->GetComponent<CollisionDetector>();
-				if (not collisionDetector0->CollisionLayerMask[collisionDetector1->Layer])
-				{
-					continue;
-				}
-
-				if (entity0->HasComponent<Active>()
-					or entity1->HasComponent<Active>())
-				{
-					const Active* active0 = entity0->GetComponent<Active>();
-					const Active* active1 = entity1->GetComponent<Active>();
-					if (not active0->isValue
-						or not active1->isValue)
-					{
-						continue;
-					}
-				}
-
-				{
-					checkCollisionBoxBox(*entity0, *entity1)
-						/*or checkCollisionBoxCircle(*entity0, *entity1)
-						or checkCollisionBoxLine(*entity0, *entity1)
-						or checkCollisionCircleCircle(*entity0, *entity1)
-						or checkCollisionCircleLine(*entity0, *entity1)*/;
-				}
-			}
-		}
-	}
 
 	updateCamera();
 	input();
@@ -265,8 +209,7 @@ bool MainScene::Update(const float deltaTime)
 	//swordSkillToMonsterCollision();
 	//bulletToMonsterCollision();
 
-	mPreviousCollidedEntityPairs = mCollidedEntityPairs;
-	mCollidedEntityPairs.clear();
+	Collision::Get().UpdateEntityPairs();
 
 	playerSetClip();
 	monsterSetClip();
@@ -3931,13 +3874,13 @@ uint32_t MainScene::getRandom(const uint32_t min, const uint32_t max)
 
 bool MainScene::isCollisionEnter(const Entity& entity0, const Entity& entity1) const
 {
-	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
 
-	if (const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
-		foundCollidedEntityPair != mCollidedEntityPairs.end())
+	if (const auto& foundCollidedEntityPair = std::find(Collision::Get().GetCollidedEntityPairs().begin(), Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
+		foundCollidedEntityPair != Collision::Get().GetCollidedEntityPairs().end())
 	{
-		const auto& foundPreviousCollidedEntityPair = std::find(mPreviousCollidedEntityPairs.begin(), mPreviousCollidedEntityPairs.end(), collidedEntityPair);
-		return foundPreviousCollidedEntityPair == mPreviousCollidedEntityPairs.end();
+		const auto& foundPreviousCollidedEntityPair = std::find(Collision::Get().GetPreviousCollidedEntityPairs().begin(), Collision::Get().GetPreviousCollidedEntityPairs().end(), collidedEntityPair);
+		return foundPreviousCollidedEntityPair == Collision::Get().GetPreviousCollidedEntityPairs().end();
 	}
 
 	return false;
@@ -3945,241 +3888,28 @@ bool MainScene::isCollisionEnter(const Entity& entity0, const Entity& entity1) c
 
 bool MainScene::isCollisionStay(const Entity& entity0, const Entity& entity1) const
 {
-	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
 
-	const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
-	return foundCollidedEntityPair != mCollidedEntityPairs.end();
+	const auto& foundCollidedEntityPair = 
+		std::find(Collision::Get().GetCollidedEntityPairs().begin(),
+			Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
+	
+	return foundCollidedEntityPair != Collision::Get().GetCollidedEntityPairs().end();
 }
 
 bool MainScene::isCollisionExit(const Entity& entity0, const Entity& entity1) const
 {
-	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
 
-	if (const auto& foundPreviousCollidedEntityPair = std::find(mPreviousCollidedEntityPairs.begin(), mPreviousCollidedEntityPairs.end(), collidedEntityPair);
-		foundPreviousCollidedEntityPair != mPreviousCollidedEntityPairs.end())
+	if (const auto& foundPreviousCollidedEntityPair = 
+		std::find(Collision::Get().GetPreviousCollidedEntityPairs().begin(), 
+			Collision::Get().GetPreviousCollidedEntityPairs().end(), collidedEntityPair);
+		foundPreviousCollidedEntityPair != Collision::Get().GetPreviousCollidedEntityPairs().end())
 	{
-		const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
-		return foundCollidedEntityPair == mCollidedEntityPairs.end();
-	}
-
-	return false;
-}
-
-std::pair<const Entity*, const Entity*> MainScene::getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const
-{
-	std::pair<const Entity*, const Entity*> collidedEntityPair{};
-	if (&entity0 < &entity1)
-	{
-		collidedEntityPair = { &entity0, &entity1 };
-	}
-	else
-	{
-		collidedEntityPair = { &entity1, &entity0 };
-	}
-
-	return collidedEntityPair;
-}
-
-void MainScene::registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1)
-{
-	std::pair<const Entity*, const Entity*> colliderEntityPair = getCollidedEntityPair(entity0, entity1);
-
-	if (const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), colliderEntityPair);
-		foundCollidedEntityPair == mCollidedEntityPairs.end())
-	{
-		mCollidedEntityPairs.push_back(colliderEntityPair);
-	}
-}
-
-Quad MainScene::convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const
-{
-	const Point position = transform.position + boxCollider.offset;
-	const Scale boxHalfSize = transform.scale * boxCollider.size * 0.5f;
-
-	const Quad local =
-	{
-		.leftTop = { -boxHalfSize.width, -boxHalfSize.height },
-		.rightTop = { boxHalfSize.width, -boxHalfSize.height }, 
-		.leftBottom = { -boxHalfSize.width, boxHalfSize.height },
-		.rightBottom = { boxHalfSize.width, boxHalfSize.height }
-	};
-
-	const Quad rotate =
-	{
-		.leftTop = Math::RotatePoint(local.leftTop, -transform.angle),
-		.rightTop = Math::RotatePoint(local.rightTop, -transform.angle), 
-		.leftBottom = Math::RotatePoint(local.leftBottom, -transform.angle), 
-		.rightBottom = Math::RotatePoint(local.rightBottom, -transform.angle)
-	};
-
-	const Quad result
-	{
-		.leftTop = {.x = position.x + rotate.leftTop.x, .y = position.y - rotate.leftTop.y },
-		.rightTop = { .x = position.x + rotate.rightTop.x, .y = position.y - rotate.rightTop.y },
-		.leftBottom = { .x = position.x + rotate.leftBottom.x, .y = position.y - rotate.leftBottom.y },
-		.rightBottom = { .x = position.x + rotate.rightBottom.x, .y = position.y - rotate.rightBottom.y }
-	};
-
-	return result;
-}
-
-Circle MainScene::convertCircleColliderToWorldCircle(const Transform& transform, const CircleCollider& circleCollider) const
-{
-	const Circle result =
-	{
-		.center = transform.position + circleCollider.offset,
-		.radius = transform.scale.width * circleCollider.radius
-	};
-
-	return result;
-}
-
-Line MainScene::convertLineColliderToWorldLine(const Transform& transform, const LineCollider& lineCollider) const
-{
-	const Point position = transform.position + lineCollider.offset;
-	const Scale boxHalfSize = transform.scale * lineCollider.scale * 0.5f;
-
-	const Rect rect
-	{
-		.left = position.x - boxHalfSize.width,
-		.top = position.y + boxHalfSize.height,
-		.right = position.x + boxHalfSize.width,
-		.bottom = position.y - boxHalfSize.height,
-	};
-
-	float centerY = rect.top + (transform.scale.height * lineCollider.scale.height * 0.5f);
-
-	const Line result =
-	{
-		.point0 = {.x = rect.left, .y = rect.top },
-		.point1 = {.x = rect.right, .y = rect.bottom }
-	};
-
-	return result;
-}
-
-bool MainScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entity1)
-{
-	if (not entity0.HasComponent<BoxCollider>()
-		or not entity1.HasComponent<BoxCollider>())
-	{
-		return false;
-	}
-
-	const Transform* transform0 = entity0.GetComponent<Transform>();
-	const BoxCollider* boxCollider0 = entity0.GetComponent<BoxCollider>();
-	const Quad quad0 = convertBoxColliderToWorldBox(*transform0, *boxCollider0);
-
-	const Transform* transform1 = entity1.GetComponent<Transform>();
-	const BoxCollider* boxCollider1 = entity1.GetComponent<BoxCollider>();
-	const Quad quad1 = convertBoxColliderToWorldBox(*transform1, *boxCollider1);
-
-	if (Collision::IsCollidedSqureWithSqure(quad0, quad1))
-	{
-		registerCollidedEntityPairs(entity0, entity1);
-		return true;
-	}
-
-	return false;
-}
-
-bool MainScene::checkCollisionBoxCircle(const Entity& boxEntity, const Entity& circleEntity)
-{
-	if (not boxEntity.HasComponent<BoxCollider>()
-		or not circleEntity.HasComponent<CircleCollider>())
-	{
-		return false;
-	}
-
-	// TODO: Quad를 사용해서 수정하기
-	const Transform* boxTransform = boxEntity.GetComponent<Transform>();
-	const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
-	//const std::array<Point, 5> points = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);
-
-	const Transform* circleTransform = circleEntity.GetComponent<Transform>();
-	const CircleCollider* circleCollider = circleEntity.GetComponent<CircleCollider>();
-	const Circle circle = convertCircleColliderToWorldCircle(*circleTransform, *circleCollider);
-
-	//if (Collision::IsCollidedSqureWithCircle(rect, circle))
-	//{
-	//	registerCollidedEntityPairs(boxEntity, circleEntity);
-	//	return true;
-	//}
-
-	return false;
-}
-
-bool MainScene::checkCollisionBoxLine(const Entity& boxEntity, const Entity& lineEntity)
-{
-	if (not boxEntity.HasComponent<BoxCollider>()
-		or not lineEntity.HasComponent<LineCollider>())
-	{
-		return false;
-	}
-
-	// TODO: Quad를 사용해서 수정하기
-	//const Transform* boxTransform = boxEntity.GetComponent<Transform>();
-	//const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
-	//const Rect rect = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);
-
-	//const Transform* lineTransform = lineEntity.GetComponent<Transform>();
-	//const LineCollider* lineCollider = lineEntity.GetComponent<LineCollider>();
-	//const Line line = convertLineColliderToWorldLine(*lineTransform, *lineCollider);
-
-	//if (Collision::IsCollidedSqureWithLine(rect, line))
-	//{
-	//	registerCollidedEntityPairs(boxEntity, lineEntity);
-	//	return true;
-	//}
-
-	return false;
-}
-
-bool MainScene::checkCollisionCircleCircle(const Entity& entity0, const Entity& entity1)
-{
-	if (not entity0.HasComponent<CircleCollider>()
-		or not entity1.HasComponent<CircleCollider>())
-	{
-		return false;
-	}
-
-	const Transform* Transform0 = entity0.GetComponent<Transform>();
-	const CircleCollider* Collider0 = entity0.GetComponent<CircleCollider>();
-	const Circle circle0 = convertCircleColliderToWorldCircle(*Transform0, *Collider0);
-
-	const Transform* Transform1 = entity1.GetComponent<Transform>();
-	const CircleCollider* Collider1 = entity1.GetComponent<CircleCollider>();
-	const Circle circle1 = convertCircleColliderToWorldCircle(*Transform1, *Collider1);
-
-	if (Collision::IsCollidedCircleWithCircle(circle0, circle1))
-	{
-		registerCollidedEntityPairs(entity0, entity1);
-		return true;
-	}
-
-	return false;
-}
-
-bool MainScene::checkCollisionCircleLine(const Entity& circleEntity, const Entity& lineEntity)
-{
-	if (not circleEntity.HasComponent<CircleCollider>()
-		or not lineEntity.HasComponent<LineCollider>())
-	{
-		return false;
-	}
-
-	const Transform* circleTransform = circleEntity.GetComponent<Transform>();
-	const CircleCollider* circleCollider = circleEntity.GetComponent<CircleCollider>();
-	const Circle circle = convertCircleColliderToWorldCircle(*circleTransform, *circleCollider);
-
-	const Transform* lineTransform = lineEntity.GetComponent<Transform>();
-	const LineCollider* lineCollider = lineEntity.GetComponent<LineCollider>();
-	const Line line = convertLineColliderToWorldLine(*lineTransform, *lineCollider);
-
-	if (Collision::IsCollidedCircleWithLine(circle, line))
-	{
-		registerCollidedEntityPairs(circleEntity, lineEntity);
-		return true;
+		const auto& foundCollidedEntityPair = std::find(Collision::Get().GetCollidedEntityPairs().begin(), 
+			Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
+		
+		return foundCollidedEntityPair == Collision::Get().GetCollidedEntityPairs().end();
 	}
 
 	return false;

@@ -2,6 +2,7 @@
 #include "StudyScene.h"
 
 #include "Core/Collision.h"
+#include "Core/CollisionMath.h"
 #include "Core/Constant.h"
 #include "Core/Input.h"
 
@@ -200,52 +201,6 @@ void StudyScene::Initialize()
 
 bool StudyScene::Update(const float deltaTime)
 {	
-	// Core
-	{
-		for (const Entity* entity0 : GetEntityWorld()->GetAllEntities())
-		{
-			if (not entity0->HasComponent<Transform>()
-				or not entity0->HasComponent<CollisionDetector>())
-			{
-				continue;
-			}
-
-			CollisionDetector* collisionDetector0 = entity0->GetComponent<CollisionDetector>();
-			if (collisionDetector0->CollisionLayerMask.none())
-			{
-				continue;
-			}
-
-			for (const Entity* entity1 : GetEntityWorld()->GetAllEntities())
-			{
-				if (not entity1->HasComponent<Transform>()
-					or not entity1->HasComponent<CollisionDetector>())
-				{
-					continue;
-				}
-
-				if (entity0 == entity1)
-				{
-					continue;
-				}
-
-				CollisionDetector* collisionDetector1 = entity1->GetComponent<CollisionDetector>();
-				if (not collisionDetector0->CollisionLayerMask[collisionDetector1->Layer])
-				{
-					continue;
-				}
-
-				{
-					checkCollisionBoxBox(*entity0, *entity1)
-						/*or checkCollisionBoxCircle(*entity0, *entity1)
-						or checkCollisionBoxLine(*entity0, *entity1)
-						or checkCollisionCircleCircle(*entity0, *entity1)
-						or checkCollisionCircleLine(*entity0, *entity1)*/;
-				}
-			}
-		}
-	}
-
 	// Camera
 	{
 		//Transform* transform = mMainCamera.GetComponent<Transform>();
@@ -430,10 +385,9 @@ bool StudyScene::Update(const float deltaTime)
 			{
 			}
 		}
-
-		mPreviousCollidedEntityPairs = mCollidedEntityPairs;
-		mCollidedEntityPairs.clear();
 	}
+
+	Collision::Get().UpdateEntityPairs();
 
 	for (Entity& entity : mMonsters)
 	{
@@ -505,98 +459,20 @@ Point StudyScene::getScreenMousePosition() const
 	return screenPosition;
 }
 
-bool StudyScene::checkCollisionBoxBox(const Entity& entity0, const Entity& entity1)
-{
-	if (not entity0.HasComponent<BoxCollider>()
-		or not entity1.HasComponent<BoxCollider>())
-	{
-		return false;
-	}
-
-	const Transform* transform0 = entity0.GetComponent<Transform>();
-	const BoxCollider* boxCollider0 = entity0.GetComponent<BoxCollider>();
-	const Quad quad0 = convertBoxColliderToWorldBox(*transform0, *boxCollider0);
-
-	const Transform* transform1 = entity1.GetComponent<Transform>();
-	const BoxCollider* boxCollider1 = entity1.GetComponent<BoxCollider>();
-	const Quad quad1 = convertBoxColliderToWorldBox(*transform1, *boxCollider1);
-
-	if (Collision::IsCollidedSqureWithSqure(quad0, quad1))
-	{
-		registerCollidedEntityPairs(entity0, entity1);
-		return true;
-	}
-
-	return false;
-}
-
-Quad StudyScene::convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const
-{
-	const Point position = transform.position + boxCollider.offset;
-	const Scale boxHalfSize = transform.scale * boxCollider.size * 0.5f;
-
-	const Quad local =
-	{
-		.leftTop = { -boxHalfSize.width, -boxHalfSize.height },
-		.rightTop = { boxHalfSize.width, -boxHalfSize.height },
-		.leftBottom = { -boxHalfSize.width, boxHalfSize.height },
-		.rightBottom = { boxHalfSize.width, boxHalfSize.height }
-	};
-
-	const Quad rotate =
-	{
-		.leftTop = Math::RotatePoint(local.leftTop, -transform.angle),
-		.rightTop = Math::RotatePoint(local.rightTop, -transform.angle),
-		.leftBottom = Math::RotatePoint(local.leftBottom, -transform.angle),
-		.rightBottom = Math::RotatePoint(local.rightBottom, -transform.angle)
-	};
-
-	const Quad result
-	{
-		.leftTop = {.x = position.x + rotate.leftTop.x, .y = position.y - rotate.leftTop.y },
-		.rightTop = {.x = position.x + rotate.rightTop.x, .y = position.y - rotate.rightTop.y },
-		.leftBottom = {.x = position.x + rotate.leftBottom.x, .y = position.y - rotate.leftBottom.y },
-		.rightBottom = {.x = position.x + rotate.rightBottom.x, .y = position.y - rotate.rightBottom.y }
-	};
-
-	return result;
-}
-
-void StudyScene::registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1)
-{
-	std::pair<const Entity*, const Entity*> colliderEntityPair = getCollidedEntityPair(entity0, entity1);
-
-	if (const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), colliderEntityPair);
-		foundCollidedEntityPair == mCollidedEntityPairs.end())
-	{
-		mCollidedEntityPairs.push_back(colliderEntityPair);
-	}
-}
-
-std::pair<const Entity*, const Entity*> StudyScene::getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const
-{
-	std::pair<const Entity*, const Entity*> collidedEntityPair{};
-	if (&entity0 < &entity1)
-	{
-		collidedEntityPair = { &entity0, &entity1 };
-	}
-	else
-	{
-		collidedEntityPair = { &entity1, &entity0 };
-	}
-
-	return collidedEntityPair;
-}
-
 bool StudyScene::isCollisionEnter(const Entity& entity0, const Entity& entity1) const
 {
-	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
 
-	if (const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
-		foundCollidedEntityPair != mCollidedEntityPairs.end())
+	if (const auto& foundCollidedEntityPair = 
+		std::find(Collision::Get().GetCollidedEntityPairs().begin(),
+			Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
+		foundCollidedEntityPair != Collision::Get().GetCollidedEntityPairs().end())
 	{
-		const auto& foundPreviousCollidedEntityPair = std::find(mPreviousCollidedEntityPairs.begin(), mPreviousCollidedEntityPairs.end(), collidedEntityPair);
-		return foundPreviousCollidedEntityPair == mPreviousCollidedEntityPairs.end();
+		const auto& foundPreviousCollidedEntityPair = 
+			std::find(Collision::Get().GetPreviousCollidedEntityPairs().begin(),
+				Collision::Get().GetPreviousCollidedEntityPairs().end(), collidedEntityPair);
+		
+		return foundPreviousCollidedEntityPair == Collision::Get().GetPreviousCollidedEntityPairs().end();
 	}
 
 	return false;
@@ -604,21 +480,30 @@ bool StudyScene::isCollisionEnter(const Entity& entity0, const Entity& entity1) 
 
 bool StudyScene::isCollisionStay(const Entity& entity0, const Entity& entity1) const
 {
-	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+	std::pair<const Entity*, const Entity*> collidedEntityPair = 
+		Collision::Get().GetCollidedEntityPair(entity0, entity1);
 
-	const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
-	return foundCollidedEntityPair != mCollidedEntityPairs.end();
+	const auto& foundCollidedEntityPair = 
+		std::find(Collision::Get().GetCollidedEntityPairs().begin(),
+			Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
+	
+	return foundCollidedEntityPair != Collision::Get().GetCollidedEntityPairs().end();
 }
 
 bool StudyScene::isCollisionExit(const Entity& entity0, const Entity& entity1) const
 {
-	std::pair<const Entity*, const Entity*> collidedEntityPair = getCollidedEntityPair(entity0, entity1);
+	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
 
-	if (const auto& foundPreviousCollidedEntityPair = std::find(mPreviousCollidedEntityPairs.begin(), mPreviousCollidedEntityPairs.end(), collidedEntityPair);
-		foundPreviousCollidedEntityPair != mPreviousCollidedEntityPairs.end())
+	if (const auto& foundPreviousCollidedEntityPair = 
+		std::find(Collision::Get().GetPreviousCollidedEntityPairs().begin(),
+			Collision::Get().GetPreviousCollidedEntityPairs().end(), collidedEntityPair);
+		foundPreviousCollidedEntityPair != Collision::Get().GetPreviousCollidedEntityPairs().end())
 	{
-		const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(), mCollidedEntityPairs.end(), collidedEntityPair);
-		return foundCollidedEntityPair == mCollidedEntityPairs.end();
+		const auto& foundCollidedEntityPair = 
+			std::find(Collision::Get().GetCollidedEntityPairs().begin(),
+				Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
+		
+		return foundCollidedEntityPair == Collision::Get().GetCollidedEntityPairs().end();
 	}
 
 	return false;

@@ -6,6 +6,7 @@
 
 #include "Clip.h"
 #include "Collision.h"
+#include "CollisionMath.h"
 
 void Core::Initialize(Scene* scene)
 {
@@ -20,10 +21,10 @@ void Core::Initialize(Scene* scene)
 	mRenderer = SDL_CreateRenderer(mWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	mHelper.Initialize(mRenderer);
 	
-	ChangeScene(scene);
-
 	IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
 	TTF_Init();
+
+	ChangeScene(scene);
 }
 
 bool Core::Update(const float deltaTime)
@@ -40,6 +41,8 @@ bool Core::Update(const float deltaTime)
 	mCameraTransform = cameraSystem(entityWorld);
 
 	removeEntitySystem();
+
+	updateCollision(entityWorld);
 
 	updateAnimator(entityWorld, deltaTime);
 	drawImages(entityWorld);
@@ -98,6 +101,60 @@ void Core::ChangeScene(Scene* scene)
 void Core::SetSceneType(Scene::eSceneType type)
 {
 	mSceneType = type;
+}
+
+void Core::updateCollision(const EntityWorld* entityWorld)
+{
+	assert(entityWorld != nullptr);
+
+	for (const Entity* entity0 : entityWorld->GetAllEntities())
+	{
+		if (not entity0->HasComponent<Transform>()
+			or not entity0->HasComponent<CollisionDetector>())
+		{
+			continue;
+		}
+
+		CollisionDetector* collisionDetector0 = entity0->GetComponent<CollisionDetector>();
+		if (collisionDetector0->CollisionLayerMask.none())
+		{
+			continue;
+		}
+
+		for (const Entity* entity1 : entityWorld->GetAllEntities())
+		{
+			if (not entity1->HasComponent<Transform>()
+				or not entity1->HasComponent<CollisionDetector>())
+			{
+				continue;
+			}
+
+			if (entity0 == entity1)
+			{
+				continue;
+			}
+
+			CollisionDetector* collisionDetector1 = entity1->GetComponent<CollisionDetector>();
+			if (not collisionDetector0->CollisionLayerMask[collisionDetector1->Layer])
+			{
+				continue;
+			}
+
+			if (entity0->HasComponent<Active>()
+				or entity1->HasComponent<Active>())
+			{
+				const Active* active0 = entity0->GetComponent<Active>();
+				const Active* active1 = entity1->GetComponent<Active>();
+				if (not active0->isValue
+					or not active1->isValue)
+				{
+					continue;
+				}
+			}
+
+			Collision::Get().CheckCollisionBoxBox(*entity0, *entity1);
+		}
+	}
 }
 
 void Core::updateAnimator(const EntityWorld* entityWorld, const float deltaTime)

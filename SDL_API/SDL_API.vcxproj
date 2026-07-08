@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="Source\Core\Clip.cpp" />
     <ClCompile Include="Source\Core\Collision.cpp" />
+    <ClCompile Include="Source\Core\CollisionMath.cpp" />
     <ClCompile Include="Source\Core\ComponentTypes.cpp" />
     <ClCompile Include="Source\Core\Constant.cpp" />
     <ClCompile Include="Source\Core\Core.cpp" />
@@ -50,6 +51,7 @@
   <ItemGroup>
     <ClInclude Include="Source\Core\Clip.h" />
     <ClInclude Include="Source\Core\Collision.h" />
+    <ClInclude Include="Source\Core\CollisionMath.h" />
     <ClInclude Include="Source\Core\ComponentTypes.h" />
     <ClInclude Include="Source\Core\Constant.h" />
     <ClInclude Include="Source\Core\Core.h" />

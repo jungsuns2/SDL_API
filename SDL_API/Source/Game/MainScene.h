@@ -281,20 +281,4 @@ private:
 	bool isCollisionEnter(const Entity& entity0, const Entity& entity1) const;
 	bool isCollisionStay(const Entity& entity0, const Entity& entity1) const;
 	bool isCollisionExit(const Entity& entity0, const Entity& entity1) const;
-
-	std::pair<const Entity*, const Entity*> getCollidedEntityPair(const Entity& entity0, const Entity& entity1) const;
-	void registerCollidedEntityPairs(const Entity& entity0, const Entity& entity1);
-
-	Quad convertBoxColliderToWorldBox(const Transform& transform, const BoxCollider& boxCollider) const;
-	Circle convertCircleColliderToWorldCircle(const Transform& transform, const CircleCollider& circleCollider) const;
-	Line convertLineColliderToWorldLine(const Transform& transform, const LineCollider& lineCollider) const;
-
-	bool checkCollisionBoxBox(const Entity& entity0, const Entity& entity1);
-	bool checkCollisionBoxCircle(const Entity& boxEntity, const Entity& circleEntity);
-	bool checkCollisionBoxLine(const Entity& boxEntity, const Entity& lineEntity);
-	bool checkCollisionCircleCircle(const Entity& entity0, const Entity& entity1);
-	bool checkCollisionCircleLine(const Entity& circleEntity, const Entity& lineEntity);
-
-	std::vector<std::pair<const Entity*, const Entity*>> mCollidedEntityPairs{};
-	std::vector<std::pair<const Entity*, const Entity*>> mPreviousCollidedEntityPairs{};
 };

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "StartScene.h"
 
+#include "Core/Collision.h"
 #include "Core/ComponentTypes.h"
 #include "Core/Constant.h"
 #include "Core/Entity/Entity.h"
@@ -71,6 +72,8 @@ bool StartScene::Update(const float deltaTime)
 	{
 		mIsUpdate = false;
 	}
+
+	Collision::Get().UpdateEntityPairs();
 
 	return mIsUpdate;
 }
