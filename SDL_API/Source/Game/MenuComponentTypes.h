@@ -25,6 +25,12 @@ struct ExitTag : public Component
 	ExitTag() : Component(&_ID) {}
 };
 
+struct MouseCursorTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	MouseCursorTag() : Component(&_ID) {}
+};
+
 struct Button : public Component
 {
 	static constexpr uint32_t _ID = 0;

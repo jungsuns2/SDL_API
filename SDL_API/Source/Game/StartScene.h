@@ -5,6 +5,14 @@
 class StartScene final : public Scene
 {
 public:
+	enum class CollisionLayer
+	{
+		Button,
+		MouseCursor,
+		Count
+	};
+
+public:
 	StartScene() = default;
 	StartScene(const StartScene&) = delete;
 	const StartScene& operator=(const StartScene&) = delete;
@@ -15,10 +23,22 @@ public:
 	bool Update(const float deltaTime) override;
 	void Finalize()  override;
 
+private:
+	template <typename T>
+	Entity* getEntity() const;
+
+	template <typename T>
+	std::vector<Entity*> getEntities() const;
+
+	Point getScreenMousePosition() const;
+
 public:
 	bool mIsUpdate = true;
+	bool mIsDebugActive = false;
 
 	Texture mBgSkyTexture{};
 	Texture mLogoTexture{};
+	Texture mStartButtonNormalTexture{};
+	Texture mStartButtonHoverTexture{};
 };
 
