@@ -34,7 +34,9 @@
     <ClCompile Include="Source\Core\Texture.cpp" />
     <ClCompile Include="Source\Game\GameComponentTypes.cpp" />
     <ClCompile Include="Source\Game\MainScene.cpp" />
+    <ClCompile Include="Source\Game\MenuComponentTypes.cpp" />
     <ClCompile Include="Source\Game\MonsterGroupDescs.cpp" />
+    <ClCompile Include="Source\Game\StartScene.cpp" />
     <ClCompile Include="Source\Game\StudyScene.cpp" />
     <ClCompile Include="Source\Game\WaveDesc.cpp" />
     <ClCompile Include="Source\main.cpp" />
@@ -61,7 +63,9 @@
     <ClInclude Include="Source\Core\Texture.h" />
     <ClInclude Include="Source\Game\GameComponentTypes.h" />
     <ClInclude Include="Source\Game\MainScene.h" />
+    <ClInclude Include="Source\Game\MenuComponentTypes.h" />
     <ClInclude Include="Source\Game\MonsterGroupDescs.h" />
+    <ClInclude Include="Source\Game\StartScene.h" />
     <ClInclude Include="Source\Game\StudyScene.h" />
     <ClInclude Include="Source\Game\WaveDesc.h" />
     <ClInclude Include="Source\pch.h" />

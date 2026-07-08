@@ -9,6 +9,8 @@
 
 void Core::Initialize(Scene* scene)
 {
+	assert(scene != nullptr);
+
 	SDL_Init(SDL_INIT_EVERYTHING);
 
 	mWindow = SDL_CreateWindow("Player", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -17,25 +19,11 @@ void Core::Initialize(Scene* scene)
 	// SDL_RENDERER_PRESENTVSYNC: 모니터 주사율에 맞춘다.
 	mRenderer = SDL_CreateRenderer(mWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	mHelper.Initialize(mRenderer);
+	
+	ChangeScene(scene);
 
 	IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
-
 	TTF_Init();
-
-	assert(scene != nullptr);
-	
-	if (mScene != nullptr)
-	{
-		mScene->Finalize();
-		delete mScene;
-		mScene = nullptr;
-	}
-
-	mScene = scene;
-	mScene->_SetHelper(&mHelper);
-	mScene->Initialize();
-
-	mColliderTexture.Initialize(&mHelper, "Resource/WhileRect.png");
 }
 
 bool Core::Update(const float deltaTime)
@@ -76,11 +64,11 @@ bool Core::Update(const float deltaTime)
 void Core::Finalize()
 {
 	mScene->Finalize();
+	delete (mScene);
+	mScene = nullptr;
 
 	delete mCameraTransform;
 	mCameraTransform = nullptr;
-
-	mColliderTexture.Finalize();
 
 	IMG_Quit();
 
@@ -88,6 +76,28 @@ void Core::Finalize()
 	SDL_DestroyWindow(mWindow);
 
 	SDL_Quit();
+}
+
+void Core::ChangeScene(Scene* scene)
+{
+	assert(scene != nullptr);
+
+	if (mScene != nullptr)
+	{
+		mScene->Finalize();
+		delete (mScene);
+		mScene = nullptr;	
+	}
+
+	mScene = scene;
+	mScene->_SetHelper(&mHelper);
+	mScene->SetType(mSceneType);
+	mScene->Initialize();
+}
+
+void Core::SetSceneType(Scene::eSceneType type)
+{
+	mSceneType = type;
 }
 
 void Core::updateAnimator(const EntityWorld* entityWorld, const float deltaTime)

@@ -45,6 +45,9 @@ public:
 	bool Update(const float deltaTime);
 	void Finalize();
 
+	void ChangeScene(Scene* scene);
+	void SetSceneType(Scene::eSceneType type);
+
 private:
 	void updateAnimator(const EntityWorld* entityWorld, const float deltaTime);
 
@@ -69,9 +72,9 @@ private:
 
 	Helper mHelper{};
 	Scene* mScene = nullptr;
+	Scene::eSceneType mSceneType{};
 
 	Transform* mCameraTransform = nullptr;
 
-	Texture mColliderTexture{};
 	std::array<std::vector<LayerDesc>, Constant::MAX_LAYER> mLayers{};
 };

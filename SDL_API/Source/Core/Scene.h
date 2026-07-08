@@ -9,6 +9,15 @@ struct Camera;
 class Scene
 {
 public:
+	enum class eSceneType
+	{
+		Start,
+		Main,
+		Continue,
+		Count
+	};
+
+public:
 	Scene() = default;
 	Scene(const Scene&) = delete;
 	const Scene& operator=(Scene&) = delete;
@@ -20,14 +29,18 @@ public:
 	virtual void Finalize() = 0;
 
 public:
-	[[nodiscard]] Helper* GetHelper() const;
-
-public:
 	EntityWorld* GetEntityWorld();
 	const EntityWorld* GetEntityWorld() const;
+
+	[[nodiscard]] Helper* GetHelper() const;
 	void _SetHelper(Helper* helper);
+
+public:
+	void SetType(const eSceneType type);
 
 private:
 	Helper* mHelper = nullptr;
 	EntityWorld mEntityWorld{};
+
+	eSceneType mSceneType{};
 };

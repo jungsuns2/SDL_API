@@ -2,15 +2,27 @@
 #include "Core/Core.h"
 #include "Core/Input.h"
 #include "Game/MainScene.h"
+#include "Game/StartScene.h"
 #include "Game/StudyScene.h"
 
-Core gCore;
+enum class eGameScene
+{
+	Start,
+	Main,
+	Continue,
+	Count
+};
+
+static Core gCore;
+static eGameScene gGameScene;
 
 int main(int argc, char* argv[])
 {
 
 	// 초기화를 한다.
-	gCore.Initialize(new MainScene);
+	gCore.SetSceneType(Scene::eSceneType::Start);
+	gCore.Initialize(new StartScene);
+	gGameScene = eGameScene::Start;
 
 	float deltaTime = 0.0f;
 
@@ -52,7 +64,26 @@ int main(int argc, char* argv[])
 		// 게임 업데이트
 		if (not gCore.Update(deltaTime))
 		{
-			break;
+			switch (gGameScene)
+			{
+			case eGameScene::Start:
+				gCore.SetSceneType(Scene::eSceneType::Main);
+				gCore.ChangeScene(new MainScene);
+				gGameScene = eGameScene::Main;
+				break;
+			
+			case eGameScene::Main:
+				break;
+			
+			case eGameScene::Continue:
+				break;
+			
+			case eGameScene::Count:
+				break;
+			
+			default:
+				break;
+			}
 		}
 
 		// 이전 키를 모두 초기화한다.

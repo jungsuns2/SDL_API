@@ -1192,7 +1192,9 @@ void MainScene::input()
 {
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_ESCAPE))
 	{
-		mIsUpdate = false;
+		SDL_Event quit_event{};
+		quit_event.type = SDL_QUIT;
+		SDL_PushEvent(&quit_event);
 	}
 
 #if defined(_DEBUG)
@@ -1656,7 +1658,7 @@ void MainScene::playerMove(const float deltaTime)
 	const Entity* playerEntity = getEntity<PlayerTag>();
 
 	Transform* transform = playerEntity->GetComponent<Transform>();
-	clampToTile(transform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
+	clampToTile(transform, { .min = -5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
 	transform->position += moveVelocity * deltaTime;
 
 	Direction* direction = playerEntity->GetComponent<Direction>();
@@ -2414,7 +2416,7 @@ void MainScene::updateMonsterStates(const float deltaTime)
 			}
 			else
 			{
-				clampToTile(transform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
+				clampToTile(transform, { .min = -5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
 				transform->position += velocity * deltaTime;
 			}
 
@@ -2540,7 +2542,7 @@ void MainScene::monsterMove(const float deltaTime)
 		//Knockback* playerKnockback = mPlayer.GetComponent<Knockback>();
 		//playerKnockback->direction = direction->value;
 
-		clampToTile(monsterTransform, { .min = 5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
+		clampToTile(monsterTransform, { .min = -5.0f, .max = 5.0f }, { .min = -8.0f, .max = 50.0f });
 		monsterTransform->position += velocity * deltaTime;
 		monsterTransform->flip = (direction->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 	}
@@ -3361,6 +3363,40 @@ void MainScene::removeAttackCollider()
 			}
 		}
 	}
+}
+
+template<typename T>
+Entity* MainScene::getEntity() const
+{
+	for (Entity* entity : GetEntityWorld()->GetAllEntities())
+	{
+		if (not entity->HasComponent<T>())
+		{
+			continue;
+		}
+
+		return entity;
+	}
+
+	return nullptr;
+}
+
+template<typename T>
+std::vector<Entity*> MainScene::getEntities() const
+{
+	std::vector<Entity*> result{};
+
+	for (Entity* entity : GetEntityWorld()->GetAllEntities())
+	{
+		if (not entity->HasComponent<T>())
+		{
+			continue;
+		}
+
+		result.push_back(entity);
+	}
+
+	return result;
 }
 
 template<typename T>

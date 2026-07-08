@@ -123,38 +123,10 @@ private:
 	[[nodiscard]] Rect getCameraRect() const;
 		
 	template <typename T>
-	Entity* getEntity() const
-	{
-		for (Entity* entity : GetEntityWorld()->GetAllEntities())
-		{
-			if (not entity->HasComponent<T>())
-			{
-				continue;
-			}
+	Entity* getEntity() const;
 
-			return entity;
-		}
-
-		return nullptr;
-	}
-		
 	template <typename T>
-	std::vector<Entity*> getEntities() const
-	{
-		std::vector<Entity*> result{};
-
-		for (Entity* entity : GetEntityWorld()->GetAllEntities())
-		{
-			if (not entity->HasComponent<T>())
-			{
-				continue;
-			}
-
-			result.push_back(entity);
-		}
-
-		return result;
-	}
+	std::vector<Entity*> getEntities() const;
 
 	void initializeUI();
 	void initializeWaveTimer();

@@ -16,6 +16,11 @@ void Scene::_SetHelper(Helper* helper)
 	mHelper = helper;
 }
 
+void Scene::SetType(const eSceneType type)
+{
+	mSceneType = type;
+}
+
 EntityWorld* Scene::GetEntityWorld()
 {
 	return &mEntityWorld;
