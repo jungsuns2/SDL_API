@@ -80,8 +80,8 @@ void StartScene::Initialize()
 		entity->AddComponent(DebugActive());
 		entity->AddComponent(DebugColor());
 
-		CollisionDetector collider(static_cast<uint32_t>(StartScene::CollisionLayer::Button));
-		collider.CollisionLayerMask.set(uint32_t(StartScene::CollisionLayer::Button));
+		CollisionDetector collider(static_cast<uint32_t>(StartScene::CollisionLayer::StartButton));
+		collider.CollisionLayerMask.set(uint32_t(StartScene::CollisionLayer::MouseCursor));
 		entity->AddComponent(collider);
 
 		Image* image = entity->GetComponent<Image>();
@@ -100,7 +100,7 @@ void StartScene::Initialize()
 		boxCollider->size = { .width = 37.0f, .height = 15.0f };
 	}
 
-	// Start Button
+	// Exit Button
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(ExitTag());
@@ -113,8 +113,8 @@ void StartScene::Initialize()
 		entity->AddComponent(DebugActive());
 		entity->AddComponent(DebugColor());
 
-		CollisionDetector collider(static_cast<uint32_t>(StartScene::CollisionLayer::Button));
-		collider.CollisionLayerMask.set(uint32_t(StartScene::CollisionLayer::Button));
+		CollisionDetector collider(static_cast<uint32_t>(StartScene::CollisionLayer::ExitButton));
+		collider.CollisionLayerMask.set(uint32_t(StartScene::CollisionLayer::MouseCursor));
 		entity->AddComponent(collider);
 
 		Image* image = entity->GetComponent<Image>();
@@ -145,7 +145,7 @@ void StartScene::Initialize()
 		entity->AddComponent(DebugColor());
 
 		CollisionDetector collider(static_cast<uint32_t>(StartScene::CollisionLayer::MouseCursor));
-		collider.CollisionLayerMask.set(uint32_t(StartScene::CollisionLayer::Button));
+		collider.CollisionLayerMask.set(uint32_t(StartScene::CollisionLayer::MouseCursor));
 		entity->AddComponent(collider);
 
 		Active* active = entity->GetComponent<Active>();
@@ -181,17 +181,11 @@ bool StartScene::Update(const float deltaTime)
 	}
 
 	// 버튼을 업데이트한다.
-	{
-		Entity* mouseEntity = getEntity<MouseCursorTag>();
-		Entity* startEntity = getEntity<StartTag>();
-		Entity* exitEntity = getEntity<ExitTag>();
-
-		CollisionDetector* mouseCollisionDetector = mouseEntity->GetComponent<CollisionDetector>();
-		CollisionDetector* startCollisionDetector = startEntity->GetComponent<CollisionDetector>();
-		CollisionDetector* exitCollisionDetector = exitEntity->GetComponent<CollisionDetector>();
-		
+	{		
 		// 시작 버튼
-		if (mouseCollisionDetector->CollisionLayerMask[startCollisionDetector->Layer])
+		const Entity* startEntity = getEntity<StartTag>();
+		if (const Button* button = startEntity->GetComponent<Button>();
+			not button->isNormal)
 		{
 			if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
 			{
@@ -200,7 +194,9 @@ bool StartScene::Update(const float deltaTime)
 		}
 
 		// 종료 버튼
-		if (mouseCollisionDetector->CollisionLayerMask[exitCollisionDetector->Layer])
+		const Entity* exitEntity = getEntity<ExitTag>();
+		if (const Button* button = exitEntity->GetComponent<Button>();
+			not button->isNormal)
 		{
 			if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
 			{
@@ -227,11 +223,17 @@ bool StartScene::Update(const float deltaTime)
 			{
 				Image* image = startEntity->GetComponent<Image>();
 				image->texture = &mStartButtonHoverTexture;
+
+				Button* button = startEntity->GetComponent<Button>();
+				button->isNormal = false;
 			}
 			else if (Collision::Get().IsCollisionExit(*startEntity, *mouseEntity))
 			{
 				Image* image = startEntity->GetComponent<Image>();
 				image->texture = &mStartButtonNormalTexture;
+
+				Button* button = startEntity->GetComponent<Button>();
+				button->isNormal = true;
 			}
 		}
 
@@ -244,11 +246,17 @@ bool StartScene::Update(const float deltaTime)
 			{
 				Image* image = exitEntity->GetComponent<Image>();
 				image->texture = &mExitButtonHoverTexture;
+
+				Button* button = exitEntity->GetComponent<Button>();
+				button->isNormal = false;
 			}
 			else if (Collision::Get().IsCollisionExit(*exitEntity, *mouseEntity))
 			{
 				Image* image = exitEntity->GetComponent<Image>();
 				image->texture = &mExitButtonNormalTexture;
+
+				Button* button = exitEntity->GetComponent<Button>();
+				button->isNormal = true;
 			}
 		}
 	}

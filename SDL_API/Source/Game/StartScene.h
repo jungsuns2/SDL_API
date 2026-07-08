@@ -7,7 +7,8 @@ class StartScene final : public Scene
 public:
 	enum class CollisionLayer
 	{
-		Button,
+		StartButton,
+		ExitButton,
 		MouseCursor,
 		Count
 	};
@@ -55,4 +56,3 @@ public:
 	Texture mExitButtonNormalTexture{};
 	Texture mExitButtonHoverTexture{};
 };
-

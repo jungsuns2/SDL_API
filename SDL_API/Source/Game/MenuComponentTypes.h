@@ -35,4 +35,6 @@ struct Button : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	Button() : Component(&_ID) {}
+
+	bool isNormal = true;
 };
