@@ -276,9 +276,4 @@ private:
 	std::array<Texture, 2> mTileTextures{};
 
 	Texture mRedRectTexture{};
-
-private:
-	bool isCollisionEnter(const Entity& entity0, const Entity& entity1) const;
-	bool isCollisionStay(const Entity& entity0, const Entity& entity1) const;
-	bool isCollisionExit(const Entity& entity0, const Entity& entity1) const;
 };

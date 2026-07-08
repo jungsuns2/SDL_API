@@ -40,10 +40,4 @@ private:
 	Entity mPlayer{};
 	std::array<Entity, 1> mMonsters{};
 	std::array<Entity, 20> mArrows{};
-
-	// 충돌 관련
-private:
-	bool isCollisionEnter(const Entity& entity0, const Entity& entity1) const;
-	bool isCollisionStay(const Entity& entity0, const Entity& entity1) const;
-	bool isCollisionExit(const Entity& entity0, const Entity& entity1) const;
 };

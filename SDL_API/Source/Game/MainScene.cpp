@@ -3541,7 +3541,7 @@ void MainScene::playerToMonsterCollision()
 		}
 
 		const Entity* playerEntity = getEntity<PlayerTag>();
-		if (isCollisionEnter(*playerEntity, *monsterEntity))
+		if (Collision::Get().IsCollisionEnter(*playerEntity, *monsterEntity))
 		{
 			Hp* playerHp = playerEntity->GetComponent<Hp>();
 			const Damage* damage = monsterEntity->GetComponent<Damage>();
@@ -3553,7 +3553,7 @@ void MainScene::playerToMonsterCollision()
 			Label* playerLabel = hpEntity->GetComponent<Label>();
 			playerLabel->text = name;
 		}
-		else if (isCollisionStay(*playerEntity, *monsterEntity))
+		else if (Collision::Get().IsCollisionStay(*playerEntity, *monsterEntity))
 		{
 			Knockback* knockback = playerEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
@@ -3576,7 +3576,7 @@ void MainScene::playerToMonsterAttackCollision()
 		}
 
 		const Entity* playerEntity = getEntity<PlayerTag>();
-		if (isCollisionEnter(*playerEntity, *attackEntity))
+		if (Collision::Get().IsCollisionEnter(*playerEntity, *attackEntity))
 		{
 			Hp* playerHp = playerEntity->GetComponent<Hp>();
 			const Damage* damage = attackEntity->GetComponent<Damage>();
@@ -3587,7 +3587,7 @@ void MainScene::playerToMonsterAttackCollision()
 			Label* playerLabel = hpEntity->GetComponent<Label>();
 			playerLabel->text = name;
 		}
-		else if (isCollisionStay(*playerEntity, *attackEntity))
+		else if (Collision::Get().IsCollisionStay(*playerEntity, *attackEntity))
 		{
 			Knockback* knockback = playerEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
@@ -3610,7 +3610,7 @@ void MainScene::playerToArrowCollision()
 		}
 
 		const Entity* playerEntity = getEntity<PlayerTag>();
-		if (isCollisionEnter(*playerEntity, *arrowEntity))
+		if (Collision::Get().IsCollisionEnter(*playerEntity, *arrowEntity))
 		{
 			Hp* playerHp = playerEntity->GetComponent<Hp>();
 			const Damage* damage = arrowEntity->GetComponent<Damage>();
@@ -3621,7 +3621,7 @@ void MainScene::playerToArrowCollision()
 			Label* playerLabel = hpEntity->GetComponent<Label>();
 			playerLabel->text = name;
 		}
-		else if (isCollisionStay(*playerEntity, *arrowEntity))
+		else if (Collision::Get().IsCollisionStay(*playerEntity, *arrowEntity))
 		{
 			Knockback* knockback = playerEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
@@ -3650,7 +3650,7 @@ void MainScene::swordSkillToMonsterCollision()
 		}
 
 		Entity* swordSkillEntity = getEntity<SwordSkillTag>();
-		if (isCollisionEnter(*swordSkillEntity, *monsterEntity))
+		if (Collision::Get().IsCollisionEnter(*swordSkillEntity, *monsterEntity))
 		{
 			Hp* hp = monsterEntity->GetComponent<Hp>();
 			hp->value -= 1;
@@ -3660,7 +3660,7 @@ void MainScene::swordSkillToMonsterCollision()
 			const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
 			hpBarTransform->scale.width = currentWidth;
 		}
-		else if (isCollisionStay(*swordSkillEntity, *monsterEntity))
+		else if (Collision::Get().IsCollisionStay(*swordSkillEntity, *monsterEntity))
 		{
 			Knockback* knockback = monsterEntity->GetComponent<Knockback>();
 			knockback->isValue = true;
@@ -3691,7 +3691,7 @@ void MainScene::bulletToMonsterCollision()
 		const std::vector<Entity*> entities = getEntities<BulletTag>();
 		for (Entity* bulletEntity : entities)
 		{
-			if (isCollisionEnter(*bulletEntity, *monsterEntity))
+			if (Collision::Get().IsCollisionEnter(*bulletEntity, *monsterEntity))
 			{
 				Hp* hp = monsterEntity->GetComponent<Hp>();
 				hp->value -= 2;
@@ -3701,7 +3701,7 @@ void MainScene::bulletToMonsterCollision()
 				const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 0.8f;
 				transform->scale.width = currentWidth;
 			}
-			else if (isCollisionStay(*bulletEntity, *monsterEntity))
+			else if (Collision::Get().IsCollisionStay(*bulletEntity, *monsterEntity))
 			{
 				Knockback* knockback = monsterEntity->GetComponent<Knockback>();
 				knockback->isValue = true;
@@ -3870,47 +3870,4 @@ uint32_t MainScene::getRandom(const uint32_t min, const uint32_t max)
 {
 	const uint32_t result = uint32_t(rand()) / RAND_MAX * (max - min) + min;
 	return result;
-}
-
-bool MainScene::isCollisionEnter(const Entity& entity0, const Entity& entity1) const
-{
-	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
-
-	if (const auto& foundCollidedEntityPair = std::find(Collision::Get().GetCollidedEntityPairs().begin(), Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
-		foundCollidedEntityPair != Collision::Get().GetCollidedEntityPairs().end())
-	{
-		const auto& foundPreviousCollidedEntityPair = std::find(Collision::Get().GetPreviousCollidedEntityPairs().begin(), Collision::Get().GetPreviousCollidedEntityPairs().end(), collidedEntityPair);
-		return foundPreviousCollidedEntityPair == Collision::Get().GetPreviousCollidedEntityPairs().end();
-	}
-
-	return false;
-}
-
-bool MainScene::isCollisionStay(const Entity& entity0, const Entity& entity1) const
-{
-	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
-
-	const auto& foundCollidedEntityPair = 
-		std::find(Collision::Get().GetCollidedEntityPairs().begin(),
-			Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
-	
-	return foundCollidedEntityPair != Collision::Get().GetCollidedEntityPairs().end();
-}
-
-bool MainScene::isCollisionExit(const Entity& entity0, const Entity& entity1) const
-{
-	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
-
-	if (const auto& foundPreviousCollidedEntityPair = 
-		std::find(Collision::Get().GetPreviousCollidedEntityPairs().begin(), 
-			Collision::Get().GetPreviousCollidedEntityPairs().end(), collidedEntityPair);
-		foundPreviousCollidedEntityPair != Collision::Get().GetPreviousCollidedEntityPairs().end())
-	{
-		const auto& foundCollidedEntityPair = std::find(Collision::Get().GetCollidedEntityPairs().begin(), 
-			Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
-		
-		return foundCollidedEntityPair == Collision::Get().GetCollidedEntityPairs().end();
-	}
-
-	return false;
 }

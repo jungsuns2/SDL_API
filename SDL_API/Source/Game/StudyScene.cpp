@@ -377,11 +377,11 @@ bool StudyScene::Update(const float deltaTime)
 				continue;
 			}
 
-			if (isCollisionEnter(mPlayer, arrow))
+			if (Collision::Get().IsCollisionEnter(mPlayer, arrow))
 			{
 				printf("플 - 화 충돌\n");
 			}
-			else if (isCollisionStay(mPlayer, arrow))
+			else if (Collision::Get().IsCollisionStay(mPlayer, arrow))
 			{
 			}
 		}
@@ -457,54 +457,4 @@ Point StudyScene::getScreenMousePosition() const
 	screenPosition = screenPosition + mMainCamera.GetComponent<Transform>()->position;
 
 	return screenPosition;
-}
-
-bool StudyScene::isCollisionEnter(const Entity& entity0, const Entity& entity1) const
-{
-	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
-
-	if (const auto& foundCollidedEntityPair = 
-		std::find(Collision::Get().GetCollidedEntityPairs().begin(),
-			Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
-		foundCollidedEntityPair != Collision::Get().GetCollidedEntityPairs().end())
-	{
-		const auto& foundPreviousCollidedEntityPair = 
-			std::find(Collision::Get().GetPreviousCollidedEntityPairs().begin(),
-				Collision::Get().GetPreviousCollidedEntityPairs().end(), collidedEntityPair);
-		
-		return foundPreviousCollidedEntityPair == Collision::Get().GetPreviousCollidedEntityPairs().end();
-	}
-
-	return false;
-}
-
-bool StudyScene::isCollisionStay(const Entity& entity0, const Entity& entity1) const
-{
-	std::pair<const Entity*, const Entity*> collidedEntityPair = 
-		Collision::Get().GetCollidedEntityPair(entity0, entity1);
-
-	const auto& foundCollidedEntityPair = 
-		std::find(Collision::Get().GetCollidedEntityPairs().begin(),
-			Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
-	
-	return foundCollidedEntityPair != Collision::Get().GetCollidedEntityPairs().end();
-}
-
-bool StudyScene::isCollisionExit(const Entity& entity0, const Entity& entity1) const
-{
-	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
-
-	if (const auto& foundPreviousCollidedEntityPair = 
-		std::find(Collision::Get().GetPreviousCollidedEntityPairs().begin(),
-			Collision::Get().GetPreviousCollidedEntityPairs().end(), collidedEntityPair);
-		foundPreviousCollidedEntityPair != Collision::Get().GetPreviousCollidedEntityPairs().end())
-	{
-		const auto& foundCollidedEntityPair = 
-			std::find(Collision::Get().GetCollidedEntityPairs().begin(),
-				Collision::Get().GetCollidedEntityPairs().end(), collidedEntityPair);
-		
-		return foundCollidedEntityPair == Collision::Get().GetCollidedEntityPairs().end();
-	}
-
-	return false;
 }

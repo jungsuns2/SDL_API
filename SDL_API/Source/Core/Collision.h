@@ -12,6 +12,10 @@ public:
 	[[nodiscard]] static Collision& Get();
 
 public:
+	bool IsCollisionEnter(const Entity& entity0, const Entity& entity1) const;
+	bool IsCollisionStay(const Entity& entity0, const Entity& entity1) const;
+	bool IsCollisionExit(const Entity& entity0, const Entity& entity1) const;
+
 	[[nodiscard]] std::pair<const Entity*, const Entity*> GetCollidedEntityPair(const Entity& entity0, const Entity& entity1) const;
 	void RegisterCollidedEntityPairs(const Entity& entity0, const Entity& entity1);
 
@@ -34,4 +38,3 @@ private:
 	std::vector<std::pair<const Entity*, const Entity*>> mCollidedEntityPairs{};
 	std::vector<std::pair<const Entity*, const Entity*>> mPreviousCollidedEntityPairs{};
 };
-

@@ -10,6 +10,57 @@ Collision& Collision::Get()
 	return collision;
 }
 
+bool Collision::IsCollisionEnter(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair = GetCollidedEntityPair(entity0, entity1);
+
+	if (const auto& foundPair = std::find(mCollidedEntityPairs.begin(), 
+		mCollidedEntityPairs.end(), 
+		collidedEntityPair);
+		foundPair != mCollidedEntityPairs.end())
+	{
+		const auto& foundPreviousPair = 
+			std::find(mPreviousCollidedEntityPairs.begin(), 
+				mPreviousCollidedEntityPairs.end(), 
+				collidedEntityPair);
+		
+		return foundPreviousPair == mPreviousCollidedEntityPairs.end();
+	}
+
+	return false;
+}
+
+bool Collision::IsCollisionStay(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair = GetCollidedEntityPair(entity0, entity1);
+
+	const auto& foundCollidedEntityPair =
+		std::find(mCollidedEntityPairs.begin(),
+			mCollidedEntityPairs.end(), collidedEntityPair);
+
+	return foundCollidedEntityPair != mCollidedEntityPairs.end();
+}
+
+bool Collision::IsCollisionExit(const Entity& entity0, const Entity& entity1) const
+{
+	std::pair<const Entity*, const Entity*> collidedEntityPair = Collision::Get().GetCollidedEntityPair(entity0, entity1);
+
+	if (const auto& foundPreviousCollidedEntityPair =
+		std::find(mPreviousCollidedEntityPairs.begin(),
+			mPreviousCollidedEntityPairs.end(),
+			collidedEntityPair);
+		foundPreviousCollidedEntityPair != mPreviousCollidedEntityPairs.end())
+	{
+		const auto& foundCollidedEntityPair = std::find(mCollidedEntityPairs.begin(),
+			mCollidedEntityPairs.end(), 
+			collidedEntityPair);
+
+		return foundCollidedEntityPair == mCollidedEntityPairs.end();
+	}
+
+	return false;
+}
+
 std::pair<const Entity*, const Entity*> Collision::GetCollidedEntityPair(const Entity& entity0, const Entity& entity1) const
 {
 	std::pair<const Entity*, const Entity*> collidedEntityPair{};
