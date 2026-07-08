@@ -26,7 +26,7 @@ struct MonsterGroup
 	Range rangeY;
 };
 
-constexpr std::array<MonsterGroup, 12> MONSTER_GROUPS =
+constexpr std::array<MonsterGroup, 13> MONSTER_GROUPS =
 {
 	// 0
 	MonsterGroup
@@ -60,9 +60,10 @@ constexpr std::array<MonsterGroup, 12> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::BigWhite,
-		.count = 4,
+		.count = 4, 
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
+
 	}, 
 
 	// 4
@@ -96,7 +97,7 @@ constexpr std::array<MonsterGroup, 12> MONSTER_GROUPS =
 	MonsterGroup
 	{
 		.type = eMonsterType::Archer,
-		.count = 4,
+		.count = 4, 
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
@@ -127,8 +128,17 @@ constexpr std::array<MonsterGroup, 12> MONSTER_GROUPS =
 		.rangeX = {.min = -100.0f, .max = 100.0f },
 		.rangeY = {.min = -100.0f, .max = 100.0f }
 	}, 
-
+	
 	// 11
+	MonsterGroup
+	{
+		.type = eMonsterType::SkelDog,
+		.count = 4,
+		.rangeX = {.min = -100.0f, .max = 100.0f },
+		.rangeY = {.min = -100.0f, .max = 100.0f }
+	}, 
+	
+	// 12
 	MonsterGroup
 	{
 		.type = eMonsterType::Boss,

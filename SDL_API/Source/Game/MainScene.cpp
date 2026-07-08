@@ -155,8 +155,6 @@ bool MainScene::Update(const float deltaTime)
 				spawnMonsterGroup(monsterGroup);
 
 				++mGameWaveState.groupIndex;
-				assert(mGameWaveState.groupIndex < MONSTER_GROUPS.size() && "더 이상 그룹이 없습니다.");
-
 				mGameWaveState.remainingMonsterGroupSpawnTimer = waveDesc.monsterGroupSpawnIntervalTime;
 			}
 		}
