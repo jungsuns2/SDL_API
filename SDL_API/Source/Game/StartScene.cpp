@@ -13,8 +13,12 @@ void StartScene::Initialize()
 {
 	mBgSkyTexture.Initialize(GetHelper(), "Resource/Title/Scene/TownSky_Xmas.png");
 	mLogoTexture.Initialize(GetHelper(), "Resource/Title/Logo/0.png");
+	
 	mStartButtonNormalTexture.Initialize(GetHelper(), "Resource/Title/Button/Start/0.png");
 	mStartButtonHoverTexture.Initialize(GetHelper(), "Resource/Title/Button/Start/1.png");
+
+	mExitButtonNormalTexture.Initialize(GetHelper(), "Resource/Title/Button/Exit/0.png");
+	mExitButtonHoverTexture.Initialize(GetHelper(), "Resource/Title/Button/Exit/1.png");
 
 	// Camera
 	{
@@ -33,6 +37,7 @@ void StartScene::Initialize()
 
 		Image* image = entity->GetComponent<Image>();
 		image->texture = &mBgSkyTexture;
+		image->layer = uint32_t(Layer::BackGround);
 
 		Transform* transform = entity->GetComponent<Transform>();
 		transform->scale = { .width = 3.5f, .height = 3.5f };
@@ -52,6 +57,7 @@ void StartScene::Initialize()
 
 		Image* image = entity->GetComponent<Image>();
 		image->texture = &mLogoTexture;
+		image->layer = uint32_t(Layer::Logo);
 
 		Transform* transform = entity->GetComponent<Transform>();
 		transform->position = { .x = 0.0f, .y = Constant::Get().GetHalfHeight() - 180.0f };
@@ -80,9 +86,43 @@ void StartScene::Initialize()
 
 		Image* image = entity->GetComponent<Image>();
 		image->texture = &mStartButtonNormalTexture;
+		image->layer = uint32_t(Layer::Button);
 
 		Transform* transform = entity->GetComponent<Transform>();
 		transform->position = { .x = 0.0f, .y = -Constant::Get().GetHalfHeight() + 200.0f };
+		transform->scale = { .width = 3.0f, .height = 3.0f };
+
+		Active* active = entity->GetComponent<Active>();
+		active->isValue = true;
+
+		BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
+		boxCollider->offset = { .x = 0.0f, .y = 0.0f };
+		boxCollider->size = { .width = 37.0f, .height = 15.0f };
+	}
+
+	// Start Button
+	{
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(ExitTag());
+		entity->AddComponent(Button());
+		entity->AddComponent(Image());
+		entity->AddComponent(Transform());
+		entity->AddComponent(Direction());
+		entity->AddComponent(Active());
+		entity->AddComponent(BoxCollider());
+		entity->AddComponent(DebugActive());
+		entity->AddComponent(DebugColor());
+
+		CollisionDetector collider(static_cast<uint32_t>(StartScene::CollisionLayer::Button));
+		collider.CollisionLayerMask.set(uint32_t(StartScene::CollisionLayer::Button));
+		entity->AddComponent(collider);
+
+		Image* image = entity->GetComponent<Image>();
+		image->texture = &mExitButtonNormalTexture;
+		image->layer = uint32_t(Layer::Button);
+
+		Transform* transform = entity->GetComponent<Transform>();
+		transform->position = { .x = 0.0f, .y = -Constant::Get().GetHalfHeight() + 120.0f };
 		transform->scale = { .width = 3.0f, .height = 3.0f };
 
 		Active* active = entity->GetComponent<Active>();
@@ -121,9 +161,7 @@ bool StartScene::Update(const float deltaTime)
 {	
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_ESCAPE))
 	{
-		SDL_Event quit_event{};
-		quit_event.type = SDL_QUIT;
-		SDL_PushEvent(&quit_event);
+		quitEvent();
 	}
 
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_T))
@@ -142,18 +180,31 @@ bool StartScene::Update(const float deltaTime)
 		}
 	}
 
-	// 시작 버튼을 클릭 시, MainScene으로 넘어간다.
+	// 버튼을 업데이트한다.
 	{
 		Entity* mouseEntity = getEntity<MouseCursorTag>();
 		Entity* startEntity = getEntity<StartTag>();
+		Entity* exitEntity = getEntity<ExitTag>();
 
 		CollisionDetector* mouseCollisionDetector = mouseEntity->GetComponent<CollisionDetector>();
 		CollisionDetector* startCollisionDetector = startEntity->GetComponent<CollisionDetector>();
+		CollisionDetector* exitCollisionDetector = exitEntity->GetComponent<CollisionDetector>();
+		
+		// 시작 버튼
 		if (mouseCollisionDetector->CollisionLayerMask[startCollisionDetector->Layer])
 		{
 			if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
 			{
 				mIsUpdate = false;
+			}
+		}
+
+		// 종료 버튼
+		if (mouseCollisionDetector->CollisionLayerMask[exitCollisionDetector->Layer])
+		{
+			if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
+			{
+				quitEvent();
 			}
 		}
 	}
@@ -167,18 +218,38 @@ bool StartScene::Update(const float deltaTime)
 
 	// 충돌을 업데이트한다.
 	{
-		Entity* startEntity = getEntity<StartTag>();
-		Entity* mouseEntity = getEntity<MouseCursorTag>();
+		// 시작 버튼
+		{
+			Entity* startEntity = getEntity<StartTag>();
+			Entity* mouseEntity = getEntity<MouseCursorTag>();
 
-		if (Collision::Get().IsCollisionEnter(*startEntity, *mouseEntity))
-		{
-			Image* image = startEntity->GetComponent<Image>();
-			image->texture = &mStartButtonHoverTexture;
+			if (Collision::Get().IsCollisionEnter(*startEntity, *mouseEntity))
+			{
+				Image* image = startEntity->GetComponent<Image>();
+				image->texture = &mStartButtonHoverTexture;
+			}
+			else if (Collision::Get().IsCollisionExit(*startEntity, *mouseEntity))
+			{
+				Image* image = startEntity->GetComponent<Image>();
+				image->texture = &mStartButtonNormalTexture;
+			}
 		}
-		else if (Collision::Get().IsCollisionExit(*startEntity, *mouseEntity))
+
+		// 종료 버튼
 		{
-			Image* image = startEntity->GetComponent<Image>();
-			image->texture = &mStartButtonNormalTexture;
+			Entity* exitEntity = getEntity<ExitTag>();
+			Entity* mouseEntity = getEntity<MouseCursorTag>();
+
+			if (Collision::Get().IsCollisionEnter(*exitEntity, *mouseEntity))
+			{
+				Image* image = exitEntity->GetComponent<Image>();
+				image->texture = &mExitButtonHoverTexture;
+			}
+			else if (Collision::Get().IsCollisionExit(*exitEntity, *mouseEntity))
+			{
+				Image* image = exitEntity->GetComponent<Image>();
+				image->texture = &mExitButtonNormalTexture;
+			}
 		}
 	}
 
@@ -191,8 +262,12 @@ void StartScene::Finalize()
 {
 	mBgSkyTexture.Finalize();
 	mLogoTexture.Finalize();
+	
 	mStartButtonNormalTexture.Finalize();
 	mStartButtonHoverTexture.Finalize();
+
+	mExitButtonNormalTexture.Finalize();
+	mExitButtonHoverTexture.Finalize();
 }
 
 template <typename T>
@@ -248,4 +323,11 @@ Point StartScene::getScreenMousePosition() const
 	screenPosition += entity->GetComponent<Transform>()->position;
 
 	return screenPosition;
+}
+
+void StartScene::quitEvent()
+{
+	SDL_Event quit_event{};
+	quit_event.type = SDL_QUIT;
+	SDL_PushEvent(&quit_event);
 }

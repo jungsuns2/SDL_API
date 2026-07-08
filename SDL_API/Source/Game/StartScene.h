@@ -12,6 +12,14 @@ public:
 		Count
 	};
 
+	enum class Layer
+	{
+		BackGround,
+		Logo,
+		Button,
+		Count
+	};
+
 public:
 	StartScene() = default;
 	StartScene(const StartScene&) = delete;
@@ -32,13 +40,19 @@ private:
 
 	Point getScreenMousePosition() const;
 
+	void quitEvent();
+
 public:
 	bool mIsUpdate = true;
 	bool mIsDebugActive = false;
 
 	Texture mBgSkyTexture{};
 	Texture mLogoTexture{};
+
 	Texture mStartButtonNormalTexture{};
 	Texture mStartButtonHoverTexture{};
+
+	Texture mExitButtonNormalTexture{};
+	Texture mExitButtonHoverTexture{};
 };
 
