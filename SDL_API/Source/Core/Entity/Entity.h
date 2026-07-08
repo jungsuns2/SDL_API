@@ -9,13 +9,50 @@ public:
 
 public:
 	template<typename T>
-	void AddComponent(const T& newComponent);
+	void AddComponent(const T& newComponent)
+	{
+#if defined(_DEBUG)
+		for (Component* component : mComponents)
+		{
+			if (component->ID == &newComponent._ID)
+			{
+				assert(false and "중복된 컴포넌트입니다.");
+				return;
+			}
+		}
+#endif
+
+		mComponents.push_back(new T(newComponent));
+	};
+	
+	template<typename T>
+	T* GetComponent() const
+	{
+		for (Component* component : mComponents)
+		{
+			if (component->ID == &T::_ID)
+			{
+				return static_cast<T*>(component);
+			}
+		}
+
+		assert(false && "없는 컴포넌트입니다.");
+		return nullptr;
+	};
 
 	template<typename T>
-	T* GetComponent() const;
+	bool HasComponent() const
+	{
+		for (Component* component : mComponents)
+		{
+			if (component->ID == &T::_ID)
+			{
+				return true;
+			}
+		}
 
-	template<typename T>
-	bool HasComponent() const;
+		return false;
+	};
 	
 	void RemovedComponent();
 
@@ -34,47 +71,3 @@ private:
 	std::string mSourceLocation{};
 #endif
 };
-
-template<typename T>
-void Entity::AddComponent(const T& newComponent)
-{
-#if defined(_DEBUG)
-	for (Component* component : mComponents)
-	{
-		if (component->ID == &newComponent._ID)
-		{
-			assert(false and "중복된 컴포넌트입니다.");
-			return;
-		}
-	}
-#endif
-
-	mComponents.push_back(new T(newComponent));
-}
-template<typename T>
-T* Entity::GetComponent() const
-{
-	for (Component* component : mComponents)
-	{
-		if (component->ID == &T::_ID)
-		{
-			return static_cast<T*>(component);
-		}
-	}
-
-	assert(false && "없는 컴포넌트입니다.");
-	return nullptr;
-}
-template<typename T>
-bool Entity::HasComponent() const
-{
-	for (Component* component : mComponents)
-	{
-		if (component->ID == &T::_ID)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
