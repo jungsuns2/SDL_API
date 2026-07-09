@@ -66,10 +66,10 @@ struct SwordTag : public Component
 	SwordTag() : Component(&_ID) {}
 };
 
-struct SwordSkillTag : public Component
+struct SwordAttackTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	SwordSkillTag() : Component(&_ID) {}
+	SwordAttackTag() : Component(&_ID) {}
 };
 
 struct GunTag : public Component
@@ -162,10 +162,10 @@ struct MonsterRangedAttackTag : public Component
 	MonsterRangedAttackTag() : Component(&_ID) {}
 };
 
-struct HitboxTag : public Component
+struct BigWhiteHitboxTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	HitboxTag() : Component(&_ID) {}
+	BigWhiteHitboxTag() : Component(&_ID) {}
 };
 
 struct CycloneFanTag : public Component
@@ -220,12 +220,12 @@ struct Monster : public Component
 	float spawnBlinkTimer = 0.0f;
 };
 
-struct MonsterHitboxSponwer : public Component
+struct HitboxSponwer : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	MonsterHitboxSponwer() : Component(&_ID) {}
+	HitboxSponwer() : Component(&_ID) {}
 
-	bool isAttackSpawned = false;
+	bool isSpawned = false;
 	Entity* hitboxEntity = nullptr;
 };
 
@@ -343,7 +343,7 @@ struct Hitbox : public Component
 	static constexpr uint32_t _ID = 0;
 	Hitbox() : Component(&_ID) {}
 
-	Entity* monsterEntity = nullptr;
+	Entity* targetEntity = nullptr;
 };
 
 struct Damage : public Component
