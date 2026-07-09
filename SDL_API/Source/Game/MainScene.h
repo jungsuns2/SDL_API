@@ -42,7 +42,7 @@ struct GameWaveState
 	float labelShowElapsedTimer;
 };
 
-struct SwordSkillState
+struct SwordAttackState
 {
 	bool isSpawn;
 	float coolTimer;
@@ -81,14 +81,18 @@ public:
 	enum class CollisionLayer
 	{
 		None,
-		Player,
+
 		Monster,
-		SwordSkill,
-		Bullet,
-		Arrow,
+		MonsterAttack,
+		MonsterArrow,
+
 		CycloneFan,
 		HandSkill,
-		Wall,
+
+		Player,
+		SwordAttack,
+		PlayerBullet,
+
 		Count
 	};
 
@@ -100,6 +104,7 @@ public:
 		Monster,
 		Shadow,
 		Player,
+		UI,
 		Count
 	};
 
@@ -147,9 +152,9 @@ private:
 	void updateSword();
 	void updateSwordStates(const float deltaTime);
 
-	void spawnSwordSkill();
-	void updateSwordSkill(const float deltaTime);
-	void updateSwordSkillStates(const float deltaTime);
+	void spawnSwordAttack();
+	void updateSwordAttack(const float deltaTime);
+	void updateSwordAttackStates(const float deltaTime);
 
 	void spawnBullets(const float deltaTime);
 	void updateBullets(const float deltaTime);
@@ -176,12 +181,11 @@ private:
 	void updateHandSkill();
 	void handSkillSetClip();
 
-	void spawnAttackCollider();
-	void updateAttackCollision();
-	void removeAttackCollider();
+	void spawnHitbox();
+	void updateHitbox(const float deltaTime);
 
 	void playerToMonsterCollision();
-	void playerToMonsterAttackCollision();
+	void playerToMonsterHitboxCollision();
 	void playerToArrowCollision();
 	void swordSkillToMonsterCollision();
 	void bulletToMonsterCollision();
@@ -210,7 +214,7 @@ private:
 
 	GameWaveState mGameWaveState{};
 	
-	SwordSkillState mSwordSkillState{};
+	SwordAttackState mSwordAttackState{};
 	BulletState mBulletState{};
 
 	CycloneFanState mCycloneFanState{};
@@ -236,8 +240,17 @@ private:
 	Clip mBossHandCenterSkillClip{};
 
 	Clip mSwordClip{};
-	Clip mSwordSkillClip{};
+	Clip mSwordAttackClip{};
 	Clip mBulletClip{};
+
+	Texture mRedRectTexture{};
+
+	std::array<Texture, 2> mTileTextures{};
+	Texture mArrowTexture{};
+
+	Texture mPlayerHpBarBackGroundTexture{};
+	Texture mPlayerHpBarBorderTexture{};
+	Texture mPlayerIconTexture{};
 
 	std::array<Texture, 5> mPlayerIdleTextures{};
 	std::array<Texture, 6> mPlayerRunTextures{};
@@ -245,12 +258,17 @@ private:
 	Texture mPlayerHandTexture{};
 	Texture mPlayerDeadTexture{};
 
+	std::array<Texture, 12> mSwordTextures{};
+	std::array<Texture, 8> mSwordAttackTextures{};
+
+	Texture mGunTexture{};
+	std::array<Texture, 8> mBulletTextures{};
+
 	std::array<Texture, 2> mSpwanTextures{};
 
 	std::array<Texture, 6> mBigWhiteSkelRunTextures{};
 	std::array<Texture, 12> mBigWhiteSkelAttackTextures{};
 
-	Texture mArrowTexture{};
 	std::array<Texture, 3> mArcherRunTextures{};
 	std::array<Texture, 13> mArcherAttackTextures{};
 
@@ -266,14 +284,4 @@ private:
 	std::array<Texture, 18> mBossAttackHandTextures{};
 	std::array<Texture, 7> mBossHandCenterSkillTextures{};
 	std::array<Texture, 7> mBossHandSkillTextures{};
-
-	std::array<Texture, 12> mSwordTextures{};
-	std::array<Texture, 8> mSwordSkillTextures{};
-
-	Texture mGunTexture{};
-	std::array<Texture, 8> mBulletTextures{};
-
-	std::array<Texture, 2> mTileTextures{};
-
-	Texture mRedRectTexture{};
 };

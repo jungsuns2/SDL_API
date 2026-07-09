@@ -61,8 +61,11 @@ private:
 	void drawImages(const EntityWorld* entityWorld);
 
 	void colliderImageRenderingSystem(const EntityWorld* entityWorld);
+
 	void labelRenderingSystem(const EntityWorld* entityWorld);
+
 	void labelUIRenderingSystem(const EntityWorld* entityWorld);
+	void imageUIRenderingSystem(const EntityWorld* entityWorld);
 
 	void removeEntitySystem();
 

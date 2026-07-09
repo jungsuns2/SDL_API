@@ -51,8 +51,8 @@ bool Core::Update(const float deltaTime)
 	colliderImageRenderingSystem(entityWorld);
 #endif
 
+	imageUIRenderingSystem(entityWorld);
 	labelUIRenderingSystem(entityWorld);
-	labelRenderingSystem(entityWorld);
 
 	SDL_RenderPresent(mRenderer); // 화면에 출력한다.
 	
@@ -325,7 +325,8 @@ void Core::drawImages(const EntityWorld* entityWorld)
 	for (const Entity* entity : entityWorld->GetAllEntities())
 	{
 		if (not entity->HasComponent<Transform>()
-			or not entity->HasComponent<Image>())
+			or not entity->HasComponent<Image>()
+			or entity->HasComponent<Ui>())
 		{
 			continue;
 		}
@@ -613,6 +614,63 @@ void Core::labelUIRenderingSystem(const EntityWorld* entityWorld)
 			SDL_DestroyTexture(label->texture);
 			label->texture = nullptr;
 		}
+	}
+}
+
+void Core::imageUIRenderingSystem(const EntityWorld* entityWorld)
+{
+	assert(entityWorld != nullptr);
+
+	for (const Entity* entity : entityWorld->GetAllEntities())
+	{
+		if (not entity->HasComponent<Transform>()
+			or not entity->HasComponent<Image>()
+			or not entity->HasComponent<Ui>())
+		{
+			continue;
+		}
+
+		if (entity->HasComponent<Active>())
+		{
+			if (const Active* active = entity->GetComponent<Active>();
+				not active->isValue)
+			{
+				continue;
+			}
+		}
+
+		const Image* image = entity->GetComponent<Image>();
+		const Texture* texture = image->texture;
+		assert(texture != nullptr and "image 컴포넌트에 설정된 texture가 유효하지 않습니다.");
+
+		Color color{};
+		if (entity->HasComponent<Color>())
+		{
+			color = *entity->GetComponent<Color>();
+		}
+
+
+		const Transform* transform = entity->GetComponent<Transform>();
+
+		const Scale scale =
+		{
+			.width = float(texture->GetWidth()) * transform->scale.width,
+			.height = float(texture->GetHeight()) * transform->scale.height
+		};
+
+		const SDL_FRect rect =
+		{
+			.x = transform->position.x,
+			.y = transform->position.y,
+			.w = scale.width,
+			.h = scale.height,
+		};
+	
+		SDL_FPoint angleCenter{};
+
+		SDL_SetTextureColorMod(texture->GetTexture(), color.r, color.g, color.b);
+		SDL_SetTextureAlphaMod(texture->GetTexture(), color.a);
+		SDL_RenderCopyExF(mRenderer, texture->GetTexture(), nullptr, &rect, transform->angle, &angleCenter, transform->flip);
 	}
 }
 

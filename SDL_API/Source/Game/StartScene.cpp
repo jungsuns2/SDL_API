@@ -48,7 +48,6 @@ void StartScene::Initialize()
 
 	// Logo
 	{
-		// TODO: 로고 사이즈가 너무 큼, 그리고 png 파일이 아님;
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(LogoTag());
 		entity->AddComponent(Image());
@@ -281,6 +280,8 @@ void StartScene::Finalize()
 template <typename T>
 Entity* StartScene::getEntity() const
 {
+	Entity* foundEntity = nullptr;
+
 	for (Entity* entity : GetEntityWorld()->GetAllEntities())
 	{
 		if (not entity->HasComponent<T>())
@@ -288,10 +289,16 @@ Entity* StartScene::getEntity() const
 			continue;
 		}
 
-		return entity;
+		if (foundEntity != nullptr)
+		{
+			assert(false and "여러 Entity가 존재합니다.");
+			break;
+		}
+
+		foundEntity = entity;
 	}
 
-	return nullptr;
+	return foundEntity;
 }
 
 template<typename T>

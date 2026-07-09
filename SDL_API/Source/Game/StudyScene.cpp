@@ -180,7 +180,7 @@ void StudyScene::Initialize()
 			image.texture = &mArrowTexture;
 			entity.AddComponent(image);
 
-			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Arrow));
+			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::MonsterArrow));
 			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
 			entity.AddComponent(collider);
 

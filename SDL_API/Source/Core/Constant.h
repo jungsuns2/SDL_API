@@ -18,5 +18,5 @@ public:
 	[[nodiscard]] float GetHalfHeight() const;
 
 public:
-	static constexpr uint32_t MAX_LAYER = 6;
+	static constexpr uint32_t MAX_LAYER = 7;
 };

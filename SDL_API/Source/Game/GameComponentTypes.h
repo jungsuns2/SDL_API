@@ -30,10 +30,34 @@ struct ShadowTag : public Component
 	ShadowTag() : Component(&_ID) {}
 };
 
+struct PlayerHpBarBackGroundTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	PlayerHpBarBackGroundTag() : Component(&_ID) {}
+};
+
+struct PlayerHpBarBolderTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	PlayerHpBarBolderTag() : Component(&_ID) {}
+};
+
 struct PlayerHpBarTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	PlayerHpBarTag() : Component(&_ID) {}
+};
+
+struct PlayerHpLabelTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	PlayerHpLabelTag() : Component(&_ID) {}
+};
+
+struct PlayerIconTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	PlayerIconTag() : Component(&_ID) {}
 };
 
 struct SwordTag : public Component
@@ -138,10 +162,10 @@ struct MonsterRangedAttackTag : public Component
 	MonsterRangedAttackTag() : Component(&_ID) {}
 };
 
-struct MonsterAttackColliderTag : public Component
+struct HitboxTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	MonsterAttackColliderTag() : Component(&_ID) {}
+	HitboxTag() : Component(&_ID) {}
 };
 
 struct CycloneFanTag : public Component
@@ -194,6 +218,15 @@ struct Monster : public Component
 	float length = 0.0f;
 	float attackDistance = 0.0f;
 	float spawnBlinkTimer = 0.0f;
+};
+
+struct MonsterHitboxSponwer : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	MonsterHitboxSponwer() : Component(&_ID) {}
+
+	bool isAttackSpawned = false;
+	Entity* hitboxEntity = nullptr;
 };
 
 struct BossHand : public Component
@@ -305,12 +338,12 @@ struct ColliderState : public Component
 	uint32_t attackAnimIndex = 0;
 };
 
-struct MonsterAttackCollider : public Component
+struct Hitbox : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	MonsterAttackCollider() : Component(&_ID) {}
+	Hitbox() : Component(&_ID) {}
 
-	Entity* ownerEntity = nullptr;
+	Entity* monsterEntity = nullptr;
 };
 
 struct Damage : public Component
