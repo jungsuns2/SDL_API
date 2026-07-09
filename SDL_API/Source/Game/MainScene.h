@@ -252,6 +252,10 @@ private:
 	Texture mPlayerHpBarBorderTexture{};
 	Texture mPlayerIconTexture{};
 
+	Texture mPlayerDashLeftBackGroundTexture{};
+	Texture mPlayerDashCenterBackGroundTexture{};
+	Texture mPlayerDashRightBackGroundTexture{};
+
 	std::array<Texture, 5> mPlayerIdleTextures{};
 	std::array<Texture, 6> mPlayerRunTextures{};
 	Texture mPlayerShadowTexture{};

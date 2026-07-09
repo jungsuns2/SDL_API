@@ -227,6 +227,10 @@ void MainScene::Finalize()
 	mPlayerHpBarBorderTexture.Finalize();
 	mPlayerIconTexture.Finalize();
 
+	mPlayerDashLeftBackGroundTexture.Finalize();
+	mPlayerDashCenterBackGroundTexture.Finalize();
+	mPlayerDashRightBackGroundTexture.Finalize();
+
 	// Player
 	{
 		for (Texture& texture : mPlayerIdleTextures)
@@ -377,6 +381,10 @@ void MainScene::initialize_Resource()
 		mPlayerHpBarBackGroundTexture.Initialize(GetHelper(), "Resource/Ui/Player/Hp/BackGround.png");
 		mPlayerHpBarBorderTexture.Initialize(GetHelper(), "Resource/Ui/Player/Hp/Front.png");
 		mPlayerIconTexture.Initialize(GetHelper(), "Resource/Ui/Player/Icon/0.png");
+
+		mPlayerDashLeftBackGroundTexture.Initialize(GetHelper(), "Resource/Ui/Player/Dash/0.png");
+		mPlayerDashCenterBackGroundTexture.Initialize(GetHelper(), "Resource/Ui/Player/Dash/1.png");
+		mPlayerDashRightBackGroundTexture.Initialize(GetHelper(), "Resource/Ui/Player/Dash/2.png");
 	}
 
 	// Player
@@ -1049,7 +1057,21 @@ void MainScene::initialize_Entity()
 		entity->AddComponent(collider);
 	}
 
-	// Player Hp
+	// Player UI Dash
+	{
+		for (uint32_t i = 0; i < 5; ++i)
+		{
+			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+			entity->AddComponent(PlayerDashTag());
+			entity->AddComponent(Ui());
+			entity->AddComponent(Image());
+			entity->AddComponent(Transform());
+			entity->AddComponent(Active());
+			entity->AddComponent(Color());
+		}
+	}
+
+	// Player UI Hp
 	{
 		// BackGround Bar
 		{
@@ -1268,10 +1290,43 @@ Rect MainScene::getCameraRect() const
 
 void MainScene::initializeUI()
 {
+	constexpr float DASH_BACKGROUND_OFFSET = 30.0f;
+
 	constexpr Point HPBAR_BACKGROUND_OFFSET = { .x = 10.0f, .y = 60.0f };
 	constexpr Point ICON_OFFSET = { .x = 30.0f, .y = 55.0f };
 	constexpr Point HPBAR_OFFSET = { .x = 78.0f, .y = 50.0f };
 	constexpr Point HPBAR_LABEL_OFFSET = { .x = 110.0f, .y = 50.0f };
+
+	// Player Dash
+	{
+		auto entities = getEntities<PlayerDashTag>();
+		for (uint32_t i = 0; i < 5; ++i)
+		{
+			Entity* entity = entities[i];
+
+			Image* image = entity->GetComponent<Image>();
+			image->texture = &mPlayerDashCenterBackGroundTexture;
+
+			const Point firstPosition = { .x = 10.0f, .y = 10.0f };
+
+			Transform* transform = entity->GetComponent<Transform>();
+			transform->scale = { .width = 3.0f, .height = 3.0f };
+			transform->position = { .x = (firstPosition.x + 3.0f) + DASH_BACKGROUND_OFFSET * i, .y = 10.0f };
+
+			if (i == 0)
+			{
+				image->texture = &mPlayerDashLeftBackGroundTexture;
+				transform->position = firstPosition;
+			}
+			else if (i == 4)
+			{
+				image->texture = &mPlayerDashRightBackGroundTexture;
+			}
+
+			Active* active = entity->GetComponent<Active>();
+			active->isValue = true;
+		}
+	}
 
 	// Player Hp Bar BackGround
 	{
@@ -1305,7 +1360,7 @@ void MainScene::initializeUI()
 	}
 
 	// Player Icon
-	{;
+	{
 		Entity* entity = getEntity<PlayerIconTag>();
 
 		Image* image = entity->GetComponent<Image>();
@@ -1323,7 +1378,7 @@ void MainScene::initializeUI()
 	const Hp* hp = playerEntity->GetComponent<Hp>();
 
 	// Player Hp Bar
-	{;
+	{
 		Entity* entity = getEntity<PlayerHpBarTag>();
 
 		Image* image = entity->GetComponent<Image>();
