@@ -166,7 +166,7 @@ bool MainScene::Update(const float deltaTime)
 				mMonsterIndex = 0;
 
 				// 몬스터를 갱신한다.
-				for (const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+				for (const std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
 					Entity * entity : monsterEntities)
 				{
 					Monster* monster = entity->GetComponent<Monster>();
@@ -296,8 +296,11 @@ bool MainScene::Update(const float deltaTime)
 	playerToMonsterCollision();
 	playerToArrowCollision();
 
-	swordSkillToMonsterCollision();
+	swordAttackToMonsterCollision();
 	//bulletToMonsterCollision();
+
+	// TODO: BossTag를 이용해서 충돌 체크 만들기
+	swordAttackToBossCollision(deltaTime);
 
 	Collision::Get().UpdateEntityPairs();
 
@@ -383,6 +386,10 @@ void MainScene::Finalize()
 		}
 
 		mSkelDogAttackTexture.Finalize();
+
+		mBossHpbarBackGroundTexture.Finalize();
+		mBossHpBarBorderTexture.Finalize();
+		mBossIconTexture.Finalize();
 
 		for (Texture& texture : mBossIdleTextures)
 		{
@@ -484,6 +491,10 @@ void MainScene::initialize_Resource()
 		mPlayerDashRightBackGroundTexture.Initialize(GetHelper(), "Resource/Ui/Player/Dash/2.png");
 		
 		mPlayerDashTexture.Initialize(GetHelper(), "Resource/Ui/Player/Dash/3.png");
+
+		mBossHpbarBackGroundTexture.Initialize(GetHelper(), "Resource/Ui/Boss/HpBar/0.png");
+		mBossHpBarBorderTexture.Initialize(GetHelper(), "Resource/Ui/Boss/HpBar/1.png");
+		mBossIconTexture.Initialize(GetHelper(), "Resource/Ui/Boss/Icon/0.png");
 	}
 
 	// Player
@@ -1211,7 +1222,7 @@ void MainScene::initialize_Entity()
 			entity->AddComponent(Color());
 		}
 
-		// Hp Bar
+		// Icon
 		{
 			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 			entity->AddComponent(PlayerIconTag());
@@ -2044,6 +2055,7 @@ void MainScene::spawnSwordAttack()
 		newEntity->AddComponent(Animator());
 		newEntity->AddComponent(Active());
 		newEntity->AddComponent(Color());
+		newEntity->AddComponent(Damage());
 		newEntity->AddComponent(DebugColor());
 
 		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::SwordAttack));
@@ -2069,6 +2081,9 @@ void MainScene::spawnSwordAttack()
 
 		Active* active = newEntity->GetComponent<Active>();
 		active->isValue = true;
+
+		Damage* damage = newEntity->GetComponent<Damage>();
+		damage->value = 1;
 
 		const Entity* playerEntity = getEntity<PlayerTag>();
 		const Transform* playerTransform = playerEntity->GetComponent<Transform>();
@@ -2158,6 +2173,7 @@ void MainScene::spawnBullets(const float deltaTime)
 			newEntity->AddComponent(Animator());
 			newEntity->AddComponent(Active());
 			newEntity->AddComponent(Color());
+			newEntity->AddComponent(Damage());
 			newEntity->AddComponent(BoxCollider());
 			newEntity->AddComponent(DebugColor());
 
@@ -2195,6 +2211,9 @@ void MainScene::spawnBullets(const float deltaTime)
 		const Point difference = getScreenMousePosition() - gunTransform->position;
 		Direction* direction = newEntity->GetComponent<Direction>();
 		direction->value = Math::NormalizeVector(difference);
+
+		Damage* damage = newEntity->GetComponent<Damage>();
+		damage->value = 2;
 
 		const Entity* bulletCountEntity = getEntity<BulletCountTag>();
 		Label* label = bulletCountEntity->GetComponent<Label>();
@@ -2318,26 +2337,6 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	const float x = desc.x;
 	const float y = desc.y;
 
-	if (type == eMonsterType::Boss)
-	{
-		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-		entity->AddComponent(BossBackTag());
-		entity->AddComponent(Transform());
-		entity->AddComponent(Image());
-		entity->AddComponent(Animator());
-		entity->AddComponent(Direction());
-		entity->AddComponent(Active());
-
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-
-		Image* image = entity->GetComponent<Image>();
-		image->layer = static_cast<uint32_t>(Layer::BossBack);
-
-		Animator* animator = entity->GetComponent<Animator>();
-		animator->clipState = &mBossBackClip;
-	}
-
 	// 몬스터 컴포넌트를 추가합니다.
 	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 	{
@@ -2401,7 +2400,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 	{
 	case eMonsterType::BigWhite:
 	{
-		entity->AddComponent(MonsterTag());
+		entity->AddComponent(NormalMonsterTag());
 		entity->AddComponent(HitboxSponwer());
 
 		hp->max = 2;
@@ -2423,7 +2422,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 
 	case eMonsterType::Archer:
 	{
-		entity->AddComponent(MonsterTag());
+		entity->AddComponent(NormalMonsterTag());
 
 		hp->max = 3;
 		damage->value = 2;
@@ -2444,7 +2443,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 
 	case eMonsterType::SkelDog:
 	{
-		entity->AddComponent(MonsterTag());
+		entity->AddComponent(NormalMonsterTag());
 
 		hp->max = 4;
 		damage->value = 1;
@@ -2471,7 +2470,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		const Transform* cameraTransform = cameraEntity->GetComponent<Transform>();
 		transform->position = { .x = cameraTransform->position.x - 120.0f, .y = cameraTransform->position.y + Constant::Get().GetHalfHeight() - 200.0f };
 
-		hp->max = 50;
+		hp->max = 100;
 		damage->value = 10;
 		pattern->type = AttackPattern::eType::CycloneFan;
 		pattern->timer = 0.0f;
@@ -2485,63 +2484,210 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 		colliderState->attackOffset = { .x = 0.0f, .y = 0.0f };
 		colliderState->attackAnimIndex = 5;
 
-		const Entity* backEntity = getEntity<BossBackTag>();
-		Transform* backTransform = backEntity->GetComponent<Transform>();
-		backTransform->position = { .x = transform->position.x + BACK_OFFSET.x, .y = transform->position.y - BACK_OFFSET.y };
+		// HpBar UI
+		{
+			// BackGround Bar
+			{
+				Entity* backGroundBarEntity = GetEntityWorld()->AddEntity(new Entity());
+				backGroundBarEntity->AddComponent(BossHpBarBackGroundTag());
+				backGroundBarEntity->AddComponent(Ui());
+				backGroundBarEntity->AddComponent(Color());
+				
+				Image backGroundBarImage{};
+				backGroundBarImage.texture = &mBossHpbarBackGroundTexture;
+				backGroundBarEntity->AddComponent(backGroundBarImage);
+
+				const Entity* targetEntity = getEntity<WaveTimerTag>();
+
+				Transform backGroundBarTransform{};
+				backGroundBarTransform.position = targetEntity->GetComponent<Transform>()->position;
+				backGroundBarTransform.position.x -= 40.0f;
+				backGroundBarTransform.position.y += 60.0f;
+				backGroundBarTransform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+				backGroundBarEntity->AddComponent(backGroundBarTransform);
+
+				Active backGroundBarActive{};
+				backGroundBarActive.isValue = true;
+				backGroundBarEntity->AddComponent(backGroundBarActive);
+			}
+
+			// Bolder Bar
+			{
+				Entity* bolderEntity = GetEntityWorld()->AddEntity(new Entity());
+				bolderEntity->AddComponent(BossHpBarBolderTag());
+				bolderEntity->AddComponent(Ui());
+				bolderEntity->AddComponent(Color());
+
+				Image bolderImage{};
+				bolderImage.texture = &mBossHpBarBorderTexture;
+				bolderEntity->AddComponent(bolderImage);
+
+				const Entity* targetEntity = getEntity<BossHpBarBackGroundTag>();
+
+				Transform bolderTransform{};
+				bolderTransform.position = targetEntity->GetComponent<Transform>()->position;
+				bolderTransform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+				bolderEntity->AddComponent(bolderTransform);
+
+				Active bolderActive{};
+				bolderActive.isValue = true;
+				bolderEntity->AddComponent(bolderActive);
+			}
+
+			// Icon
+			{
+				Entity* iconEntity = GetEntityWorld()->AddEntity(new Entity());
+				iconEntity->AddComponent(BossIconTag());
+				iconEntity->AddComponent(Ui());
+				iconEntity->AddComponent(Color());
+
+				Image iconImage{};
+				iconImage.texture = &mBossIconTexture;
+				iconEntity->AddComponent(iconImage);
+
+				const Entity* targetEntity = getEntity<BossHpBarBolderTag>();
+
+				Transform iconTransform{};
+				iconTransform.position = targetEntity->GetComponent<Transform>()->position;
+				iconTransform.position.x += 7.0f;
+				iconTransform.position.y += 7.0f;
+
+				iconTransform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+				iconEntity->AddComponent(iconTransform);
+
+				Active iconActive{};
+				iconActive.isValue = true;
+				iconEntity->AddComponent(iconActive);
+			}
+
+			// Hp
+			{
+				Entity* hpEntity = GetEntityWorld()->AddEntity(new Entity());
+				hpEntity->AddComponent(BossHpBarTag());
+				hpEntity->AddComponent(Ui());
+				hpEntity->AddComponent(Color());
+
+				Image hpImage{};
+				hpImage.texture = &mRedRectTexture;
+				hpEntity->AddComponent(hpImage);
+
+				const Entity* targetEntity = getEntity<BossIconTag>();
+
+				Transform hpTransform{};
+				hpTransform.position = targetEntity->GetComponent<Transform>()->position;
+				hpTransform.position.x += 60.0f;
+				hpTransform.position.y += 2.0f;
+
+				const float currentWidth = (static_cast<float>(hp->max) / hp->max) * 6.2f;
+				hpTransform.scale = { .width = currentWidth, .height = 0.6f };
+				hpEntity->AddComponent(hpTransform);
+
+				Active hpActive{};
+				hpActive.isValue = true;
+				hpEntity->AddComponent(hpActive);
+			}
+
+			// Hp Label
+			{
+				Entity* labelEntity = GetEntityWorld()->AddEntity(new Entity());
+				labelEntity->AddComponent(BossHpLabelTag());
+				labelEntity->AddComponent(Ui());
+				labelEntity->AddComponent(Color());
+
+				Label label{};
+				label.font = &mHpFont;
+				std::string hpName = std::to_string(hp->max) + "/" + std::to_string(hp->max);
+				label.text = hpName;
+				labelEntity->AddComponent(label);
+
+				const Entity* targetEntity = getEntity<BossHpBarBolderTag>();
+
+				Transform labelTransform{};
+				labelTransform.position = targetEntity->GetComponent<Transform>()->position;
+				labelTransform.position.x += 170.0f;
+				labelTransform.position.y += 10.0f;
+				labelEntity->AddComponent(labelTransform);
+
+				Active labelActive{};
+				labelActive.isValue = true;
+				labelEntity->AddComponent(labelActive);
+			}
+		}
+
+		// Back
+		{
+			Entity* backEntity = GetEntityWorld()->AddEntity(new Entity());
+			backEntity->AddComponent(BossBackTag());
+			backEntity->AddComponent(Transform());
+			backEntity->AddComponent(Image());
+			backEntity->AddComponent(Animator());
+			backEntity->AddComponent(Direction());
+			backEntity->AddComponent(Active());
+
+			Transform* backTransform = backEntity->GetComponent<Transform>();
+			backTransform->position = { .x = transform->position.x + BACK_OFFSET.x, .y = transform->position.y - BACK_OFFSET.y };
+			backTransform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+
+			Image* backImage = backEntity->GetComponent<Image>();
+			backImage->layer = static_cast<uint32_t>(Layer::BossBack);
+
+			Animator* backAnimator = backEntity->GetComponent<Animator>();
+			backAnimator->clipState = &mBossBackClip;
+		}
 
 		// Left Hand
 		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(BossLeftHandTag());
-			entity->AddComponent(BossHand());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Image());
-			entity->AddComponent(Animator());
-			entity->AddComponent(Direction());
-			entity->AddComponent(Active());
+			Entity* leftEntity = GetEntityWorld()->AddEntity(new Entity());
+			leftEntity->AddComponent(BossLeftHandTag());
+			leftEntity->AddComponent(BossHand());
+			leftEntity->AddComponent(Transform());
+			leftEntity->AddComponent(Image());
+			leftEntity->AddComponent(Animator());
+			leftEntity->AddComponent(Direction());
+			leftEntity->AddComponent(Active());
 
-			BossHand* hand = entity->GetComponent<BossHand>();
-			hand->state = BossHand::eState::Idle;
-			hand->clips = mBossHandClips.data();
+			BossHand* leftHand = leftEntity->GetComponent<BossHand>();
+			leftHand->state = BossHand::eState::Idle;
+			leftHand->clips = mBossHandClips.data();
 
-			Transform* transform = entity->GetComponent<Transform>();
-			transform->position.x = LEFT_OFFSET.x - Constant::Get().GetHalfWidth();
-			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+			Transform* leftTransform = leftEntity->GetComponent<Transform>();
+			leftTransform->position.x = LEFT_OFFSET.x - Constant::Get().GetHalfWidth();
+			leftTransform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 
-			Image* image = entity->GetComponent<Image>();
-			image->layer = static_cast<uint32_t>(Layer::BossBack);
+			Image* leftImage = leftEntity->GetComponent<Image>();
+			leftImage->layer = static_cast<uint32_t>(Layer::BossBack);
 
-			Animator* animator = entity->GetComponent<Animator>();
-			animator->clipState = hand->clips;
+			Animator* leftAnimator = leftEntity->GetComponent<Animator>();
+			leftAnimator->clipState = leftHand->clips;
 
 		}
 
 		// Right Hand
 		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(BossRightHandTag());
-			entity->AddComponent(BossHand());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Image());
-			entity->AddComponent(Animator());
-			entity->AddComponent(Direction());
-			entity->AddComponent(Active());
+			Entity* rightEntity = GetEntityWorld()->AddEntity(new Entity());
+			rightEntity->AddComponent(BossRightHandTag());
+			rightEntity->AddComponent(BossHand());
+			rightEntity->AddComponent(Transform());
+			rightEntity->AddComponent(Image());
+			rightEntity->AddComponent(Animator());
+			rightEntity->AddComponent(Direction());
+			rightEntity->AddComponent(Active());
 
-			BossHand* hand = entity->GetComponent<BossHand>();
-			hand->state = BossHand::eState::Idle;
-			hand->clips = mBossHandClips.data();
+			BossHand* rightHand = rightEntity->GetComponent<BossHand>();
+			rightHand->state = BossHand::eState::Idle;
+			rightHand->clips = mBossHandClips.data();
 
-			Transform* transform = entity->GetComponent<Transform>();
-			transform->position.x = Constant::Get().GetHalfWidth() - RIGHT_OFFSET.x;
-			transform->position.y = Constant::Get().GetHalfHeight() - RIGHT_OFFSET.y;
-			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-			transform->flip = SDL_FLIP_HORIZONTAL;
+			Transform* rightTransform = rightEntity->GetComponent<Transform>();
+			rightTransform->position.x = Constant::Get().GetHalfWidth() - RIGHT_OFFSET.x;
+			rightTransform->position.y = Constant::Get().GetHalfHeight() - RIGHT_OFFSET.y;
+			rightTransform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+			rightTransform->flip = SDL_FLIP_HORIZONTAL;
 
-			Image* image = entity->GetComponent<Image>();
-			image->layer = static_cast<uint32_t>(Layer::BossBack);
+			Image* rightImage = rightEntity->GetComponent<Image>();
+			rightImage->layer = static_cast<uint32_t>(Layer::BossBack);
 
-			Animator* animator = entity->GetComponent<Animator>();
-			animator->clipState = hand->clips;
+			Animator* rightAnimator = rightEntity->GetComponent<Animator>();
+			rightAnimator->clipState = rightHand->clips;
 		}
 	}
 		break;
@@ -2585,7 +2731,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 
 void MainScene::updateMonsterStates(const float deltaTime)
 {
-	const std::vector<Entity*> entities = getEntities<MonsterTag>();
+	const std::vector<Entity*> entities = getEntities<NormalMonsterTag>();
 	for (Entity* entity : entities)
 	{
 		if (entity == nullptr)
@@ -2743,7 +2889,7 @@ void MainScene::updateMonsterStates(const float deltaTime)
 
 	for (Entity* entity : entities)
 	{
-		if (not entity->HasComponent<MonsterTag>())
+		if (not entity->HasComponent<NormalMonsterTag>())
 		{
 			continue;
 		}
@@ -2777,10 +2923,10 @@ void MainScene::updateHpMonsters(const float deltaTime)
 {
 	constexpr float DAMAGE_TIME = 0.12f;
 
-	const std::vector<Entity*> entities = getEntities<MonsterTag>();
+	const std::vector<Entity*> entities = getEntities<Monster>();
 	for (Entity* entity : entities)
 	{
-		if (not entity->HasComponent<MonsterTag>())
+		if (not entity->HasComponent<Monster>())
 		{
 			continue;
 		}
@@ -2813,10 +2959,10 @@ void MainScene::updateHpMonsters(const float deltaTime)
 
 void MainScene::monsterMove(const float deltaTime)
 {
-	const std::vector<Entity*> entities = getEntities<MonsterTag>();
+	const std::vector<Entity*> entities = getEntities<NormalMonsterTag>();
 	for (Entity* entity : entities)
 	{
-		if (not entity->HasComponent<MonsterTag>())
+		if (not entity->HasComponent<NormalMonsterTag>())
 		{
 			continue;
 		}
@@ -2857,7 +3003,7 @@ void MainScene::monsterMove(const float deltaTime)
 
 void MainScene::monsterHpBarMove()
 {
-	const std::vector<Entity*> entities = getEntities<MonsterTag>();
+	const std::vector<Entity*> entities = getEntities<NormalMonsterTag>();
 	for (const Entity* monsterEntity : entities)
 	{
 		if (const Monster* monster = monsterEntity->GetComponent<Monster>(); 
@@ -2893,7 +3039,7 @@ void MainScene::setDirectionOffset(Entity* setEntity, const Entity& entity)
 
 void MainScene::monsterSetClip()
 {	
-	for (const std::vector<Entity*> entities = getEntities<MonsterTag>(); 
+	for (const std::vector<Entity*> entities = getEntities<NormalMonsterTag>(); 
 		Entity* entity : entities)
 	{
 		if (entity == nullptr)
@@ -3498,7 +3644,7 @@ void MainScene::bossHandsSetClip()
 
 void MainScene::spawnHitbox()
 {
-	for (std::vector<Entity*> entities = getEntities<MonsterTag>(); 
+	for (std::vector<Entity*> entities = getEntities<NormalMonsterTag>(); 
 		Entity* monsterEntity : entities)
 	{
 		const Monster* monster = monsterEntity->GetComponent<Monster>();
@@ -3576,7 +3722,7 @@ void MainScene::updateHitbox(const float deltaTime)
 {
 	constexpr float SPEED = 600.0f;
 
-	for (std::vector<Entity*> entities = getEntities<MonsterTag>();
+	for (std::vector<Entity*> entities = getEntities<NormalMonsterTag>();
 		Entity * monsterEntity : entities)
 	{
 		if (not monsterEntity->HasComponent<HitboxSponwer>())
@@ -3676,7 +3822,7 @@ void MainScene::spawnRangedAttack(const SpawnRangeAttackDesc& desc)
 	Texture* texture = desc.texture;
 	const uint32_t spawnFrameIndex = desc.spawnFrameIndex;
 
-	for (const auto monsterEntities = getEntities<MonsterTag>();
+	for (const auto monsterEntities = getEntities<NormalMonsterTag>();
 		const Entity* monsterEntity : monsterEntities)
 	{
 		if (monsterEntity == nullptr)
@@ -3851,7 +3997,7 @@ void MainScene::rangedAttackMove(const float speed, const float deltaTime)
 
 void MainScene::playerToMonsterCollision()
 {
-	const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+	const std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
 	for (const Entity* monsterEntity : monsterEntities)
 	{
 		if (monsterEntity->HasComponent<Active>())
@@ -3970,9 +4116,9 @@ void MainScene::playerToArrowCollision()
 	}
 }
 
-void MainScene::swordSkillToMonsterCollision()
+void MainScene::swordAttackToMonsterCollision()
 {
-	const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+	const std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
 	for (Entity* monsterEntity : monsterEntities)
 	{
 		if (const Active* active = monsterEntity->GetComponent<Active>();
@@ -4011,7 +4157,7 @@ void MainScene::swordSkillToMonsterCollision()
 
 void MainScene::bulletToMonsterCollision()
 {
-	const std::vector<Entity*> monsterEntities = getEntities<MonsterTag>();
+	const std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
 	for (Entity* monsterEntity : monsterEntities)
 	{
 		if (const Active* active = monsterEntity->GetComponent<Active>();
@@ -4047,6 +4193,44 @@ void MainScene::bulletToMonsterCollision()
 
 				bulletEntity->SetRemove();
 			}
+		}
+	}
+}
+
+void MainScene::swordAttackToBossCollision(const float deltaTime)
+{
+	Entity* bossEntity = getEntity<BossTag>();
+	Entity* swordAttackEntity = getEntity<SwordAttackTag>();
+
+	if (Collision::Get().IsCollisionEnter(*swordAttackEntity, *bossEntity))
+	{
+		const Damage& damage = *swordAttackEntity->GetComponent<Damage>();
+
+		Hp* hp = bossEntity->GetComponent<Hp>();
+		hp->value -= damage.value;
+
+		Entity* hpBarEntity = getEntity<BossHpBarTag>();
+		Transform* transform = hpBarEntity->GetComponent<Transform>();
+		const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 6.2f;
+		transform->scale.width = currentWidth;
+
+		const std::string hpName = std::to_string(hp->value) + "/" + std::to_string(hp->max);
+		Entity* hpLabelEntity = getEntity<BossHpLabelTag>();
+		hpLabelEntity->GetComponent<Label>();
+		Label* label = hpLabelEntity->GetComponent<Label>();
+		label->text = hpName;
+	}
+	if (Collision::Get().IsCollisionStay(*swordAttackEntity, *bossEntity))
+	{
+		Knockback* knockback = bossEntity->GetComponent<Knockback>();
+		knockback->isValue = true;
+
+		Color* swordColor = swordAttackEntity->GetComponent<Color>();
+		swordColor->a -= Uint8(100 * deltaTime);
+
+		if (swordColor->a <= 0)
+		{
+			swordAttackEntity->SetRemove();
 		}
 	}
 }

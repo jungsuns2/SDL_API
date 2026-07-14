@@ -188,8 +188,10 @@ private:
 	void playerToMonsterCollision();
 	void playerToMonsterHitboxCollision();
 	void playerToArrowCollision();
-	void swordSkillToMonsterCollision();
+	void swordAttackToMonsterCollision();
 	void bulletToMonsterCollision();
+
+	void swordAttackToBossCollision(const float deltaTime);
 
 	template<typename T>
 	void spawnRangedAttack(const SpawnRangeAttackDesc& desc);
@@ -284,6 +286,10 @@ private:
 	std::array<Texture, 5> mSkelDogIdleTextures{};
 	std::array<Texture, 7> mSkelDogRunTextures{};
 	Texture mSkelDogAttackTexture{};
+
+	Texture mBossHpbarBackGroundTexture{};
+	Texture mBossHpBarBorderTexture{};
+	Texture mBossIconTexture{};
 
 	std::array<Texture, 10> mBossIdleTextures{};
 	std::array<Texture, 12> mBossAttackTextures{};

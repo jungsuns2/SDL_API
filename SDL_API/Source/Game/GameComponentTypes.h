@@ -42,6 +42,12 @@ struct PlayerHpBarBolderTag : public Component
 	PlayerHpBarBolderTag() : Component(&_ID) {}
 };
 
+struct PlayerIconTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	PlayerIconTag() : Component(&_ID) {}
+};
+
 struct PlayerHpBarTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
@@ -52,12 +58,6 @@ struct PlayerHpLabelTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	PlayerHpLabelTag() : Component(&_ID) {}
-};
-
-struct PlayerIconTag : public Component
-{
-	static constexpr uint32_t _ID = 0;
-	PlayerIconTag() : Component(&_ID) {}
 };
 
 struct PlayerDashBackGroundTag : public Component
@@ -114,10 +114,10 @@ struct WaveStageTag : public Component
 	WaveStageTag() : Component(&_ID) {}
 };
 
-struct MonsterTag : public Component
+struct NormalMonsterTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	MonsterTag() : Component(&_ID) {}
+	NormalMonsterTag() : Component(&_ID) {}
 };
 
 struct BossBackTag : public Component
@@ -154,6 +154,36 @@ struct BossHandCenterSkillTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	BossHandCenterSkillTag() : Component(&_ID) {}
+};
+
+struct BossHpBarBackGroundTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossHpBarBackGroundTag() : Component(&_ID) {}
+};
+
+struct BossHpBarBolderTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossHpBarBolderTag() : Component(&_ID) {}
+};
+
+struct BossIconTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossIconTag() : Component(&_ID) {}
+};
+
+struct BossHpBarTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossHpBarTag() : Component(&_ID) {}
+};
+
+struct BossHpLabelTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossHpLabelTag() : Component(&_ID) {}
 };
 
 struct MonsterHpBarTag : public Component
