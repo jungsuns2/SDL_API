@@ -122,7 +122,7 @@ bool MainScene::Update(const float deltaTime)
 						active->isValue = true;
 
 						Color* color = newEntity->GetComponent<Color>();
-						color->a = 0.0f;
+						color->a = 0;
 					}
 				}
 			}
@@ -141,25 +141,25 @@ bool MainScene::Update(const float deltaTime)
 
 				if (mGameWaveState.labelShowElapsedTimer <= FADE_IN_TIME)
 				{
-					backGroundColor->a += FADE_SPEED * deltaTime;
-					labelColor->a += FADE_SPEED * deltaTime;
+					backGroundColor->a += Uint8(FADE_SPEED * deltaTime);
+					labelColor->a += Uint8(FADE_SPEED * deltaTime);
 				}
 				else if (mGameWaveState.labelShowElapsedTimer >= FADE_IN_TIME 
 					and mGameWaveState.labelShowElapsedTimer < FADE_OUT_TIME)
 				{
-					backGroundColor->a = 255.0f;
-					labelColor->a = 255.0f;
+					backGroundColor->a = 255;
+					labelColor->a = 255;
 				}
 				else if (mGameWaveState.labelShowElapsedTimer >= FADE_OUT_TIME)
 				{
 					if (backGroundEntity != nullptr)
 					{
-						backGroundColor->a -= FADE_SPEED * deltaTime;
-						labelColor->a -= FADE_SPEED * deltaTime;
+						backGroundColor->a -= Uint8(FADE_SPEED * deltaTime);
+						labelColor->a -= Uint8(FADE_SPEED * deltaTime);
 
-						if (backGroundColor->a <= 0.0f)
+						if (backGroundColor->a <= 0)
 						{
-							labelColor->a = 0.0f;
+							labelColor->a = 0;
 
 							backGroundEntity->SetRemove();
 
@@ -1484,7 +1484,7 @@ void MainScene::initializeWaveStage()
 	entity->AddComponent(active);
 
 	Color color{};
-	color.a = 0.0f;
+	color.a = 0;
 	entity->AddComponent(color);
 }
 
