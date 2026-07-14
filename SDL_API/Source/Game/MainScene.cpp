@@ -10,7 +10,6 @@
 
 constexpr float PRIMARY_SIZE = 3.0f;
 
-// TODO: Dash 구현
 // TODO: 총알 충돌박스 만들기
 // TODO: 스테이지 끝나면 mIsUpdate = false로 하고, 창 하나 만들기
 // TODO: Boss 체력바 만들기
@@ -2061,12 +2060,15 @@ void MainScene::spawnBullets(const float deltaTime)
 			newEntity->AddComponent(Active());
 			newEntity->AddComponent(Color());
 			newEntity->AddComponent(BoxCollider());
-			newEntity->AddComponent(DebugActive());
 			newEntity->AddComponent(DebugColor());
 
 			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::PlayerBullet));
 			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
 			newEntity->AddComponent(collider);
+
+			DebugActive debugActive{};
+			debugActive.isValue = mIsDebugActive;
+			newEntity->AddComponent(debugActive);
 		}
 
 		Image* image = newEntity->GetComponent<Image>();
