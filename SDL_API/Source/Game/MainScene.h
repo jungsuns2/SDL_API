@@ -105,6 +105,7 @@ public:
 		Shadow,
 		Player,
 		UI,
+		BackGround,
 		Count
 	};
 
@@ -124,7 +125,7 @@ private:
 	void initialize_Entity();
 
 	void input();
-	void updateCamera();
+	void updateCamera(Entity* targetEntity);
 	[[nodiscard]] Rect getCameraRect() const;
 		
 	template <typename T>
@@ -244,6 +245,8 @@ private:
 	Clip mBulletClip{};
 
 	Texture mRedRectTexture{};
+	
+	Texture mBgSkyNightTexture{};
 
 	std::array<Texture, 2> mTileTextures{};
 	Texture mArrowTexture{};

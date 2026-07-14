@@ -186,6 +186,12 @@ struct CycloneFanTag : public Component
 	CycloneFanTag() : Component(&_ID) {}
 };
 
+struct BackGroundTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BackGroundTag() : Component(&_ID) {}
+};
+
 struct Player : public Component
 {
 	enum class eState

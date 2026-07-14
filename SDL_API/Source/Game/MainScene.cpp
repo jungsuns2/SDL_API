@@ -10,8 +10,6 @@
 
 constexpr float PRIMARY_SIZE = 3.0f;
 
-// TODO: 총알 충돌박스 만들기
-// TODO: 스테이지 끝나면 mIsUpdate = false로 하고, 창 하나 만들기
 // TODO: Boss 체력바 만들기
 // TODO: Q누르면, 무기 교체하기 (struct WeaponState 하나 만들어서 멤버 변수로 두기, 칼과 총은 active = false로만 둔다. 무기가 보일 때 스킬과 총알이 나가도록 바꾼다)
 // TODO: 노래 추가하기
@@ -53,22 +51,96 @@ void MainScene::Initialize()
 
 bool MainScene::Update(const float deltaTime)
 {
-
-	updateCamera();
 	input();
 
 	// Update Wave
 	{
+		constexpr float WAVE_STATE_TIME = 3.0f;
+		constexpr float FADE_IN_TIME = 1.3f;
+		constexpr float FADE_OUT_TIME = 2.3f;
+		constexpr float FADE_SPEED = 255.0f / FADE_IN_TIME;
+
 		// 웨이브 정보를 잠시 동안 라벨로 표시한다.
 		{
+			// BackGround
+			{
+				const Entity* entity = getEntity<WaveStageTag>();
+				if (Active* active = entity->GetComponent<Active>();
+					active->isValue)
+				{
+					updateCamera(nullptr);
+
+					Entity* playerEntity = getEntity<PlayerTag>();
+					Transform* playerTransfrom = playerEntity->GetComponent<Transform>();
+					playerTransfrom->position = { .x = 0.0f, .y = 0.0f };
+
+					if (Entity* entity = getEntity<BackGroundTag>();
+						entity == nullptr)
+					{
+						Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+						newEntity->AddComponent(BackGroundTag());
+						newEntity->AddComponent(Image());
+						newEntity->AddComponent(Transform());
+						newEntity->AddComponent(Active());
+						newEntity->AddComponent(Color());
+
+						Image* image = newEntity->GetComponent<Image>();
+						image->texture = &mBgSkyNightTexture;
+						image->layer = uint32_t(Layer::BackGround);
+
+						Transform* transform = newEntity->GetComponent<Transform>();
+						transform->scale = { .width = 3.5f, .height = 3.5f };
+
+						Active* active = newEntity->GetComponent<Active>();
+						active->isValue = true;
+
+						Color* color = newEntity->GetComponent<Color>();
+						color->a = 0.0f;
+					}
+				}
+			}
+
 			mGameWaveState.labelShowElapsedTimer += deltaTime;
 
-			const Entity* entity = getEntity<WaveStageTag>();
-			if (Active* active = entity->GetComponent<Active>(); 
-				active->isValue and mGameWaveState.labelShowElapsedTimer >= 2.0f)
+			Entity* entity = getEntity<WaveStageTag>();
+			Active* active = entity->GetComponent<Active>();
+
+			if (active->isValue)
 			{
-				mGameWaveState.labelShowElapsedTimer = 0.0f;
-				active->isValue = false;
+				Entity* backGroundEntity = getEntity<BackGroundTag>();
+				
+				Color* backGroundColor = backGroundEntity->GetComponent<Color>();
+				Color* labelColor = entity->GetComponent<Color>();
+
+				if (mGameWaveState.labelShowElapsedTimer <= FADE_IN_TIME)
+				{
+					backGroundColor->a += FADE_SPEED * deltaTime;
+					labelColor->a += FADE_SPEED * deltaTime;
+				}
+				else if (mGameWaveState.labelShowElapsedTimer >= FADE_IN_TIME 
+					and mGameWaveState.labelShowElapsedTimer < FADE_OUT_TIME)
+				{
+					backGroundColor->a = 255.0f;
+					labelColor->a = 255.0f;
+				}
+				else if (mGameWaveState.labelShowElapsedTimer >= FADE_OUT_TIME)
+				{
+					if (backGroundEntity != nullptr)
+					{
+						backGroundColor->a -= FADE_SPEED * deltaTime;
+						labelColor->a -= FADE_SPEED * deltaTime;
+
+						if (backGroundColor->a <= 0.0f)
+						{
+							labelColor->a = 0.0f;
+
+							backGroundEntity->SetRemove();
+
+							mGameWaveState.labelShowElapsedTimer = 0.0f;
+							active->isValue = false;
+						}
+					}
+				}
 			}
 		}
 
@@ -140,6 +212,7 @@ bool MainScene::Update(const float deltaTime)
 		// Update Wave Timer Label
 		{
 			const Entity* entity = getEntity<WaveTimerTag>();
+
 			Label* label = entity->GetComponent<Label>();
 			const uint32_t seconds = uint32_t(mGameWaveState.waveTimer) % 60;
 			const uint32_t minutes = uint32_t(mGameWaveState.waveTimer) / 60;
@@ -153,19 +226,31 @@ bool MainScene::Update(const float deltaTime)
 
 		// Update Monster Spawn
 		{
-			const WaveDesc& waveDesc = WAVES[mGameWaveState.index];
-			const uint32_t monsterGroupIndex = waveDesc.monsterGroupIndicies[mGameWaveState.groupIndex];
-			const MonsterGroup& monsterGroup = MONSTER_GROUPS[monsterGroupIndex];
-
-			mGameWaveState.remainingMonsterGroupSpawnTimer -= deltaTime;
-			if (mGameWaveState.remainingMonsterGroupSpawnTimer <= 0.0f)
+			const Entity* waveEntity = getEntity<WaveStageTag>();
+			if (const Active* waveActive = waveEntity->GetComponent<Active>();
+				not waveActive->isValue)
 			{
-				spawnMonsterGroup(monsterGroup);
+				const WaveDesc& waveDesc = WAVES[mGameWaveState.index];
+				const uint32_t monsterGroupIndex = waveDesc.monsterGroupIndicies[mGameWaveState.groupIndex];
+				const MonsterGroup& monsterGroup = MONSTER_GROUPS[monsterGroupIndex];
 
-				++mGameWaveState.groupIndex;
-				mGameWaveState.remainingMonsterGroupSpawnTimer = waveDesc.monsterGroupSpawnIntervalTime;
+				mGameWaveState.remainingMonsterGroupSpawnTimer -= deltaTime;
+				if (mGameWaveState.remainingMonsterGroupSpawnTimer <= 0.0f)
+				{
+					spawnMonsterGroup(monsterGroup);
+
+					++mGameWaveState.groupIndex;
+					mGameWaveState.remainingMonsterGroupSpawnTimer = waveDesc.monsterGroupSpawnIntervalTime;
+				}
 			}
 		}
+	}
+
+	const Entity* entity = getEntity<WaveStageTag>();
+	if (Active* active = entity->GetComponent<Active>();
+		not active->isValue)
+	{
+		updateCamera(getEntity<PlayerTag>());
 	}
 
 	playerState(deltaTime);
@@ -373,6 +458,7 @@ void MainScene::Finalize()
 	}
 
 	mRedRectTexture.Finalize();
+	mBgSkyNightTexture.Finalize();
 }
 
 void MainScene::initialize_Resource()
@@ -385,6 +471,7 @@ void MainScene::initialize_Resource()
 	mTileTextures[1].Initialize(GetHelper(), "Resource/Tile/1.png");
 
 	mRedRectTexture.Initialize(GetHelper(), "Resource/RedRectangle.png");
+	mBgSkyNightTexture.Initialize(GetHelper(), "Resource/Title/Scene/Sky_Night.png");
 
 	// UI
 	{
@@ -1006,6 +1093,10 @@ void MainScene::initialize_Entity()
 			entity->AddComponent(Label());
 			entity->AddComponent(Transform());
 			entity->AddComponent(Active());
+			
+			Color color{};
+			color.a = 0.0f;
+			entity->AddComponent(color);
 		}
 
 		// Bullet Count
@@ -1268,17 +1359,26 @@ void MainScene::input()
 #endif
 }
 
-void MainScene::updateCamera()
+void MainScene::updateCamera(Entity* targetEntity)
 {
 	constexpr Point OFFSET = { .x = 24.0f, .y = 23.0f };
-
-	const Entity* entity = getEntity<Camera>();
-	Transform* transform = entity->GetComponent<Transform>();
-
-	const Entity* playerEntity = getEntity<PlayerTag>();
-	Transform* target = playerEntity->GetComponent<Transform>();
 	
-	transform->position = target->position;
+	Point targetPosition = { .x = 0.0f, .y = 0.0f };
+
+	if (targetEntity == nullptr)
+	{
+		targetPosition = { .x = 0.0f, .y = 0.0f };
+	}
+	else
+	{
+		Transform* transform = targetEntity->GetComponent<Transform>();
+		targetPosition = transform->position;
+	}
+	
+	Entity* entity = getEntity<Camera>();
+
+	Transform* transform = entity->GetComponent<Transform>();
+	transform->position = targetPosition;
 
 	const Scale halfScreen =
 	{
@@ -1594,7 +1694,6 @@ void MainScene::playerDash(const Point& moveDirection, const float deltaTime)
 	const Entity* playerEntity = getEntity<PlayerTag>();
 	Dash* dash = playerEntity->GetComponent<Dash>();
 
-	// TODO: entities를 불러와서 Entity* entity[dash->count] 해서 SetRemove 하기
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_SPACE))
 	{
 		if (dash->count > 0)
@@ -1759,7 +1858,7 @@ void MainScene::playerMove(const float deltaTime)
 	static int32_t prevMoveX;
 	static int32_t prevMoveY;
 
-	static Point moveVelocity = {};
+	static Point moveVelocity;
 
 	if (moveX != 0)
 	{
