@@ -122,7 +122,6 @@ public:
 
 private:
 	void initialize_Resource();
-	void initialize_Entity();
 
 	void input();
 	void updateCamera(Entity* targetEntity);
@@ -134,11 +133,19 @@ private:
 	template <typename T>
 	std::vector<Entity*> getEntities() const;
 
-	void initializeUI();
+	void initializeTile();
+	
+	void initializePlayer();
+	void initializeGun();
+	void initializeSword();
+
+	void initializePlayerDashUi();
+	void initializePlayerHpBarUi();
+	void initializePlayerBulletUi();
+
 	void initializeWaveTimer();
 	void initializeWaveStage();
 
-	void initializePlayer();
 	void playerDash(const Point& moveDirection, const float deltaTime);
 	void playerSpawnShadow(const float deltaTime);
 	void playerUpdateShadow(const float deltaTime);
@@ -146,10 +153,8 @@ private:
 	void playerMove(const float deltaTime);
 	void playerSetClip();
 
-	void initializeGun();
 	void updateGun();
 
-	void initializeSword();
 	void updateSword();
 	void updateSwordStates(const float deltaTime);
 

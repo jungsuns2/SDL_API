@@ -10,7 +10,6 @@
 
 constexpr float PRIMARY_SIZE = 3.0f;
 
-// TODO: Boss 체력바 만들기
 // TODO: Q누르면, 무기 교체하기 (struct WeaponState 하나 만들어서 멤버 변수로 두기, 칼과 총은 active = false로만 둔다. 무기가 보일 때 스킬과 총알이 나가도록 바꾼다)
 // TODO: 노래 추가하기
 // TODO: 몬스터 스폰 위치를 더 랜덤하게 수정한다.
@@ -21,7 +20,15 @@ void MainScene::Initialize()
 	srand(static_cast<unsigned int>(time(NULL)));
 
 	initialize_Resource();
-	initialize_Entity();
+
+	// Camera
+	{
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(Camera());
+		entity->AddComponent(Transform());
+	}
+
+	initializeTile();
 
 	initializePlayer();
 
@@ -43,10 +50,30 @@ void MainScene::Initialize()
 		.reloadTimer = 0.0f
 	};
 
-	initializeUI();
+	initializePlayerDashUi();
+	initializePlayerHpBarUi();
+	initializePlayerBulletUi();
 
 	initializeWaveTimer();
 	initializeWaveStage();
+
+	// Boss
+	{
+		mCycloneFanState =
+		{
+			.maxCount = 30,
+			.count = 30,
+			.fireTimer = 0.0f,
+			.reloadTimer = 0.0f,
+			.isUpdate = false
+		};
+
+		mHandSkillState =
+		{
+			.isSpawn = false
+		};
+	}
+
 }
 
 bool MainScene::Update(const float deltaTime)
@@ -561,6 +588,9 @@ void MainScene::initialize_Resource()
 		};
 
 		mPlayerClips[uint32_t(Player::eState::Dead)].AddClip(frame);
+
+		mPlayerClips[uint32_t(Player::eState::Idle)].SetLoop(true);
+		mPlayerClips[uint32_t(Player::eState::Run)].SetLoop(true);
 	}
 
 	// Sword
@@ -578,6 +608,8 @@ void MainScene::initialize_Resource()
 
 			mSwordClip.AddClip(frame);
 		}
+
+		mSwordClip.SetLoop(true);
 	}
 
 	// Sword Skill
@@ -595,6 +627,8 @@ void MainScene::initialize_Resource()
 
 			mSwordAttackClip.AddClip(frame);
 		}
+
+		mSwordAttackClip.SetLoop(true);
 	}
 
 	// Gun
@@ -615,6 +649,8 @@ void MainScene::initialize_Resource()
 
 			mBulletClip.AddClip(frame);
 		}
+
+		mBulletClip.SetLoop(true);
 	}
 
 	uint32_t index{};
@@ -1013,286 +1049,7 @@ void MainScene::initialize_Resource()
 
 			index = 0;
 		}
-	}
-}
 
-void MainScene::initialize_Entity()
-{
-	// Camera
-	{
-		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-		entity->AddComponent(Camera());
-		entity->AddComponent(Transform());
-	}
-
-	// Tile
-	{
-		constexpr uint32_t TILE_SIZE = 16;
-		mTilePositionOffset = TILE_SIZE * PRIMARY_SIZE;
-
-		FILE* file = nullptr;
-		fopen_s(&file, "Resource/Tile/Tile.txt", "r");
-		assert(file != nullptr);
-
-		uint32_t width{};
-		uint32_t height{};
-		fscanf_s(file, "%d %d", &width, &height);
-		mTileMaxCount = height;
-
-
-		Point centerOffset = { .x = -float(width * 0.5f), .y = -float(height * 0.5f), };
-
-		mTiles = new Entity * [height];
-		for (uint32_t y = 0; y < height; ++y)
-		{
-			const float offsetY = float(height + centerOffset.y) * float(TILE_SIZE - 1);
-
-			mTiles[y] = new Entity[width];
-
-			for (uint32_t x = 0; x < width; ++x)
-			{
-				uint32_t tileIndex = 0;
-				fscanf_s(file, "%d", &tileIndex);
-				assert(mTileTextures.size() > tileIndex and "지원하지 않는 타일입니다.");
-
-				Texture& tileTexture = mTileTextures[tileIndex];
-				assert(tileTexture.GetWidth() == TILE_SIZE and tileTexture.GetHeight() == TILE_SIZE and "지원하지 않는 타일 사이즈입니다.");
-
-				Entity& entity = mTiles[y][x];
-
-				Transform transform{};
-				transform.position = { .x = (x + centerOffset.x) * TILE_SIZE * PRIMARY_SIZE, .y = (offsetY - y * TILE_SIZE) * PRIMARY_SIZE };
-				transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-				entity.AddComponent(transform);
-
-				Image image{};
-				image.texture = &tileTexture;
-				image.layer = static_cast<uint32_t>(Layer::Tile);
-				entity.AddComponent(image);
-
-				Active active{};
-				active.isValue = true;
-				entity.AddComponent(active);
-
-				Color color{};
-				entity.AddComponent(color);
-
-				GetEntityWorld()->AddEntity(&entity);
-			}
-		}
-
-		fclose(file);
-	}
-
-	// UI Label
-	{
-		// Timer
-		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(WaveTimerTag());
-			entity->AddComponent(Ui());
-			entity->AddComponent(Label());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Active());
-		}
-
-		// Wave Stage
-		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(WaveStageTag());
-			entity->AddComponent(Ui());
-			entity->AddComponent(Label());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Active());
-			
-			Color color{};
-			color.a = 0.0f;
-			entity->AddComponent(color);
-		}
-
-		// Bullet Count
-		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(BulletCountTag());
-			entity->AddComponent(Ui());
-			entity->AddComponent(Label());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Active());
-		}
-	}
-
-	// Gun
-	{
-		constexpr Point CENTER = { .x = -0.25f,.y = -0.25f };
-
-		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-		entity->AddComponent(GunTag());
-		entity->AddComponent(Direction());
-		entity->AddComponent(Transform());
-		entity->AddComponent(Image());
-		entity->AddComponent(Active());
-		entity->AddComponent(Color());
-	}
-
-	// Player Left Hand
-	{
-		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-		entity->AddComponent(LeftHandTag());
-		entity->AddComponent(Transform());
-		entity->AddComponent(Image());
-		entity->AddComponent(Active());
-	}
-
-	// Player
-	{
-		constexpr uint32_t MAX_HP = 100;
-
-		mPlayerClips[uint32_t(Player::eState::Idle)].SetLoop(true);
-		mPlayerClips[uint32_t(Player::eState::Run)].SetLoop(true);
-
-		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-		entity->AddComponent(PlayerTag());
-		entity->AddComponent(Player());
-		entity->AddComponent(Image());
-		entity->AddComponent(Direction());
-		entity->AddComponent(Transform());
-		entity->AddComponent(Animator());
-		entity->AddComponent(Hp());
-		entity->AddComponent(Dash());
-		entity->AddComponent(Knockback());
-		entity->AddComponent(Active());
-		entity->AddComponent(Color());
-		entity->AddComponent(BoxCollider());
-		entity->AddComponent(DebugActive());
-		entity->AddComponent(DebugColor());
-
-		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Player));
-		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-		entity->AddComponent(collider);
-	}
-
-	// Player UI Dash
-	{
-		constexpr uint32_t DASH_COUNT = 5;
-
-		for (uint32_t i = 0; i < DASH_COUNT; ++i)
-		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(PlayerDashBackGroundTag());
-			entity->AddComponent(Ui());
-			entity->AddComponent(Image());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Active());
-			entity->AddComponent(Color());
-		}
-
-		for (uint32_t i = 0; i < DASH_COUNT; ++i)
-		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(PlayerDashUiTag());
-			entity->AddComponent(Ui());
-			entity->AddComponent(Image());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Active());
-			entity->AddComponent(Color());
-		}
-	}
-
-	// Player UI Hp
-	{
-		// BackGround Bar
-		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(PlayerHpBarBackGroundTag());
-			entity->AddComponent(Ui());
-			entity->AddComponent(Image());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Active());
-			entity->AddComponent(Color());
-		}
-
-		// Bolder Bar
-		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(PlayerHpBarBolderTag());
-			entity->AddComponent(Ui());
-			entity->AddComponent(Image());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Active());
-			entity->AddComponent(Color());
-		}
-
-		// Icon
-		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(PlayerIconTag());
-			entity->AddComponent(Ui());
-			entity->AddComponent(Image());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Active());
-			entity->AddComponent(Color());
-		}
-
-		// Hp
-		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(PlayerHpBarTag());
-			entity->AddComponent(Ui());
-			entity->AddComponent(Image());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Active());
-			entity->AddComponent(Color());
-		}
-
-		// Hp Label
-		{
-			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(PlayerHpLabelTag());
-			entity->AddComponent(Ui());
-			entity->AddComponent(Label());
-			entity->AddComponent(Transform());
-			entity->AddComponent(Active());
-			entity->AddComponent(Color());
-		}
-	}
-
-	// Player Right Hand
-	{
-		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-		entity->AddComponent(RightHandTag());
-		entity->AddComponent(Transform());
-		entity->AddComponent(Image());
-		entity->AddComponent(Active());
-	}
-
-	// Sword
-	{
-		mSwordClip.SetLoop(true);
-
-		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-		entity->AddComponent(SwordTag());
-		entity->AddComponent(Direction());
-		entity->AddComponent(Transform());
-		entity->AddComponent(Image());
-		entity->AddComponent(Animator());
-		entity->AddComponent(Active());
-		entity->AddComponent(Color());
-	}
-
-	// Sword Skill
-	mSwordAttackClip.SetLoop(true);
-
-	// Bullet
-	{
-		mBulletClip.SetLoop(true);
-
-		const Entity* bulletCountEntity = getEntity<BulletCountTag>();
-		Label* label = bulletCountEntity->GetComponent<Label>();
-		label->text = std::to_string(mBulletState.maxCount) + "/" + std::to_string(mBulletState.maxCount);
-	}
-
-	// Monster
-	{
 		mBigWhiteSkelClips[uint32_t(Monster::eState::Spawn)].SetLoop(true);
 		mBigWhiteSkelClips[uint32_t(Monster::eState::Run)].SetLoop(true);
 		mBigWhiteSkelClips[uint32_t(Monster::eState::Attack)].SetLoop(true);
@@ -1320,21 +1077,66 @@ void MainScene::initialize_Entity()
 		mBossHandCenterSkillClip.SetLoop(true);
 
 		mCycloneFanClip.SetLoop(true);
-
-		mCycloneFanState =
-		{
-			.maxCount = 30,
-			.count = 30,
-			.fireTimer = 0.0f,
-			.reloadTimer = 0.0f,
-			.isUpdate = false
-		};
-
-		mHandSkillState =
-		{
-			.isSpawn = false
-		};
 	}
+}
+
+void MainScene::initializeTile()
+{
+	constexpr uint32_t TILE_SIZE = 16;
+	mTilePositionOffset = TILE_SIZE * PRIMARY_SIZE;
+
+	FILE* file = nullptr;
+	fopen_s(&file, "Resource/Tile/Tile.txt", "r");
+	assert(file != nullptr);
+
+	uint32_t width{};
+	uint32_t height{};
+	fscanf_s(file, "%d %d", &width, &height);
+	mTileMaxCount = height;
+
+
+	Point centerOffset = { .x = -float(width * 0.5f), .y = -float(height * 0.5f), };
+
+	mTiles = new Entity * [height];
+	for (uint32_t y = 0; y < height; ++y)
+	{
+		const float offsetY = float(height + centerOffset.y) * float(TILE_SIZE - 1);
+
+		mTiles[y] = new Entity[width];
+
+		for (uint32_t x = 0; x < width; ++x)
+		{
+			uint32_t tileIndex = 0;
+			fscanf_s(file, "%d", &tileIndex);
+			assert(mTileTextures.size() > tileIndex and "지원하지 않는 타일입니다.");
+
+			Texture& tileTexture = mTileTextures[tileIndex];
+			assert(tileTexture.GetWidth() == TILE_SIZE and tileTexture.GetHeight() == TILE_SIZE and "지원하지 않는 타일 사이즈입니다.");
+
+			Entity& entity = mTiles[y][x];
+
+			Transform transform{};
+			transform.position = { .x = (x + centerOffset.x) * TILE_SIZE * PRIMARY_SIZE, .y = (offsetY - y * TILE_SIZE) * PRIMARY_SIZE };
+			transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+			entity.AddComponent(transform);
+
+			Image image{};
+			image.texture = &tileTexture;
+			image.layer = static_cast<uint32_t>(Layer::Tile);
+			entity.AddComponent(image);
+
+			Active active{};
+			active.isValue = true;
+			entity.AddComponent(active);
+
+			Color color{};
+			entity.AddComponent(color);
+
+			GetEntityWorld()->AddEntity(&entity);
+		}
+	}
+
+	fclose(file);
 }
 
 void MainScene::input()
@@ -1424,187 +1226,232 @@ Rect MainScene::getCameraRect() const
 	return result;
 }
 
-void MainScene::initializeUI()
+void MainScene::initializePlayerDashUi()
 {
 	constexpr uint32_t DASH_COUNT = 5;
 	constexpr float DASH_BACKGROUND_OFFSET = 30.0f;
 	constexpr Point DASH_BACKGROUND_FIRST_POSITION = { .x = 10.0f, .y = 10.0f };
 
+	// BackGround
+	for (uint32_t i = 0; i < DASH_COUNT; ++i)
+	{
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(PlayerDashBackGroundTag());
+		entity->AddComponent(Ui());
+		entity->AddComponent(Color());
+
+		Image image{};
+		image.texture = &mPlayerDashCenterBackGroundTexture;
+
+		Transform transform{};
+		transform.scale = { .width = 3.0f, .height = 3.0f };
+		transform.position = { .x = (DASH_BACKGROUND_FIRST_POSITION.x + 3.0f) + DASH_BACKGROUND_OFFSET * i, .y = 10.0f };
+
+		if (i == 0)
+		{
+			image.texture = &mPlayerDashLeftBackGroundTexture;
+			transform.position = DASH_BACKGROUND_FIRST_POSITION;
+		}
+		else if (i == 4)
+		{
+			image.texture = &mPlayerDashRightBackGroundTexture;
+		}
+
+		entity->AddComponent(transform);
+		entity->AddComponent(image);
+
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
+	}
+
+	// Dash
+	for (uint32_t i = 0; i < DASH_COUNT; ++i)
+	{
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(PlayerDashUiTag());
+		entity->AddComponent(Ui());
+		entity->AddComponent(Color());
+
+		Image image{};
+		image.texture = &mPlayerDashTexture;
+		entity->AddComponent(image);
+
+		Transform transform{};
+		transform.scale = { .width = 3.0f, .height = 3.0f };
+		transform.position = { .x = (DASH_BACKGROUND_FIRST_POSITION.x + 5.0f) + DASH_BACKGROUND_OFFSET * i, .y = 15.0f };
+
+		if (i == 0)
+		{
+			transform.position = { .x = (DASH_BACKGROUND_FIRST_POSITION.x + 5.0f), .y = 15.0f };
+		}
+
+		entity->AddComponent(transform);
+
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
+	}
+}
+
+void MainScene::initializePlayerHpBarUi()
+{
 	constexpr Point HPBAR_BACKGROUND_OFFSET = { .x = 10.0f, .y = 60.0f };
 	constexpr Point ICON_OFFSET = { .x = 30.0f, .y = 55.0f };
 	constexpr Point HPBAR_OFFSET = { .x = 78.0f, .y = 50.0f };
 	constexpr Point HPBAR_LABEL_OFFSET = { .x = 110.0f, .y = 50.0f };
 
-	// Player Dash
-	{
-		// BackGround
-		{
-			auto entities = getEntities<PlayerDashBackGroundTag>();
-			for (uint32_t i = 0; i < DASH_COUNT; ++i)
-			{
-				Entity* entity = entities[i];
-
-				Image* image = entity->GetComponent<Image>();
-				image->texture = &mPlayerDashCenterBackGroundTexture;
-
-
-				Transform* transform = entity->GetComponent<Transform>();
-				transform->scale = { .width = 3.0f, .height = 3.0f };
-				transform->position = { .x = (DASH_BACKGROUND_FIRST_POSITION.x + 3.0f) + DASH_BACKGROUND_OFFSET * i, .y = 10.0f };
-
-				if (i == 0)
-				{
-					image->texture = &mPlayerDashLeftBackGroundTexture;
-					transform->position = DASH_BACKGROUND_FIRST_POSITION;
-				}
-				else if (i == 4)
-				{
-					image->texture = &mPlayerDashRightBackGroundTexture;
-				}
-
-				Active* active = entity->GetComponent<Active>();
-				active->isValue = true;
-			}
-		}
-
-		// Dash
-		{
-			auto entities = getEntities<PlayerDashUiTag>();
-			for (uint32_t i = 0; i < DASH_COUNT; ++i)
-			{
-				Entity* entity = entities[i];
-
-				Image* image = entity->GetComponent<Image>();
-				image->texture = &mPlayerDashTexture;
-
-
-				Transform* transform = entity->GetComponent<Transform>();
-				transform->scale = { .width = 3.0f, .height = 3.0f };
-				transform->position = { .x = (DASH_BACKGROUND_FIRST_POSITION.x + 5.0f) + DASH_BACKGROUND_OFFSET * i, .y = 15.0f };
-
-				if (i == 0)
-				{
-					transform->position = { .x = (DASH_BACKGROUND_FIRST_POSITION.x + 5.0f), .y = 15.0f };
-				}
-
-				Active* active = entity->GetComponent<Active>();
-				active->isValue = true;
-			}
-		}
-	}
-
 	// Player Hp Bar BackGround
 	{
-		Entity* entity = getEntity<PlayerHpBarBackGroundTag>();
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(PlayerHpBarBackGroundTag());
+		entity->AddComponent(Ui());
+		entity->AddComponent(Color());
 
-		Image* image = entity->GetComponent<Image>();
-		image->texture = &mPlayerHpBarBackGroundTexture;
+		Image image{};
+		image.texture = &mPlayerHpBarBackGroundTexture;
+		entity->AddComponent(image);
 
+		Transform transform{};
+		transform.position = { .x = HPBAR_BACKGROUND_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_BACKGROUND_OFFSET.y };
+		transform.scale = { .width = 3.0f, .height = 3.0f };
+		entity->AddComponent(transform);
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->position = { .x = HPBAR_BACKGROUND_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_BACKGROUND_OFFSET.y };
-		transform->scale = { .width = 3.0f, .height = 3.0f };
-
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 
 	// Player Hp Bar Bolder
 	{
-		Entity* entity = getEntity<PlayerHpBarBolderTag>();
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(PlayerHpBarBolderTag());
+		entity->AddComponent(Ui());
+		entity->AddComponent(Color());
 
-		Image* image = entity->GetComponent<Image>();
-		image->texture = &mPlayerHpBarBorderTexture;
+		Image image{};
+		image.texture = &mPlayerHpBarBorderTexture;
+		entity->AddComponent(image);
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->position = { .x = HPBAR_BACKGROUND_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_BACKGROUND_OFFSET.y };
-		transform->scale = { .width = 3.0f, .height = 3.0f };
+		Transform transform{};
+		transform.position = { .x = HPBAR_BACKGROUND_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_BACKGROUND_OFFSET.y };
+		transform.scale = { .width = 3.0f, .height = 3.0f };
+		entity->AddComponent(transform);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 
 	// Player Icon
 	{
-		Entity* entity = getEntity<PlayerIconTag>();
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(PlayerIconTag());
+		entity->AddComponent(Ui());
+		entity->AddComponent(Color());
 
-		Image* image = entity->GetComponent<Image>();
-		image->texture = &mPlayerIconTexture;
+		Image image{};
+		image.texture = &mPlayerIconTexture;
+		entity->AddComponent(image);
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->position = { .x = ICON_OFFSET.x, .y = float(Constant::Get().GetHeight()) - ICON_OFFSET.y };
-		transform->scale = { .width = 1.5f, .height = 1.5f };
+		Transform transform{};
+		transform.position = { .x = ICON_OFFSET.x, .y = float(Constant::Get().GetHeight()) - ICON_OFFSET.y };
+		transform.scale = { .width = 1.5f, .height = 1.5f };
+		entity->AddComponent(transform);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 
 	const Entity* playerEntity = getEntity<PlayerTag>();
 	const Hp* hp = playerEntity->GetComponent<Hp>();
 
-	// Player Hp Bar
+	// Player Hp
 	{
-		Entity* entity = getEntity<PlayerHpBarTag>();
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(PlayerHpBarTag());
+		entity->AddComponent(Ui());
+		entity->AddComponent(Color());
 
-		Image* image = entity->GetComponent<Image>();
-		image->texture = &mRedRectTexture;
+		Image image{};
+		image.texture = &mRedRectTexture;
+		entity->AddComponent(image);
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->position = { .x = HPBAR_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_OFFSET.y };
+		Transform transform{};
+		transform.position = { .x = HPBAR_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_OFFSET.y };
 
 		const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 3.0f;
-		transform->scale = { .width = currentWidth, .height = 0.6f };
+		transform.scale = { .width = currentWidth, .height = 0.6f };
+		entity->AddComponent(transform);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 
 	// Player Hp Label
 	{
-		Entity* entity = getEntity<PlayerHpLabelTag>();
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(PlayerHpLabelTag());
+		entity->AddComponent(Ui());
+		entity->AddComponent(Color());
 
-		Label* label = entity->GetComponent<Label>();
-		label->font = &mHpFont;
+		Label label{};
+		label.font = &mHpFont;
 
 		std::string hpName = std::to_string(hp->value) + "/" + std::to_string(hp->max);
-		label->text = hpName;
+		label.text = hpName;
+		entity->AddComponent(label);
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->position = { .x = HPBAR_LABEL_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_LABEL_OFFSET.y };
+		Transform transform{};
+		transform.position = { .x = HPBAR_LABEL_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_LABEL_OFFSET.y };
+		entity->AddComponent(transform);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
+}
 
-	// Bullet Count
-	{
-		 Entity* entity = getEntity<BulletCountTag>();
+void MainScene::initializePlayerBulletUi()
+{
+	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+	entity->AddComponent(BulletCountTag());
+	entity->AddComponent(Ui());
 
-		Label* label = entity->GetComponent<Label>();
-		label->font = &mUIFont;
-		label->text = " ";
+	Label label{};
+	label.font = &mUIFont;
+	label.text = std::to_string(mBulletState.maxCount) + "/" + std::to_string(mBulletState.maxCount);
+	entity->AddComponent(label);
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->position = { .x = float(Constant::Get().GetWidth()) - 140.0f, .y = float(Constant::Get().GetHeight()) - 60.0f };
+	Transform transform{};
+	transform.position = { .x = float(Constant::Get().GetWidth()) - 140.0f, .y = float(Constant::Get().GetHeight()) - 60.0f };
+	entity->AddComponent(transform);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
-	}
+	Active active{};
+	active.isValue = true;
+	entity->AddComponent(active);
 }
 
 void MainScene::initializeWaveTimer()
 {
-	const Entity* entity = getEntity<WaveTimerTag>();
+	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+	entity->AddComponent(WaveTimerTag());
+	entity->AddComponent(Ui());
 
-	Label* label = entity->GetComponent<Label>();
-	label->font = &mUIFont;
-	label->text = " ";
+	Label label{};
+	label.font = &mUIFont;
+	label.text = " ";
+	entity->AddComponent(label);
 
-	Transform* transform = entity->GetComponent<Transform>();
-	transform->position = { .x = Constant::Get().GetHalfWidth() - 150.0f, .y = 0.0f };
+	Transform transform{};
+	transform.position = { .x = Constant::Get().GetHalfWidth() - 150.0f, .y = 0.0f };
+	entity->AddComponent(transform);
 
-	Active* active = entity->GetComponent<Active>();
-	active->isValue = true;
+	Active active{};
+	active.isValue = true;
+	entity->AddComponent(active);
 }
 
 void MainScene::initializeWaveStage()
@@ -1619,17 +1466,26 @@ void MainScene::initializeWaveStage()
 		.labelShowElapsedTimer = 0.0f
 	};
 	
-	const Entity* entity = getEntity<WaveStageTag>();
+	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+	entity->AddComponent(WaveStageTag());
+	entity->AddComponent(Ui());
 
-	Label* label = entity->GetComponent<Label>();
-	label->font = &mUIFont;
-	label->text = "1 Wave";
+	Label label{};
+	label.font = &mUIFont;
+	label.text = "1 Wave";
+	entity->AddComponent(label);
 
-	Transform* transform = entity->GetComponent<Transform>();
-	transform->position = { .x = Constant::Get().GetHalfWidth() - 80.0f, .y = Constant::Get().GetHalfHeight() - 50.0f };
+	Transform transform{};
+	transform.position = { .x = Constant::Get().GetHalfWidth() - 80.0f, .y = Constant::Get().GetHalfHeight() - 50.0f };
+	entity->AddComponent(transform);
 
-	Active* active = entity->GetComponent<Active>();
-	active->isValue = true;
+	Active active{};
+	active.isValue = true;
+	entity->AddComponent(active);
+
+	Color color{};
+	color.a = 0.0f;
+	entity->AddComponent(color);
 }
 
 void MainScene::initializePlayer()
@@ -1637,63 +1493,94 @@ void MainScene::initializePlayer()
 	constexpr uint32_t MAX_HP = 100;
 	constexpr uint32_t MAX_DASH = 5;
 
-	// Information
-	{
-		const Entity* entity = getEntity<PlayerTag>();
-
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-
-		Image* image = entity->GetComponent<Image>();
-		image->layer = static_cast<uint32_t>(Layer::Player);
-
-		Animator* animator = entity->GetComponent<Animator>();
-		animator->clipState = &mPlayerClips[uint32_t(Player::eState::Idle)];
-
-		Hp* hp = entity->GetComponent<Hp>();
-		hp->max = MAX_HP;
-		hp->value = MAX_HP;
-
-		Dash* dash = entity->GetComponent<Dash>();
-		dash->maxCount = MAX_DASH;
-		dash->count = MAX_DASH;
-
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
-
-		BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
-		boxCollider->offset = { .x = 0.0f, .y = 32.0f };
-		boxCollider->size = { .width = 13.0f, .height = 20.0f };
-	}
-
 	// Left Hand
 	{
-		const Entity* entity = getEntity<LeftHandTag>();
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(LeftHandTag());
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		Transform transform{};
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		entity->AddComponent(transform);
 
-		Image* image = entity->GetComponent<Image>();
-		image->texture = &mPlayerHandTexture;
-		image->layer = static_cast<uint32_t>(Layer::Player);
+		Image image{};
+		image.texture = &mPlayerHandTexture;
+		image.layer = static_cast<uint32_t>(Layer::Player);
+		entity->AddComponent(image);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
+	}
+
+	// Player
+	{
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(PlayerTag());
+		entity->AddComponent(Player());
+		entity->AddComponent(Direction());
+		entity->AddComponent(Knockback());
+		entity->AddComponent(Color());
+		entity->AddComponent(DebugColor());
+
+		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::Player));
+		collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
+		entity->AddComponent(collider);
+
+		BoxCollider boxCollider{};
+		boxCollider.offset = { .x = 0.0f, .y = 32.0f };
+		boxCollider.size = { .width = 13.0f, .height = 20.0f };
+		entity->AddComponent(boxCollider);
+
+		DebugActive debugActive{};
+		debugActive.isValue = mIsDebugActive;
+		entity->AddComponent(debugActive);
+
+		Image image{};
+		image.layer = static_cast<uint32_t>(Layer::Player);
+		entity->AddComponent(image);
+
+		Animator animator{};
+		animator.clipState = &mPlayerClips[uint32_t(Player::eState::Idle)];
+		animator.frameIndex = 0;
+		animator.elapsedTime = 0.0f;
+		entity->AddComponent(animator);
+
+		Transform transform{};
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		entity->AddComponent(transform);
+
+		Hp hp{};
+		hp.max = MAX_HP;
+		hp.value = MAX_HP;
+		entity->AddComponent(hp);
+
+		Dash dash{};
+		dash.maxCount = MAX_DASH;
+		dash.count = MAX_DASH;
+		entity->AddComponent(dash);
+
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 
 	// Right Hand
 	{
-		const Entity* entity = getEntity<RightHandTag>();
+		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+		entity->AddComponent(RightHandTag());
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		Transform transform{};
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		entity->AddComponent(transform);
 
-		Image* image = entity->GetComponent<Image>();
-		image->texture = &mPlayerHandTexture;
-		image->layer = static_cast<uint32_t>(Layer::Player);
+		Image image{};
+		image.texture = &mPlayerHandTexture;
+		image.layer = static_cast<uint32_t>(Layer::Player);
+		entity->AddComponent(image);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 }
 
@@ -2017,6 +1904,8 @@ void MainScene::playerSetClip()
 
 	Player* player = entity->GetComponent<Player>();
 	Animator* animator = entity->GetComponent<Animator>();
+
+	printf("%d\n", animator->frameIndex);
 
 	switch (player->state)
 	{
@@ -4271,18 +4160,24 @@ void MainScene::initializeGun()
 {
 	constexpr Point CENTER = { .x = -0.25f,.y = -0.25f };
 
-	const Entity* entity = getEntity<GunTag>();
+	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+	entity->AddComponent(GunTag());
+	entity->AddComponent(Direction());
+	entity->AddComponent(Color());
 
-	Transform* transform = entity->GetComponent<Transform>();
-	transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-	transform->center = CENTER;
+	Transform transform{};
+	transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+	transform.center = CENTER;
+	entity->AddComponent(transform);
 
-	Image* image = entity->GetComponent<Image>();
-	image->texture = &mGunTexture;
-	image->layer = static_cast<uint32_t>(Layer::Player);
+	Image image{};
+	image.texture = &mGunTexture;
+	image.layer = static_cast<uint32_t>(Layer::Player);
+	entity->AddComponent(image);
 
-	Active* active = entity->GetComponent<Active>();
-	active->isValue = true;
+	Active active{};
+	active.isValue = true;
+	entity->AddComponent(active);
 }
 
 void MainScene::updateGun()
@@ -4325,20 +4220,27 @@ void MainScene::updateGun()
 
 void MainScene::initializeSword()
 {
-	const Entity* entity = getEntity<SwordTag>();
+	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+	entity->AddComponent(SwordTag());
+	entity->AddComponent(Direction());
+	entity->AddComponent(Color());
 
-	Transform* transform = entity->GetComponent<Transform>();
-	transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-	transform->center = { .x = 0.0f,.y = -0.33f };
+	Transform transform{};
+	transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+	transform.center = { .x = 0.0f,.y = -0.33f };
+	entity->AddComponent(transform);
 
-	Image* image = entity->GetComponent<Image>();
-	image->layer = static_cast<uint32_t>(Layer::Player);
+	Image image{};
+	image.layer = static_cast<uint32_t>(Layer::Player);
+	entity->AddComponent(image);
 
-	Animator* animator = entity->GetComponent<Animator>();
-	animator->clipState = &mSwordClip;
+	Animator animator{};
+	animator.clipState = &mSwordClip;
+	entity->AddComponent(animator);
 
-	Active* active = entity->GetComponent<Active>();
-	active->isValue = true;
+	Active active{};
+	active.isValue = true;
+	entity->AddComponent(active);
 }
 
 void MainScene::updateSword()
