@@ -52,7 +52,9 @@ struct BulletState
 {
 	uint32_t maxCount;
 	uint32_t count;
+	bool isfire;
 	float fireTimer;
+	bool isReload;
 	float reloadTimer;
 };
 
@@ -71,6 +73,11 @@ struct HandSkillState
 	bool isSpawn;
 	bool isAttack;
 	float attackTimer;
+};
+
+struct PlayerWeaponState
+{
+	bool isSword;
 };
 
 class EntityWorld;
@@ -136,8 +143,9 @@ private:
 	void initializeTile();
 	
 	void initializePlayer();
-	void initializeGun();
+
 	void initializeSword();
+	void initializeGun();
 
 	void initializePlayerDashUi();
 	void initializePlayerHpBarUi();
@@ -152,6 +160,8 @@ private:
 	void playerState(const float deltaTime);
 	void playerMove(const float deltaTime);
 	void playerSetClip();
+
+	void changePlayerWeapon();
 
 	void updateGun();
 
@@ -227,6 +237,8 @@ private:
 
 	CycloneFanState mCycloneFanState{};
 	HandSkillState mHandSkillState{};
+
+	PlayerWeaponState mPlayerWeaponState{};
 
 	uint32_t mMonsterIndex = 0;
 	int32_t mDashShadowOffsetIndex = -1;

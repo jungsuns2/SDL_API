@@ -32,6 +32,8 @@ void MainScene::Initialize()
 
 	initializePlayer();
 
+	mPlayerWeaponState.isSword = true;
+
 	initializeSword();
 
 	initializeGun();
@@ -44,9 +46,11 @@ void MainScene::Initialize()
 
 	mBulletState =
 	{
-		.maxCount = 30,
-		.count = 30,
+		.maxCount = 60,
+		.count = 60,
+		.isfire = false,
 		.fireTimer = 0.0f,
+		.isReload = false,
 		.reloadTimer = 0.0f
 	};
 
@@ -265,6 +269,8 @@ bool MainScene::Update(const float deltaTime)
 	{
 		updateCamera(getEntity<PlayerTag>());
 		playerMove(deltaTime);
+
+		changePlayerWeapon();
 
 		spawnSwordAttack();
 		spawnBullets(deltaTime);
@@ -1406,6 +1412,7 @@ void MainScene::initializePlayerBulletUi()
 	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 	entity->AddComponent(BulletCountTag());
 	entity->AddComponent(Ui());
+	entity->AddComponent(Active());
 
 	Label label{};
 	label.font = &mUIFont;
@@ -1415,10 +1422,6 @@ void MainScene::initializePlayerBulletUi()
 	Transform transform{};
 	transform.position = { .x = float(Constant::Get().GetWidth()) - 140.0f, .y = float(Constant::Get().GetHeight()) - 60.0f };
 	entity->AddComponent(transform);
-
-	Active active{};
-	active.isValue = true;
-	entity->AddComponent(active);
 }
 
 void MainScene::initializeWaveTimer()
@@ -1915,23 +1918,38 @@ void MainScene::playerSetClip()
 	
 }
 
+void MainScene::changePlayerWeapon()
+{
+	if (Input::Get().GetKeyDown(SDL_SCANCODE_Q))
+	{
+		mPlayerWeaponState.isSword = !mPlayerWeaponState.isSword;
+
+		Entity* gunEntity = getEntity<GunTag>();
+		Entity* swordEntity = getEntity<SwordTag>();
+		Entity* bulletLabelEntity = getEntity<BulletCountTag>();
+
+		Active* gunActive = gunEntity->GetComponent<Active>();
+		gunActive->isValue = mPlayerWeaponState.isSword;
+
+		Active* bulletLabelActive = bulletLabelEntity->GetComponent<Active>();
+		bulletLabelActive->isValue = mPlayerWeaponState.isSword;
+
+		Active* swordActive = swordEntity->GetComponent<Active>();
+		swordActive->isValue = !mPlayerWeaponState.isSword;
+	}
+}
+
 void MainScene::spawnSwordAttack()
 {
 	if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT)
-		and not mSwordAttackState.isSpawn)
+		and not mSwordAttackState.isSpawn
+		and getEntity<SwordTag>()->GetComponent<Active>()->isValue)
 	{
 		mSwordAttackState.isSpawn = true;
 
 		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
 		newEntity->AddComponent(SwordAttackTag());
-		newEntity->AddComponent(RangedAttack());
-		newEntity->AddComponent(Direction());
-		newEntity->AddComponent(Transform());
-		newEntity->AddComponent(Image());
-		newEntity->AddComponent(Animator());
-		newEntity->AddComponent(Active());
 		newEntity->AddComponent(Color());
-		newEntity->AddComponent(Damage());
 		newEntity->AddComponent(DebugColor());
 
 		CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::SwordAttack));
@@ -1947,38 +1965,45 @@ void MainScene::spawnSwordAttack()
 		debugActive.isValue = mIsDebugActive;
 		newEntity->AddComponent(debugActive);
 
-		Image* image = newEntity->GetComponent<Image>();
-		image->layer = static_cast<uint32_t>(Layer::Player);
+		Image image{};
+		image.layer = static_cast<uint32_t>(Layer::Player);
+		newEntity->AddComponent(image);
 
-		Animator* effectAnim = newEntity->GetComponent<Animator>();
-		effectAnim->clipState = &mSwordAttackClip;
-		effectAnim->frameIndex = 0;
-		effectAnim->elapsedTime = 0.0f;
+		Animator effectAnim{};
+		effectAnim.clipState = &mSwordAttackClip;
+		effectAnim.frameIndex = 0;
+		effectAnim.elapsedTime = 0.0f;
+		newEntity->AddComponent(effectAnim);
 
-		Active* active = newEntity->GetComponent<Active>();
-		active->isValue = true;
+		Active active{};
+		active.isValue = true;
+		newEntity->AddComponent(active);
 
-		Damage* damage = newEntity->GetComponent<Damage>();
-		damage->value = 1;
+		Damage damage{};
+		damage.value = 1;
+		newEntity->AddComponent(Damage());
 
 		const Entity* playerEntity = getEntity<PlayerTag>();
 		const Transform* playerTransform = playerEntity->GetComponent<Transform>();
 
-		RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
-		rangedAttack->distance = 200.0f;
-		rangedAttack->startPosition = playerTransform->position;
+		RangedAttack rangedAttack{};
+		rangedAttack.distance = 200.0f;
+		rangedAttack.startPosition = playerTransform->position;
+		newEntity->AddComponent(rangedAttack);
 
 		const Point mouseToPlayer = getScreenMousePosition() - playerTransform->position;
-		Direction* effectDirection = newEntity->GetComponent<Direction>();
-		effectDirection->value = Math::NormalizeVector(mouseToPlayer);
+		Direction effectDirection{};
+		effectDirection.value = Math::NormalizeVector(mouseToPlayer);
+		newEntity->AddComponent(effectDirection);
 
-		Transform* transform = newEntity->GetComponent<Transform>();
-		transform->position = playerTransform->position;
-		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+		Transform transform{};
+		transform.position = playerTransform->position;
+		transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
 		float degree = std::atan2(mouseToPlayer.y, mouseToPlayer.x) * (180.0f / 3.141592f);
 		degree -= 90.0f;
-		transform->angle = -degree;
-		transform->flip = (effectDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+		transform.angle = -degree;
+		transform.flip = (effectDirection.value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+		newEntity->AddComponent(transform);
 	}
 }
 
@@ -2034,70 +2059,89 @@ void MainScene::spawnBullets(const float deltaTime)
 	}
 
 	const Entity* gunEntity = getEntity<GunTag>();
+	if (not gunEntity->GetComponent<Active>()->isValue
+		or mBulletState.isReload)
+	{
+		return;
+	}
+
 	const Transform* gunTransform = gunEntity->GetComponent<Transform>();
 
-	mBulletState.fireTimer -= deltaTime;
-	if (mBulletState.fireTimer <= 0.0f)
+	if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT)
+		and not mSwordAttackState.isSpawn
+		and gunEntity->GetComponent<Active>()->isValue)
 	{
-		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+		mBulletState.isfire = true;
+	}
+
+	if (mBulletState.isfire)
+	{
+		mBulletState.fireTimer -= deltaTime;
+		if (mBulletState.fireTimer <= 0.0f)
 		{
-			newEntity->AddComponent(BulletTag());
-			newEntity->AddComponent(RangedAttack());
-			newEntity->AddComponent(Direction());
-			newEntity->AddComponent(Transform());
-			newEntity->AddComponent(Image());
-			newEntity->AddComponent(Animator());
-			newEntity->AddComponent(Active());
-			newEntity->AddComponent(Color());
-			newEntity->AddComponent(Damage());
-			newEntity->AddComponent(BoxCollider());
-			newEntity->AddComponent(DebugColor());
+			Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+			{
+				newEntity->AddComponent(BulletTag());
+				newEntity->AddComponent(RangedAttack());
+				newEntity->AddComponent(Direction());
+				newEntity->AddComponent(Transform());
+				newEntity->AddComponent(Image());
+				newEntity->AddComponent(Animator());
+				newEntity->AddComponent(Active());
+				newEntity->AddComponent(Color());
+				newEntity->AddComponent(Damage());
+				newEntity->AddComponent(BoxCollider());
+				newEntity->AddComponent(DebugColor());
 
-			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::PlayerBullet));
-			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
-			newEntity->AddComponent(collider);
+				CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::PlayerBullet));
+				collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Monster));
+				newEntity->AddComponent(collider);
 
-			DebugActive debugActive{};
-			debugActive.isValue = mIsDebugActive;
-			newEntity->AddComponent(debugActive);
+				DebugActive debugActive{};
+				debugActive.isValue = mIsDebugActive;
+				newEntity->AddComponent(debugActive);
+			}
+
+			Image* image = newEntity->GetComponent<Image>();
+			image->layer = static_cast<uint32_t>(Layer::Player);
+
+			Animator* animator = newEntity->GetComponent<Animator>();
+			animator->clipState = &mBulletClip;
+			animator->frameIndex = 0;
+			animator->elapsedTime = 0.0f;
+
+			BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
+			boxCollider->size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
+
+			Active* active = newEntity->GetComponent<Active>();
+			active->isValue = true;
+
+			RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
+			rangedAttack->distance = 300.0f;
+			rangedAttack->startPosition = gunTransform->position;
+
+			Transform* transform = newEntity->GetComponent<Transform>();
+			transform->position = gunTransform->position;
+			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+
+			const Point difference = getScreenMousePosition() - gunTransform->position;
+			Direction* direction = newEntity->GetComponent<Direction>();
+			direction->value = Math::NormalizeVector(difference);
+
+			Damage* damage = newEntity->GetComponent<Damage>();
+			damage->value = 2;
+
+			const Entity* bulletCountEntity = getEntity<BulletCountTag>();
+			Label* label = bulletCountEntity->GetComponent<Label>();
+
+			--mBulletState.count;
+
+			const std::string strLabel = (mBulletState.count < 10) ? "0" + std::to_string(mBulletState.count) : std::to_string(mBulletState.count);
+			label->text = strLabel + "/" + std::to_string(mBulletState.maxCount);
+
+			mBulletState.isfire = false;
+			mBulletState.fireTimer = FIRE_TIME;
 		}
-
-		Image* image = newEntity->GetComponent<Image>();
-		image->layer = static_cast<uint32_t>(Layer::Player);
-
-		Animator* animator = newEntity->GetComponent<Animator>();
-		animator->clipState = &mBulletClip;
-		animator->frameIndex = 0;
-		animator->elapsedTime = 0.0f;
-
-		BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
-		boxCollider->size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
-
-		Active* active = newEntity->GetComponent<Active>();
-		active->isValue = true;
-
-		RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
-		rangedAttack->distance = 300.0f;
-		rangedAttack->startPosition = gunTransform->position;
-
-		Transform* transform = newEntity->GetComponent<Transform>();
-		transform->position = gunTransform->position;
-		transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-
-		const Point difference = getScreenMousePosition() - gunTransform->position;
-		Direction* direction = newEntity->GetComponent<Direction>();
-		direction->value = Math::NormalizeVector(difference);
-
-		Damage* damage = newEntity->GetComponent<Damage>();
-		damage->value = 2;
-
-		const Entity* bulletCountEntity = getEntity<BulletCountTag>();
-		Label* label = bulletCountEntity->GetComponent<Label>();
-		const std::string strLabel = (mBulletState.count < 10) ? "0" + std::to_string(mBulletState.count) : std::to_string(mBulletState.count);
-		label->text = strLabel + "/" + std::to_string(mBulletState.maxCount);
-
-		--mBulletState.count;
-		mBulletState.fireTimer = FIRE_TIME;
 	}
 }
 
@@ -2123,15 +2167,26 @@ void MainScene::updateBullets(const float deltaTime)
 
 void MainScene::updateBulletStates(const float deltaTime)
 {
-	constexpr float RELOAD_TIME = 1.2f;
+	constexpr float RELOAD_TIME = 2.0f;
 
-	if (mBulletState.count <= 0)
+	if (mBulletState.count <= 0
+		or (Input::Get().GetKeyDown(SDL_SCANCODE_R) and mBulletState.count != mBulletState.maxCount))
+	{
+		mBulletState.isReload = true;
+	}
+
+	if (mBulletState.isReload)
 	{
 		mBulletState.reloadTimer += deltaTime;
 		if (mBulletState.reloadTimer >= RELOAD_TIME)
 		{
 			mBulletState.count = mBulletState.maxCount;
 			mBulletState.reloadTimer = 0.0f;
+			mBulletState.isReload = false;
+
+			const Entity* bulletCountEntity = getEntity<BulletCountTag>();
+			Label* label = bulletCountEntity->GetComponent<Label>();
+			label->text = std::to_string(mBulletState.count) + "/" + std::to_string(mBulletState.maxCount);
 		}
 	}
 
@@ -4149,6 +4204,7 @@ void MainScene::initializeGun()
 
 	Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 	entity->AddComponent(GunTag());
+	entity->AddComponent(Active());
 	entity->AddComponent(Direction());
 	entity->AddComponent(Color());
 
@@ -4161,10 +4217,6 @@ void MainScene::initializeGun()
 	image.texture = &mGunTexture;
 	image.layer = static_cast<uint32_t>(Layer::Player);
 	entity->AddComponent(image);
-
-	Active active{};
-	active.isValue = true;
-	entity->AddComponent(active);
 }
 
 void MainScene::updateGun()
@@ -4226,7 +4278,7 @@ void MainScene::initializeSword()
 	entity->AddComponent(animator);
 
 	Active active{};
-	active.isValue = true;
+	active.isValue = mPlayerWeaponState.isSword;
 	entity->AddComponent(active);
 }
 
@@ -4260,16 +4312,16 @@ void MainScene::updateSwordStates(const float deltaTime)
 		return;
 	}
 
-	const Transform* skillTransform = swordattackEntity->GetComponent<Transform>();
-	const Direction* skillDirection = swordattackEntity->GetComponent<Direction>();
-	const Point velocity = skillDirection->value * 20.0f;
+	const Transform* attackTransform = swordattackEntity->GetComponent<Transform>();
+	const Direction* attackDirection = swordattackEntity->GetComponent<Direction>();
+	const Point velocity = attackDirection->value * 20.0f;
 
 	Entity* entity = getEntity<SwordTag>();
 
 	Transform* transform = entity->GetComponent<Transform>();
-	transform->angle = skillTransform->angle;
-	transform->position = skillTransform->position + velocity * deltaTime;
-	transform->flip = (skillDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+	transform->angle = attackTransform->angle;
+	transform->position = attackTransform->position + velocity * deltaTime;
+	transform->flip = (attackDirection->value.x > 0.0f) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 }
 
 float MainScene::getRandom(const float min, const float max)
