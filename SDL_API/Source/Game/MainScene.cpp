@@ -83,9 +83,9 @@ bool MainScene::Update(const float deltaTime)
 	// Update Wave
 	{
 		constexpr float WAVE_STATE_TIME = 3.0f;
-		constexpr float FADE_IN_TIME = 1.3f;
+		constexpr float FADE_TIME = 1.3f;
 		constexpr float FADE_OUT_TIME = 2.3f;
-		constexpr float FADE_SPEED = 255.0f / FADE_IN_TIME;
+		constexpr float FADE_SPEED = 255.0f / FADE_TIME;
 
 		// 웨이브 정보를 잠시 동안 라벨로 표시한다.
 		{
@@ -120,9 +120,6 @@ bool MainScene::Update(const float deltaTime)
 
 						Active* active = newEntity->GetComponent<Active>();
 						active->isValue = true;
-
-						Color* color = newEntity->GetComponent<Color>();
-						color->a = 0;
 					}
 				}
 			}
@@ -139,18 +136,7 @@ bool MainScene::Update(const float deltaTime)
 				Color* backGroundColor = backGroundEntity->GetComponent<Color>();
 				Color* labelColor = entity->GetComponent<Color>();
 
-				if (mGameWaveState.labelShowElapsedTimer <= FADE_IN_TIME)
-				{
-					backGroundColor->a += Uint8(FADE_SPEED * deltaTime);
-					labelColor->a += Uint8(FADE_SPEED * deltaTime);
-				}
-				else if (mGameWaveState.labelShowElapsedTimer >= FADE_IN_TIME 
-					and mGameWaveState.labelShowElapsedTimer < FADE_OUT_TIME)
-				{
-					backGroundColor->a = 255;
-					labelColor->a = 255;
-				}
-				else if (mGameWaveState.labelShowElapsedTimer >= FADE_OUT_TIME)
+				if (mGameWaveState.labelShowElapsedTimer >= FADE_OUT_TIME)
 				{
 					if (backGroundEntity != nullptr)
 					{
@@ -278,21 +264,22 @@ bool MainScene::Update(const float deltaTime)
 		not active->isValue)
 	{
 		updateCamera(getEntity<PlayerTag>());
+		playerMove(deltaTime);
+
+		spawnSwordAttack();
+		spawnBullets(deltaTime);
 	}
 
 	playerState(deltaTime);
-	playerMove(deltaTime);
 
-	updateSword();
 	updateSwordStates(deltaTime);
-
+	updateSword();
+	
 	updateGun();
 
-	spawnSwordAttack();
 	updateSwordAttack(deltaTime);
 	updateSwordAttackStates(deltaTime);
 
-	spawnBullets(deltaTime);
 	updateBullets(deltaTime);
 	updateBulletStates(deltaTime);
 

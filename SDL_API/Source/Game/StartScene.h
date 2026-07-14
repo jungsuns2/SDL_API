@@ -46,6 +46,7 @@ private:
 public:
 	bool mIsUpdate = true;
 	bool mIsDebugActive = false;
+	bool mIsFade = false;
 
 	Texture mBgSkyTexture{};
 	Texture mLogoTexture{};

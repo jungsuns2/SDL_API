@@ -31,39 +31,41 @@ void StartScene::Initialize()
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(BackGroundTag());
-		entity->AddComponent(Image());
-		entity->AddComponent(Transform());
-		entity->AddComponent(Active());
+		entity->AddComponent(Color());
 
-		Image* image = entity->GetComponent<Image>();
-		image->texture = &mBgSkyTexture;
-		image->layer = uint32_t(Layer::BackGround);
+		Image image{};
+		image.texture = &mBgSkyTexture;
+		image.layer = uint32_t(Layer::BackGround);
+		entity->AddComponent(image);
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->scale = { .width = 3.5f, .height = 3.5f };
+		Transform transform{};
+		transform.scale = { .width = 3.5f, .height = 3.5f };
+		entity->AddComponent(transform);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 
 	// Logo
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(LogoTag());
-		entity->AddComponent(Image());
-		entity->AddComponent(Transform());
-		entity->AddComponent(Active());
+		entity->AddComponent(Color());
 
-		Image* image = entity->GetComponent<Image>();
-		image->texture = &mLogoTexture;
-		image->layer = uint32_t(Layer::Logo);
+		Image image{};
+		image.texture = &mLogoTexture;
+		image.layer = uint32_t(Layer::Logo);
+		entity->AddComponent(image);
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->position = { .x = 0.0f, .y = Constant::Get().GetHalfHeight() - 180.0f };
-		transform->scale = { .width = 2.0f, .height = 2.0f };
+		Transform transform{};
+		transform.position = { .x = 0.0f, .y = Constant::Get().GetHalfHeight() - 180.0f };
+		transform.scale = { .width = 2.0f, .height = 2.0f };
+		entity->AddComponent(transform);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 
 	// Start Button
@@ -71,11 +73,8 @@ void StartScene::Initialize()
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(StartTag());
 		entity->AddComponent(Button());
-		entity->AddComponent(Image());
-		entity->AddComponent(Transform());
 		entity->AddComponent(Direction());
-		entity->AddComponent(Active());
-		entity->AddComponent(BoxCollider());
+		entity->AddComponent(Color());
 		entity->AddComponent(DebugActive());
 		entity->AddComponent(DebugColor());
 
@@ -83,20 +82,24 @@ void StartScene::Initialize()
 		collider.CollisionLayerMask.set(uint32_t(StartScene::CollisionLayer::MouseCursor));
 		entity->AddComponent(collider);
 
-		Image* image = entity->GetComponent<Image>();
-		image->texture = &mStartButtonNormalTexture;
-		image->layer = uint32_t(Layer::Button);
+		BoxCollider boxCollider{};
+		boxCollider.offset = { .x = 0.0f, .y = 0.0f };
+		boxCollider.size = { .width = 37.0f, .height = 15.0f };
+		entity->AddComponent(boxCollider);
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->position = { .x = 0.0f, .y = -Constant::Get().GetHalfHeight() + 200.0f };
-		transform->scale = { .width = 3.0f, .height = 3.0f };
+		Image image{};
+		image.texture = &mStartButtonNormalTexture;
+		image.layer = uint32_t(Layer::Button);
+		entity->AddComponent(image);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Transform transform{};
+		transform.position = { .x = 0.0f, .y = -Constant::Get().GetHalfHeight() + 200.0f };
+		transform.scale = { .width = 3.0f, .height = 3.0f };
+		entity->AddComponent(transform);
 
-		BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
-		boxCollider->offset = { .x = 0.0f, .y = 0.0f };
-		boxCollider->size = { .width = 37.0f, .height = 15.0f };
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 
 	// Exit Button
@@ -104,11 +107,8 @@ void StartScene::Initialize()
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(ExitTag());
 		entity->AddComponent(Button());
-		entity->AddComponent(Image());
-		entity->AddComponent(Transform());
 		entity->AddComponent(Direction());
-		entity->AddComponent(Active());
-		entity->AddComponent(BoxCollider());
+		entity->AddComponent(Color());
 		entity->AddComponent(DebugActive());
 		entity->AddComponent(DebugColor());
 
@@ -116,20 +116,24 @@ void StartScene::Initialize()
 		collider.CollisionLayerMask.set(uint32_t(StartScene::CollisionLayer::MouseCursor));
 		entity->AddComponent(collider);
 
-		Image* image = entity->GetComponent<Image>();
-		image->texture = &mExitButtonNormalTexture;
-		image->layer = uint32_t(Layer::Button);
+		BoxCollider boxCollider{};
+		boxCollider.offset = { .x = 0.0f, .y = 0.0f };
+		boxCollider.size = { .width = 37.0f, .height = 15.0f };
+		entity->AddComponent(boxCollider);
 
-		Transform* transform = entity->GetComponent<Transform>();
-		transform->position = { .x = 0.0f, .y = -Constant::Get().GetHalfHeight() + 120.0f };
-		transform->scale = { .width = 3.0f, .height = 3.0f };
+		Image image{};
+		image.texture = &mExitButtonNormalTexture;
+		image.layer = uint32_t(Layer::Button);
+		entity->AddComponent(image);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		Transform transform{};
+		transform.position = { .x = 0.0f, .y = -Constant::Get().GetHalfHeight() + 120.0f };
+		transform.scale = { .width = 3.0f, .height = 3.0f };
+		entity->AddComponent(transform);
 
-		BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
-		boxCollider->offset = { .x = 0.0f, .y = 0.0f };
-		boxCollider->size = { .width = 37.0f, .height = 15.0f };
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 
 	// Mouse
@@ -138,8 +142,6 @@ void StartScene::Initialize()
 		entity->AddComponent(MouseCursorTag());
 		entity->AddComponent(Transform());
 		entity->AddComponent(Direction());
-		entity->AddComponent(Active());
-		entity->AddComponent(BoxCollider());
 		entity->AddComponent(DebugActive());
 		entity->AddComponent(DebugColor());
 
@@ -147,12 +149,14 @@ void StartScene::Initialize()
 		collider.CollisionLayerMask.set(uint32_t(StartScene::CollisionLayer::MouseCursor));
 		entity->AddComponent(collider);
 
-		Active* active = entity->GetComponent<Active>();
-		active->isValue = true;
+		BoxCollider boxCollider{};
+		boxCollider.offset = { .x = 3.0f, .y = -7.0f };
+		boxCollider.size = { .width = 18.0f, .height = 20.0f };
+		entity->AddComponent(boxCollider);
 
-		BoxCollider* boxCollider = entity->GetComponent<BoxCollider>();
-		boxCollider->offset = { .x = 3.0f, .y = -7.0f };
-		boxCollider->size = { .width = 18.0f, .height = 20.0f };
+		Active active{};
+		active.isValue = true;
+		entity->AddComponent(active);
 	}
 }
 
@@ -180,13 +184,39 @@ bool StartScene::Update(const float deltaTime)
 	}
 
 	// 버튼을 업데이트한다.
-	{		
+	{
 		// 시작 버튼
 		const Entity* startEntity = getEntity<StartTag>();
 		if (const Button* button = startEntity->GetComponent<Button>();
 			not button->isNormal)
 		{
 			if (Input::Get().GetMouseButtonDown(SDL_BUTTON_LEFT))
+			{
+				mIsFade = true;
+			}
+		}
+
+		if (mIsFade)
+		{
+			const Entity* backGroundEntity = getEntity<BackGroundTag>();
+			const Entity* LogoEntity = getEntity<LogoTag>();
+			const Entity* exitEntity = getEntity<ExitTag>();
+
+			const Uint8 fadeOutTime = Uint8(200.0f * deltaTime);
+
+			Color* backGroundColor = backGroundEntity->GetComponent<Color>();
+			backGroundColor->a -= fadeOutTime;
+
+			Color* logoColor = LogoEntity->GetComponent<Color>();
+			logoColor->a -= fadeOutTime;
+
+			Color* startColor = startEntity->GetComponent<Color>();
+			startColor->a -= fadeOutTime;
+
+			Color* exitColor = exitEntity->GetComponent<Color>();
+			exitColor->a -= fadeOutTime;
+
+			if (backGroundColor->a <= 0)
 			{
 				mIsUpdate = false;
 			}
