@@ -256,6 +256,8 @@ private:
 	Texture mPlayerDashCenterBackGroundTexture{};
 	Texture mPlayerDashRightBackGroundTexture{};
 
+	Texture mPlayerDashTexture{};
+
 	std::array<Texture, 5> mPlayerIdleTextures{};
 	std::array<Texture, 6> mPlayerRunTextures{};
 	Texture mPlayerShadowTexture{};

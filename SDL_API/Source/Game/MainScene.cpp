@@ -10,6 +10,15 @@
 
 constexpr float PRIMARY_SIZE = 3.0f;
 
+// TODO: Dash 구현
+// TODO: 총알 충돌박스 만들기
+// TODO: 스테이지 끝나면 mIsUpdate = false로 하고, 창 하나 만들기
+// TODO: Boss 체력바 만들기
+// TODO: Q누르면, 무기 교체하기 (struct WeaponState 하나 만들어서 멤버 변수로 두기, 칼과 총은 active = false로만 둔다. 무기가 보일 때 스킬과 총알이 나가도록 바꾼다)
+// TODO: 노래 추가하기
+// TODO: 몬스터 스폰 위치를 더 랜덤하게 수정한다.
+// TODO: 시간되면, 보스 손 움직이게 하기
+
 void MainScene::Initialize()
 {
 	srand(static_cast<unsigned int>(time(NULL)));
@@ -231,6 +240,8 @@ void MainScene::Finalize()
 	mPlayerDashCenterBackGroundTexture.Finalize();
 	mPlayerDashRightBackGroundTexture.Finalize();
 
+	mPlayerDashTexture.Finalize();
+
 	// Player
 	{
 		for (Texture& texture : mPlayerIdleTextures)
@@ -385,6 +396,8 @@ void MainScene::initialize_Resource()
 		mPlayerDashLeftBackGroundTexture.Initialize(GetHelper(), "Resource/Ui/Player/Dash/0.png");
 		mPlayerDashCenterBackGroundTexture.Initialize(GetHelper(), "Resource/Ui/Player/Dash/1.png");
 		mPlayerDashRightBackGroundTexture.Initialize(GetHelper(), "Resource/Ui/Player/Dash/2.png");
+		
+		mPlayerDashTexture.Initialize(GetHelper(), "Resource/Ui/Player/Dash/3.png");
 	}
 
 	// Player
@@ -1059,10 +1072,23 @@ void MainScene::initialize_Entity()
 
 	// Player UI Dash
 	{
-		for (uint32_t i = 0; i < 5; ++i)
+		constexpr uint32_t DASH_COUNT = 5;
+
+		for (uint32_t i = 0; i < DASH_COUNT; ++i)
 		{
 			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-			entity->AddComponent(PlayerDashTag());
+			entity->AddComponent(PlayerDashBackGroundTag());
+			entity->AddComponent(Ui());
+			entity->AddComponent(Image());
+			entity->AddComponent(Transform());
+			entity->AddComponent(Active());
+			entity->AddComponent(Color());
+		}
+
+		for (uint32_t i = 0; i < DASH_COUNT; ++i)
+		{
+			Entity* entity = GetEntityWorld()->AddEntity(new Entity());
+			entity->AddComponent(PlayerDashUiTag());
 			entity->AddComponent(Ui());
 			entity->AddComponent(Image());
 			entity->AddComponent(Transform());
@@ -1290,7 +1316,9 @@ Rect MainScene::getCameraRect() const
 
 void MainScene::initializeUI()
 {
+	constexpr uint32_t DASH_COUNT = 5;
 	constexpr float DASH_BACKGROUND_OFFSET = 30.0f;
+	constexpr Point DASH_BACKGROUND_FIRST_POSITION = { .x = 10.0f, .y = 10.0f };
 
 	constexpr Point HPBAR_BACKGROUND_OFFSET = { .x = 10.0f, .y = 60.0f };
 	constexpr Point ICON_OFFSET = { .x = 30.0f, .y = 55.0f };
@@ -1299,32 +1327,59 @@ void MainScene::initializeUI()
 
 	// Player Dash
 	{
-		auto entities = getEntities<PlayerDashTag>();
-		for (uint32_t i = 0; i < 5; ++i)
+		// BackGround
 		{
-			Entity* entity = entities[i];
-
-			Image* image = entity->GetComponent<Image>();
-			image->texture = &mPlayerDashCenterBackGroundTexture;
-
-			const Point firstPosition = { .x = 10.0f, .y = 10.0f };
-
-			Transform* transform = entity->GetComponent<Transform>();
-			transform->scale = { .width = 3.0f, .height = 3.0f };
-			transform->position = { .x = (firstPosition.x + 3.0f) + DASH_BACKGROUND_OFFSET * i, .y = 10.0f };
-
-			if (i == 0)
+			auto entities = getEntities<PlayerDashBackGroundTag>();
+			for (uint32_t i = 0; i < DASH_COUNT; ++i)
 			{
-				image->texture = &mPlayerDashLeftBackGroundTexture;
-				transform->position = firstPosition;
-			}
-			else if (i == 4)
-			{
-				image->texture = &mPlayerDashRightBackGroundTexture;
-			}
+				Entity* entity = entities[i];
 
-			Active* active = entity->GetComponent<Active>();
-			active->isValue = true;
+				Image* image = entity->GetComponent<Image>();
+				image->texture = &mPlayerDashCenterBackGroundTexture;
+
+
+				Transform* transform = entity->GetComponent<Transform>();
+				transform->scale = { .width = 3.0f, .height = 3.0f };
+				transform->position = { .x = (DASH_BACKGROUND_FIRST_POSITION.x + 3.0f) + DASH_BACKGROUND_OFFSET * i, .y = 10.0f };
+
+				if (i == 0)
+				{
+					image->texture = &mPlayerDashLeftBackGroundTexture;
+					transform->position = DASH_BACKGROUND_FIRST_POSITION;
+				}
+				else if (i == 4)
+				{
+					image->texture = &mPlayerDashRightBackGroundTexture;
+				}
+
+				Active* active = entity->GetComponent<Active>();
+				active->isValue = true;
+			}
+		}
+
+		// Dash
+		{
+			auto entities = getEntities<PlayerDashUiTag>();
+			for (uint32_t i = 0; i < DASH_COUNT; ++i)
+			{
+				Entity* entity = entities[i];
+
+				Image* image = entity->GetComponent<Image>();
+				image->texture = &mPlayerDashTexture;
+
+
+				Transform* transform = entity->GetComponent<Transform>();
+				transform->scale = { .width = 3.0f, .height = 3.0f };
+				transform->position = { .x = (DASH_BACKGROUND_FIRST_POSITION.x + 5.0f) + DASH_BACKGROUND_OFFSET * i, .y = 15.0f };
+
+				if (i == 0)
+				{
+					transform->position = { .x = (DASH_BACKGROUND_FIRST_POSITION.x + 5.0f), .y = 15.0f };
+				}
+
+				Active* active = entity->GetComponent<Active>();
+				active->isValue = true;
+			}
 		}
 	}
 
@@ -1540,12 +1595,17 @@ void MainScene::playerDash(const Point& moveDirection, const float deltaTime)
 	const Entity* playerEntity = getEntity<PlayerTag>();
 	Dash* dash = playerEntity->GetComponent<Dash>();
 
+	// TODO: entities를 불러와서 Entity* entity[dash->count] 해서 SetRemove 하기
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_SPACE))
 	{
 		if (dash->count > 0)
 		{
 			--dash->count;
 			dash->isValue = true;
+
+			Entity* dashUiEntity = getEntities<PlayerDashUiTag>()[dash->count];
+			Active* dashUiActive = dashUiEntity->GetComponent<Active>();
+			dashUiActive->isValue = false;
 		}
 	}
 
@@ -1576,6 +1636,15 @@ void MainScene::playerDash(const Point& moveDirection, const float deltaTime)
 		{
 			++dash->count;
 			dash->countTimer = 0.0f;
+
+			const uint32_t uiIndex = dash->count - 1;
+			Entity* dashUiEntity = getEntities<PlayerDashUiTag>()[uiIndex];
+			if (dashUiEntity != nullptr)
+			{
+				Active* dashUiActive = dashUiEntity->GetComponent<Active>();
+				dashUiActive->isValue = true;
+			}
+
 		}
 	}
 }

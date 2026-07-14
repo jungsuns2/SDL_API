@@ -203,16 +203,15 @@ bool Collision::CheckCollisionBoxCircle(const Entity& boxEntity, const Entity& c
 		return false;
 	}
 
-	// TODO: Quad를 사용해서 수정하기
 	const Transform* boxTransform = boxEntity.GetComponent<Transform>();
 	const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
-	//const std::array<Point, 5> points = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);
+	const Quad quad = Collision::ConvertBoxColliderToWorldBox(*boxTransform, *boxCollider);
 
 	const Transform* circleTransform = circleEntity.GetComponent<Transform>();
 	const CircleCollider* circleCollider = circleEntity.GetComponent<CircleCollider>();
 	const Circle circle = ConvertCircleColliderToWorldCircle(*circleTransform, *circleCollider);
 
-	//if (Collision::IsCollidedSqureWithCircle(rect, circle))
+	//if (Collision::IsCollidedSqureWithCircle(quad, circle))
 	//{
 	//	registerCollidedEntityPairs(boxEntity, circleEntity);
 	//	return true;
@@ -229,7 +228,6 @@ bool Collision::CheckCollisionBoxLine(const Entity& boxEntity, const Entity& lin
 		return false;
 	}
 
-	// TODO: Quad를 사용해서 수정하기
 	//const Transform* boxTransform = boxEntity.GetComponent<Transform>();
 	//const BoxCollider* boxCollider = boxEntity.GetComponent<BoxCollider>();
 	//const Rect rect = convertBoxColliderToWorldBox(*boxTransform, *boxCollider);

@@ -60,10 +60,16 @@ struct PlayerIconTag : public Component
 	PlayerIconTag() : Component(&_ID) {}
 };
 
-struct PlayerDashTag : public Component
+struct PlayerDashBackGroundTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	PlayerDashTag() : Component(&_ID) {}
+	PlayerDashBackGroundTag() : Component(&_ID) {}
+};
+
+struct PlayerDashUiTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	PlayerDashUiTag() : Component(&_ID) {}
 };
 
 struct SwordTag : public Component
