@@ -10,7 +10,6 @@
 
 constexpr float PRIMARY_SIZE = 3.0f;
 
-// TODO: Q누르면, 무기 교체하기 (struct WeaponState 하나 만들어서 멤버 변수로 두기, 칼과 총은 active = false로만 둔다. 무기가 보일 때 스킬과 총알이 나가도록 바꾼다)
 // TODO: 노래 추가하기
 // TODO: 몬스터 스폰 위치를 더 랜덤하게 수정한다.
 // TODO: 시간되면, 보스 손 움직이게 하기
@@ -130,15 +129,30 @@ bool MainScene::Update(const float deltaTime)
 
 			mGameWaveState.labelShowElapsedTimer += deltaTime;
 
-			Entity* entity = getEntity<WaveStageTag>();
-			Active* active = entity->GetComponent<Active>();
+			Entity* waveStageEntity = getEntity<WaveStageTag>();
+			Active* active = waveStageEntity->GetComponent<Active>();
 
+			// TODO: UI Active = false로 만들고, 밑에선 true로 바꾸기
 			if (active->isValue)
 			{
+				for (auto entities = getEntities<PlayerHpBarAllTag>();
+					Entity * hpBarEntity : entities)
+				{
+					Active* active = hpBarEntity->GetComponent<Active>();
+					active->isValue = false;
+				}
+
+				for (auto entities = getEntities<PlayerDashUiAllTag>();
+					Entity * DashUiEntity : entities)
+				{
+					Active* active = DashUiEntity->GetComponent<Active>();
+					active->isValue = false;
+				}
+
 				Entity* backGroundEntity = getEntity<BackGroundTag>();
-				
 				Color* backGroundColor = backGroundEntity->GetComponent<Color>();
-				Color* labelColor = entity->GetComponent<Color>();
+				
+				Color* labelColor = waveStageEntity->GetComponent<Color>();
 
 				if (mGameWaveState.labelShowElapsedTimer >= FADE_OUT_TIME)
 				{
@@ -155,6 +169,28 @@ bool MainScene::Update(const float deltaTime)
 
 							mGameWaveState.labelShowElapsedTimer = 0.0f;
 							active->isValue = false;
+
+							// UI를 갱신한다.
+							{
+								for (auto entities = getEntities<PlayerHpBarAllTag>();
+									Entity * hpBarEntity : entities)
+								{
+									Active* active = hpBarEntity->GetComponent<Active>();
+									active->isValue = true;
+								}
+
+								for (auto entities = getEntities<PlayerDashUiAllTag>();
+									Entity * DashUiEntity : entities)
+								{
+									Active* active = DashUiEntity->GetComponent<Active>();
+									active->isValue = true;
+								}
+
+								const Entity* playerEntity = getEntity<PlayerTag>();
+								Dash* dash = playerEntity->GetComponent<Dash>();
+								dash->count = dash->maxCount;
+								dash->countTimer = 0.0f;
+							}
 						}
 					}
 				}
@@ -263,29 +299,22 @@ bool MainScene::Update(const float deltaTime)
 		}
 	}
 
-	const Entity* entity = getEntity<WaveStageTag>();
-	if (Active* active = entity->GetComponent<Active>();
-		not active->isValue)
-	{
-		updateCamera(getEntity<PlayerTag>());
-		playerMove(deltaTime);
-
-		changePlayerWeapon();
-
-		spawnSwordAttack();
-		spawnBullets(deltaTime);
-	}
+	updateCamera(getEntity<PlayerTag>());
 
 	playerState(deltaTime);
+	playerMove(deltaTime);
+	changePlayerWeapon();
 
 	updateSwordStates(deltaTime);
 	updateSword();
 	
-	updateGun();
-
+	spawnSwordAttack();
 	updateSwordAttack(deltaTime);
 	updateSwordAttackStates(deltaTime);
 
+	updateGun();
+
+	spawnBullets(deltaTime);
 	updateBullets(deltaTime);
 	updateBulletStates(deltaTime);
 
@@ -1230,6 +1259,7 @@ void MainScene::initializePlayerDashUi()
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(PlayerDashBackGroundTag());
+		entity->AddComponent(PlayerDashUiAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
 
@@ -1263,6 +1293,7 @@ void MainScene::initializePlayerDashUi()
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(PlayerDashUiTag());
+		entity->AddComponent(PlayerDashUiAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
 
@@ -1298,6 +1329,7 @@ void MainScene::initializePlayerHpBarUi()
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(PlayerHpBarBackGroundTag());
+		entity->AddComponent(PlayerHpBarAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
 
@@ -1319,6 +1351,7 @@ void MainScene::initializePlayerHpBarUi()
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(PlayerHpBarBolderTag());
+		entity->AddComponent(PlayerHpBarAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
 
@@ -1340,6 +1373,7 @@ void MainScene::initializePlayerHpBarUi()
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(PlayerIconTag());
+		entity->AddComponent(PlayerHpBarAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
 
@@ -1364,6 +1398,7 @@ void MainScene::initializePlayerHpBarUi()
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(PlayerHpBarTag());
+		entity->AddComponent(PlayerHpBarAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
 
@@ -1387,6 +1422,7 @@ void MainScene::initializePlayerHpBarUi()
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
 		entity->AddComponent(PlayerHpLabelTag());
+		entity->AddComponent(PlayerHpBarAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
 
@@ -1894,8 +1930,6 @@ void MainScene::playerSetClip()
 
 	Player* player = entity->GetComponent<Player>();
 	Animator* animator = entity->GetComponent<Animator>();
-
-	printf("%d\n", animator->frameIndex);
 
 	switch (player->state)
 	{
@@ -3579,6 +3613,11 @@ void MainScene::spawnHitbox()
 		Entity* monsterEntity : entities)
 	{
 		const Monster* monster = monsterEntity->GetComponent<Monster>();
+		if (monster->type != eMonsterType::BigWhite)
+		{
+			continue;
+		}
+				
 		if (monster->state != Monster::eState::Attack)
 		{
 			continue;

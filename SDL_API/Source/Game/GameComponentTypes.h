@@ -60,6 +60,12 @@ struct PlayerHpLabelTag : public Component
 	PlayerHpLabelTag() : Component(&_ID) {}
 };
 
+struct PlayerHpBarAllTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	PlayerHpBarAllTag() : Component(&_ID) {}
+};
+
 struct PlayerDashBackGroundTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
@@ -70,6 +76,12 @@ struct PlayerDashUiTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
 	PlayerDashUiTag() : Component(&_ID) {}
+};
+
+struct PlayerDashUiAllTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	PlayerDashUiAllTag() : Component(&_ID) {}
 };
 
 struct SwordTag : public Component
