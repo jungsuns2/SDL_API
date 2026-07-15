@@ -318,7 +318,8 @@ bool MainScene::Update(const float deltaTime)
 	updateBullets(deltaTime);
 	updateBulletStates(deltaTime);
 
-	updateMonsterStates(deltaTime);
+	//updateMonsterStates(deltaTime);
+	updateBossStates(deltaTime);
 	updateHpMonsters(deltaTime);
 	monsterMove(deltaTime);
 	monsterHpBarMove();
@@ -335,8 +336,6 @@ bool MainScene::Update(const float deltaTime)
 	);
 	rangedAttackState<MonsterArrowTag>();
 	rangedAttackMove(300.0f, deltaTime);
-
-	updateBossStates(deltaTime);
 
 	spawnHitbox();
 	playerToMonsterHitboxCollision();
@@ -2015,7 +2014,7 @@ void MainScene::spawnSwordAttack()
 
 		Damage damage{};
 		damage.value = 1;
-		newEntity->AddComponent(Damage());
+		newEntity->AddComponent(damage);
 
 		const Entity* playerEntity = getEntity<PlayerTag>();
 		const Transform* playerTransform = playerEntity->GetComponent<Transform>();
@@ -2908,7 +2907,10 @@ void MainScene::updateHpMonsters(const float deltaTime)
 			if (knockback->coolTimer >= DAMAGE_TIME)
 			{
 				Monster* monster = entity->GetComponent<Monster>();
-				monster->state = Monster::eState::Run;
+				if (monster->type != eMonsterType::Boss)
+				{
+					monster->state = Monster::eState::Run;
+				}
 
 				Color* color = entity->GetComponent<Color>();
 				color->r = 255;
@@ -3293,11 +3295,8 @@ void MainScene::updateBossStates(const float deltaTime)
 	}
 
 	case Monster::eState::Run:
-	{
-		boxCollider->size = colliderState->runSize;
-		boxCollider->offset = colliderState->runOffset;
+		__noop;
 		break;
-	}
 
 	case Monster::eState::Rush:
 		__noop;
@@ -3556,7 +3555,7 @@ void MainScene::bossSetClip()
 		break;
 
 	case Monster::eState::Run:
-		animator->SetClip(&monster->clips[uint32_t(Monster::eState::Run)]);
+		__noop;
 		break;
 
 	case Monster::eState::Attack:
