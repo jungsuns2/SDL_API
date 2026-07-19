@@ -30,7 +30,7 @@ void StartScene::Initialize()
 	// BackGround
 	{
 		Entity* entity = GetEntityWorld()->AddEntity(new Entity());
-		entity->AddComponent(BackGroundTag());
+		entity->AddComponent(NextBackGroundTag());
 		entity->AddComponent(Color());
 
 		Image image{};
@@ -198,7 +198,7 @@ bool StartScene::Update(const float deltaTime)
 
 		if (mIsFade)
 		{
-			const Entity* backGroundEntity = getEntity<BackGroundTag>();
+			const Entity* backGroundEntity = getEntity<NextBackGroundTag>();
 			const Entity* LogoEntity = getEntity<LogoTag>();
 			const Entity* exitEntity = getEntity<ExitTag>();
 

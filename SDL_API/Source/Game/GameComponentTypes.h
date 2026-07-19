@@ -198,6 +198,12 @@ struct BossHpLabelTag : public Component
 	BossHpLabelTag() : Component(&_ID) {}
 };
 
+struct BossHpBarAllTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	BossHpBarAllTag() : Component(&_ID) {}
+};
+
 struct MonsterHpBarTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
@@ -228,10 +234,22 @@ struct CycloneFanTag : public Component
 	CycloneFanTag() : Component(&_ID) {}
 };
 
-struct BackGroundTag : public Component
+struct NextBackGroundTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	BackGroundTag() : Component(&_ID) {}
+	NextBackGroundTag() : Component(&_ID) {}
+};
+
+struct ClearBackGroundTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	ClearBackGroundTag() : Component(&_ID) {}
+};
+
+struct FailLabelTag : public Component
+{
+	static constexpr uint32_t _ID = 0;
+	FailLabelTag() : Component(&_ID) {}
 };
 
 struct Player : public Component

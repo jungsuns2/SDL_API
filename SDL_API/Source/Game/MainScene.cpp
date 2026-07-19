@@ -10,8 +10,7 @@
 
 constexpr float PRIMARY_SIZE = 3.0f;
 
-// TODO: 보스 충돌 처리하기
-// TODO: 엔딩: 성공, 실패
+// TODO: 엔딩: 보스 죽이면 성공, 플레이어가 죽으면 실패
 // TODO: 노래 추가하기
 // TODO: 시간되면, 보스 손 움직이게 하기
 
@@ -105,11 +104,11 @@ bool MainScene::Update(const float deltaTime)
 					Transform* playerTransfrom = playerEntity->GetComponent<Transform>();
 					playerTransfrom->position = { .x = 0.0f, .y = 0.0f };
 
-					if (Entity* entity = getEntity<BackGroundTag>();
+					if (Entity* entity = getEntity<NextBackGroundTag>();
 						entity == nullptr)
 					{
 						Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-						newEntity->AddComponent(BackGroundTag());
+						newEntity->AddComponent(NextBackGroundTag());
 						newEntity->AddComponent(Image());
 						newEntity->AddComponent(Transform());
 						newEntity->AddComponent(Active());
@@ -133,7 +132,6 @@ bool MainScene::Update(const float deltaTime)
 			Entity* waveStageEntity = getEntity<WaveStageTag>();
 			Active* active = waveStageEntity->GetComponent<Active>();
 
-			// TODO: UI Active = false로 만들고, 밑에선 true로 바꾸기
 			if (active->isValue)
 			{
 				for (auto entities = getEntities<PlayerHpBarAllTag>();
@@ -150,9 +148,9 @@ bool MainScene::Update(const float deltaTime)
 					active->isValue = false;
 				}
 
-				Entity* backGroundEntity = getEntity<BackGroundTag>();
+				Entity* backGroundEntity = getEntity<NextBackGroundTag>();
 				Color* backGroundColor = backGroundEntity->GetComponent<Color>();
-				
+
 				Color* labelColor = waveStageEntity->GetComponent<Color>();
 
 				if (mGameWaveState.labelShowElapsedTimer >= FADE_OUT_TIME)
@@ -227,58 +225,140 @@ bool MainScene::Update(const float deltaTime)
 			mGameWaveState.waveTimer -= deltaTime;
 			if (mGameWaveState.waveTimer <= 0.0f)
 			{
-				if (++mGameWaveState.index >= WAVES.size())
+				if ((mGameWaveState.index + 1) < WAVES.size())
 				{
-					assert(false and "구현 예정.");
+					++mGameWaveState.index;
+					mGameWaveState.groupIndex = 0;
+					mGameWaveState.waveTimer = WAVES[mGameWaveState.index].elapsedTime;
+					mGameWaveState.remainingMonsterGroupSpawnTimer = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
+					mGameWaveState.labelShowElapsedTimer = 0.0f;
+
+					// 라벨 정보를 갱신한다.
+					{
+						const std::string name = std::to_string(mGameWaveState.index + 1) + " Wave";
+						Entity* entity = getEntity<WaveStageTag>();
+						Label* label = entity->GetComponent<Label>();
+						label->text = name;
+
+						Active* active = entity->GetComponent<Active>();
+						active->isValue = true;
+					}
+
+					// 몬스터를 갱신한다.
+					{
+						mMonsterIndex = 0;
+
+						for (std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
+							Entity * entity : monsterEntities)
+						{
+							Monster* monster = entity->GetComponent<Monster>();
+							monster->state = Monster::eState::Dead;
+
+							entity->SetRemove();
+						}
+
+						// 몬스터 체력바를 갱신한다.
+						for (std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
+							Entity * entity : hpBarEntities)
+						{
+							entity->SetRemove();
+						}
+
+						// 몬스터 충돌체를 갱신한다.
+						for (std::vector<Entity*> attackColliders = getEntities<BigWhiteHitboxTag>();
+							Entity * entity : attackColliders)
+						{
+							entity->SetRemove();
+						}
+					}
+
+					// 플레이어 총알을 갱신한다.
+					{
+						Entity* bulletCountEntity = getEntity<BulletCountTag>();
+						Label* label = bulletCountEntity->GetComponent<Label>();
+						label->text = std::to_string(mBulletState.count) + "/" + std::to_string(mBulletState.maxCount);
+					}
 				}
+				else
+				{					
+					// 시간 안에 보스를 죽이지 못하면, 게임이 끝난다.
+					if (Entity* clearBackGroundEntity = getEntity<ClearBackGroundTag>();
+						clearBackGroundEntity == nullptr)
+					{
+						// 배경화면
+						{
+							Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+							newEntity->AddComponent(ClearBackGroundTag());
+							newEntity->AddComponent(Color());
 
-				mGameWaveState.waveTimer = WAVES[mGameWaveState.index].elapsedTime;
-				mGameWaveState.groupIndex = 0;
-				mGameWaveState.remainingMonsterGroupSpawnTimer = WAVES[mGameWaveState.index].monsterGroupSpawnIntervalTime;
-				mGameWaveState.labelShowElapsedTimer = 0.0f;
+							Image image{};
+							image.texture = &mBgSkyNightTexture;
+							image.layer = uint32_t(Layer::BackGround);
+							newEntity->AddComponent(image);
 
-				mMonsterIndex = 0;
+							Transform transform{};
+							transform.scale = { .width = 3.5f, .height = 3.5f };
+							newEntity->AddComponent(transform);
 
-				// 몬스터를 갱신한다.
-				for (std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
-					Entity * entity : monsterEntities)
-				{
-					Monster* monster = entity->GetComponent<Monster>();
-					monster->state = Monster::eState::Dead;
+							Active active{};
+							active.isValue = true;
+							newEntity->AddComponent(active);
+						}
 
-					entity->SetRemove();
-				}
+						// Lose 글자
+						{
+							Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+							newEntity->AddComponent(FailLabelTag());
+							newEntity->AddComponent(Ui());
+							newEntity->AddComponent(Color());
 
-				// 몬스터 체력바를 갱신한다.
-				for (std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
-					Entity * entity : hpBarEntities)
-				{
-					entity->SetRemove();
-				}
+							Label label{};
+							label.font = &mUIFont;
+							label.text = "Lose...";
+							newEntity->AddComponent(label);
 
-				// 몬스터 충돌체를 갱신한다.
-				for (std::vector<Entity*> attackColliders = getEntities<BigWhiteHitboxTag>();
-					Entity * entity : attackColliders)
-				{
-					entity->SetRemove();
-				}
+							Transform transform{};
+							transform.position = { .x = Constant::Get().GetHalfWidth() - 50.0f, .y = Constant::Get().GetHalfHeight() - 50.0f };
+							newEntity->AddComponent(transform);
 
-				// 플레이어 총알을 갱신한다.
-				{
-					Entity* bulletCountEntity = getEntity<BulletCountTag>();
-					Label* label = bulletCountEntity->GetComponent<Label>();
-					label->text = std::to_string(mBulletState.count) + "/" + std::to_string(mBulletState.maxCount);
-				}
+							Active active{};
+							active.isValue = true;
+							newEntity->AddComponent(active);
+						}
+					}
 
-				// 라벨 정보를 갱신한다.
-				{
-					const std::string name = std::to_string(mGameWaveState.index + 1) + " Wave";
-					Entity* entity = getEntity<WaveStageTag>();
-					Label* label = entity->GetComponent<Label>();
-					label->text = name;
+					// UI를 삭제한다.
+					{
+						for (auto entities = getEntities<PlayerHpBarAllTag>();
+							Entity * hpBarEntity : entities)
+						{
+							Active* active = hpBarEntity->GetComponent<Active>();
+							active->isValue = false;
+						}
 
-					Active* active = entity->GetComponent<Active>();
-					active->isValue = true;
+						for (auto entities = getEntities<PlayerDashUiAllTag>();
+							Entity * DashUiEntity : entities)
+						{
+							Active* active = DashUiEntity->GetComponent<Active>();
+							active->isValue = false;
+						}
+
+						Entity* bossHpBarAllEntity = getEntity<BossHpBarAllTag>();
+						if (bossHpBarAllEntity != nullptr)
+						{
+							Active* active = bossHpBarAllEntity->GetComponent<Active>();
+							active->isValue = false;
+						}
+					}
+
+					// WaveTimer를 초기화한다.
+					{
+						Entity* waveTimerEntity = getEntity<WaveTimerTag>();
+						Active* waveTimerActive = waveTimerEntity->GetComponent<Active>();
+						waveTimerActive->isValue = false;
+
+						mGameWaveState.remainingMonsterGroupSpawnTimer = 1.0f;
+					}
 				}
 			}
 		}
@@ -368,7 +448,6 @@ bool MainScene::Update(const float deltaTime)
 	swordAttackToMonsterCollision();
 	bulletToMonsterCollision();
 
-	// TODO: BossTag를 이용해서 충돌 체크 만들기
 	playerToBossCollision();
 	swordAttackToBossCollision(deltaTime);
 	bulletToBossCollision();
@@ -1789,6 +1868,10 @@ void MainScene::playerState(const float deltaTime)
 
 			Active* rightHandActive = rightHandEntity->GetComponent<Active>();
 			rightHandActive->isValue = false;
+
+			// TODO: Lose 창을 만든다.
+			// UI 다 끄기
+			// WaveTimer 값 고정시키기 (안 흐르도록)
 		}
 	}
 }
@@ -2480,6 +2563,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 			{
 				Entity* backGroundBarEntity = GetEntityWorld()->AddEntity(new Entity());
 				backGroundBarEntity->AddComponent(BossHpBarBackGroundTag());
+				backGroundBarEntity->AddComponent(BossHpBarAllTag());
 				backGroundBarEntity->AddComponent(Ui());
 				backGroundBarEntity->AddComponent(Color());
 				
@@ -2505,6 +2589,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 			{
 				Entity* bolderEntity = GetEntityWorld()->AddEntity(new Entity());
 				bolderEntity->AddComponent(BossHpBarBolderTag());
+				bolderEntity->AddComponent(BossHpBarAllTag());
 				bolderEntity->AddComponent(Ui());
 				bolderEntity->AddComponent(Color());
 
@@ -2528,6 +2613,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 			{
 				Entity* iconEntity = GetEntityWorld()->AddEntity(new Entity());
 				iconEntity->AddComponent(BossIconTag());
+				iconEntity->AddComponent(BossHpBarAllTag());
 				iconEntity->AddComponent(Ui());
 				iconEntity->AddComponent(Color());
 
@@ -2554,6 +2640,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 			{
 				Entity* hpEntity = GetEntityWorld()->AddEntity(new Entity());
 				hpEntity->AddComponent(BossHpBarTag());
+				hpEntity->AddComponent(BossHpBarAllTag());
 				hpEntity->AddComponent(Ui());
 				hpEntity->AddComponent(Color());
 
@@ -2581,6 +2668,7 @@ void MainScene::spawnMonster(const SpawnMonsterDesc& desc)
 			{
 				Entity* labelEntity = GetEntityWorld()->AddEntity(new Entity());
 				labelEntity->AddComponent(BossHpLabelTag());
+				labelEntity->AddComponent(BossHpBarAllTag());
 				labelEntity->AddComponent(Ui());
 				labelEntity->AddComponent(Color());
 
@@ -3336,8 +3424,13 @@ void MainScene::updateBossStates(const float deltaTime)
 		break;
 
 	case Monster::eState::Dead:
+	{
+		// TODO: Clear 창을 만든다.
+		// UI 다 끄기
+		// WaveTimer 값 고정시키기 (안 흐르도록)
 		__noop;
 		break;
+	}
 
 	default:
 		assert(false and "지원하지 않는 애니메이션입니다.");
