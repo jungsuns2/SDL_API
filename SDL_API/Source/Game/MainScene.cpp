@@ -95,7 +95,7 @@ bool MainScene::Update(const float deltaTime)
 		{
 			// BackGround
 			{
-				const Entity* entity = getEntity<WaveStageTag>();
+				Entity* entity = getEntity<WaveStageTag>();
 				if (Active* active = entity->GetComponent<Active>();
 					active->isValue)
 				{
@@ -187,7 +187,7 @@ bool MainScene::Update(const float deltaTime)
 									active->isValue = true;
 								}
 
-								const Entity* playerEntity = getEntity<PlayerTag>();
+								Entity* playerEntity = getEntity<PlayerTag>();
 								Dash* dash = playerEntity->GetComponent<Dash>();
 								dash->count = dash->maxCount;
 								dash->countTimer = 0.0f;
@@ -240,7 +240,7 @@ bool MainScene::Update(const float deltaTime)
 				mMonsterIndex = 0;
 
 				// 몬스터를 갱신한다.
-				for (const std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
+				for (std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
 					Entity * entity : monsterEntities)
 				{
 					Monster* monster = entity->GetComponent<Monster>();
@@ -250,14 +250,14 @@ bool MainScene::Update(const float deltaTime)
 				}
 
 				// 몬스터 체력바를 갱신한다.
-				for (const std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
+				for (std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
 					Entity * entity : hpBarEntities)
 				{
 					entity->SetRemove();
 				}
 
 				// 몬스터 충돌체를 갱신한다.
-				for (const std::vector<Entity*> attackColliders = getEntities<BigWhiteHitboxTag>();
+				for (std::vector<Entity*> attackColliders = getEntities<BigWhiteHitboxTag>();
 					Entity * entity : attackColliders)
 				{
 					entity->SetRemove();
@@ -265,16 +265,16 @@ bool MainScene::Update(const float deltaTime)
 
 				// 플레이어 총알을 갱신한다.
 				{
-					const Entity* bulletCountEntity = getEntity<BulletCountTag>();
+					Entity* bulletCountEntity = getEntity<BulletCountTag>();
 					Label* label = bulletCountEntity->GetComponent<Label>();
 					label->text = std::to_string(mBulletState.count) + "/" + std::to_string(mBulletState.maxCount);
 				}
 
 				// 라벨 정보를 갱신한다.
 				{
-					const Entity* entity = getEntity<WaveStageTag>();
-					Label* label = entity->GetComponent<Label>();
 					const std::string name = std::to_string(mGameWaveState.index + 1) + " Wave";
+					Entity* entity = getEntity<WaveStageTag>();
+					Label* label = entity->GetComponent<Label>();
 					label->text = name;
 
 					Active* active = entity->GetComponent<Active>();
@@ -285,7 +285,7 @@ bool MainScene::Update(const float deltaTime)
 		
 		// Update Wave Timer Label
 		{
-			const Entity* entity = getEntity<WaveTimerTag>();
+			Entity* entity = getEntity<WaveTimerTag>();
 
 			Label* label = entity->GetComponent<Label>();
 			const uint32_t seconds = uint32_t(mGameWaveState.waveTimer) % 60;
