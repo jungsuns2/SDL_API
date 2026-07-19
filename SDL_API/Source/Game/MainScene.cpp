@@ -10,8 +10,9 @@
 
 constexpr float PRIMARY_SIZE = 3.0f;
 
+// TODO: 보스 충돌 처리하기
+// TODO: 엔딩: 성공, 실패
 // TODO: 노래 추가하기
-// TODO: 몬스터 스폰 위치를 더 랜덤하게 수정한다.
 // TODO: 시간되면, 보스 손 움직이게 하기
 
 void MainScene::Initialize()
@@ -191,6 +192,26 @@ bool MainScene::Update(const float deltaTime)
 								dash->count = dash->maxCount;
 								dash->countTimer = 0.0f;
 							}
+
+							// 플레이어 체력을 초기화한다.
+							{
+								Entity* playerEntity = getEntity<PlayerTag>();
+								Hp* hp = playerEntity->GetComponent<Hp>();
+								hp->value = hp->max;
+
+								const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 3.0f;
+								Entity* playerHpBarEntity = getEntity<PlayerHpBarTag>();
+								Transform* playerHpTransform = playerHpBarEntity->GetComponent<Transform>();
+								playerHpTransform->scale.width = currentWidth;
+
+								const std::string hpName = std::to_string(hp->value) + "/" + std::to_string(hp->max);
+								Entity* playerLabelEntity = getEntity<PlayerHpLabelTag>();
+								Label* label = playerLabelEntity->GetComponent<Label>();
+								label->text = hpName;
+							}
+
+							// 플레이어 총알을 초기화한다.
+							mBulletState.count = mBulletState.maxCount;
 						}
 					}
 				}
@@ -318,7 +339,7 @@ bool MainScene::Update(const float deltaTime)
 	updateBullets(deltaTime);
 	updateBulletStates(deltaTime);
 
-	//updateMonsterStates(deltaTime);
+	updateMonsterStates(deltaTime);
 	updateBossStates(deltaTime);
 	updateHpMonsters(deltaTime);
 	monsterMove(deltaTime);
@@ -345,10 +366,15 @@ bool MainScene::Update(const float deltaTime)
 	playerToArrowCollision();
 
 	swordAttackToMonsterCollision();
-	//bulletToMonsterCollision();
+	bulletToMonsterCollision();
 
 	// TODO: BossTag를 이용해서 충돌 체크 만들기
+	playerToBossCollision();
 	swordAttackToBossCollision(deltaTime);
+	bulletToBossCollision();
+
+	playerToBossHitboxCollision();
+	playerToBossHandAttackCollision();
 
 	Collision::Get().UpdateEntityPairs();
 
@@ -3084,48 +3110,55 @@ void MainScene::spawnWingBullet(const float wingOffsetAngle, const uint32_t inde
 
 	Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
 	newEntity->AddComponent(CycloneFanTag());
-	newEntity->AddComponent(RangedAttack());
-	newEntity->AddComponent(Direction());
-	newEntity->AddComponent(Transform());
-	newEntity->AddComponent(Image());
-	newEntity->AddComponent(Animator());
-	newEntity->AddComponent(Active());
-	newEntity->AddComponent(BoxCollider());
-	newEntity->AddComponent(DebugActive());
 	newEntity->AddComponent(DebugColor());
-
-	Image* image = newEntity->GetComponent<Image>();
-	image->layer = static_cast<uint32_t>(Layer::Monster);
-
-	Animator* animator = newEntity->GetComponent<Animator>();
-	animator->clipState = &mCycloneFanClip;
 
 	CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::CycloneFan));
 	collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
 	newEntity->AddComponent(collider);
 
-	BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
-	boxCollider->size = { .width = float(mCycloneFanTextures[0].GetWidth()), .height = float(mCycloneFanTextures[0].GetHeight()) };
+	BoxCollider boxCollider{};
+	boxCollider.size = { .width = float(mCycloneFanTextures[0].GetWidth()), .height = float(mCycloneFanTextures[0].GetHeight()) };
+	newEntity->AddComponent(boxCollider);
+
+	DebugActive debugActive{};
+	debugActive.isValue = mIsDebugActive;
+	newEntity->AddComponent(debugActive);
+
+	Image image{};
+	image.layer = static_cast<uint32_t>(Layer::Monster);
+	newEntity->AddComponent(image);
+
+	Animator animator{};
+	animator.clipState = &mCycloneFanClip;
+	newEntity->AddComponent(animator);
 
 	const Entity* bossEntity = getEntity<BossTag>();
 	const Point bossPosition = bossEntity->GetComponent<Transform>()->position;
-	RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
-	rangedAttack->distance = 600.0f;
-	rangedAttack->startPosition = bossPosition;
+	RangedAttack rangedAttack{};
+	rangedAttack.distance = 600.0f;
+	rangedAttack.startPosition = bossPosition;
+	newEntity->AddComponent(rangedAttack);
 
-	Transform* transform = newEntity->GetComponent<Transform>();
-	transform->position = bossPosition;
-	transform->position.x += 20.0f;
-	transform->position.y -= 55.0f;
-	transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-
-	Active* active = newEntity->GetComponent<Active>();
-	active->isValue = true;
+	Transform transform{};
+	transform.position = bossPosition;
+	transform.position.x += 20.0f;
+	transform.position.y -= 55.0f;
+	transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+	newEntity->AddComponent(transform);
 
 	const Point rotateDirection = { .x = 1.0f, .y = 0.0f };
 	const Point rotateResult = Math::RotatePoint(rotateDirection, wingOffsetAngle + index * ROTATE_ANGLE);
-	Direction* direction = newEntity->GetComponent<Direction>();
-	direction->value = rotateResult;
+	Direction direction{};
+	direction.value = rotateResult;
+	newEntity->AddComponent(direction);
+
+	Active active{};
+	active.isValue = true;
+	newEntity->AddComponent(active);
+
+	Damage damage{};
+	damage.value = 6;
+	newEntity->AddComponent(damage);
 }
 
 void MainScene::updateBossStates(const float deltaTime)
@@ -3403,94 +3436,112 @@ void MainScene::spawnHandSkill()
 		{
 			Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
 			newEntity->AddComponent(BossHandSkillTag());
-			newEntity->AddComponent(Transform());
-			newEntity->AddComponent(Image());
-			newEntity->AddComponent(Animator());
-			newEntity->AddComponent(Active());
-			newEntity->AddComponent(BoxCollider());
-			newEntity->AddComponent(DebugActive());
+			newEntity->AddComponent(Direction());
 			newEntity->AddComponent(DebugColor());
 
-			Image* image = newEntity->GetComponent<Image>();
-			image->layer = static_cast<uint32_t>(Layer::Monster);
+			Image image{};
+			image.layer = static_cast<uint32_t>(Layer::Monster);
+			newEntity->AddComponent(image);
 
-			Animator* animator = newEntity->GetComponent<Animator>();
-			animator->clipState = &mBossHandStartSkillClip;
+			Animator animator{};
+			animator.clipState = &mBossHandStartSkillClip;
+			newEntity->AddComponent(animator);
 
 			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::HandSkill));
 			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
 			newEntity->AddComponent(collider);
 
-			BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
-			boxCollider->size = { .width = float(mBossHandSkillTextures[0].GetWidth()), .height = float(mBossHandSkillTextures[0].GetHeight()) };
+			BoxCollider boxCollider{};
+			boxCollider.size = { .width = float(mBossHandSkillTextures[0].GetWidth()), .height = float(mBossHandSkillTextures[0].GetHeight()) };
+			newEntity->AddComponent(boxCollider);
+
+			DebugActive debugActive{};
+			debugActive.isValue = mIsDebugActive;
+			newEntity->AddComponent(debugActive);
 
 			const Transform* handTransform = handEntity->GetComponent<Transform>();
 			
-			Transform* transform = newEntity->GetComponent<Transform>();
-			transform->position = handTransform->position;
-			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
-			transform->flip = handTransform->flip;
+			Transform transform{};
+			transform.position = handTransform->position;
+			transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+			transform.flip = handTransform->flip;
 
 			if (handTransform->flip == SDL_FLIP_NONE)
 			{
-				transform->position.x += START_POSITION_OFFSET;
-				transform->position.y += START_POSITION_OFFSET;
+				transform.position.x += START_POSITION_OFFSET;
+				transform.position.y += START_POSITION_OFFSET;
 			}
 			else if (handTransform->flip == SDL_FLIP_HORIZONTAL)
 			{
-				transform->position.x -= START_POSITION_OFFSET;
-				transform->position.y -= START_POSITION_OFFSET;
+				transform.position.x -= START_POSITION_OFFSET;
+				transform.position.y -= START_POSITION_OFFSET;
 			}
-			
-			Active* active = newEntity->GetComponent<Active>();
-			active->isValue = true;
+
+			newEntity->AddComponent(transform);
+
+			Damage damage{};
+			damage.value = 10;
+			newEntity->AddComponent(damage);
+
+			Active active{};
+			active.isValue = true;
+			newEntity->AddComponent(active);
 		}
 
 		// Center
 		{
 			Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
 			newEntity->AddComponent(BossHandCenterSkillTag());
-			newEntity->AddComponent(Transform());
-			newEntity->AddComponent(Image());
-			newEntity->AddComponent(Animator());
-			newEntity->AddComponent(Active());
-			newEntity->AddComponent(BoxCollider());
-			newEntity->AddComponent(DebugActive());
+			newEntity->AddComponent(Direction());
 			newEntity->AddComponent(DebugColor());
 
-			Image* image = newEntity->GetComponent<Image>();
-			image->layer = static_cast<uint32_t>(Layer::Monster);
+			Image image{};
+			image.layer = static_cast<uint32_t>(Layer::Monster);
+			newEntity->AddComponent(image);
 
-			Animator* animator = newEntity->GetComponent<Animator>();
-			animator->clipState = &mBossHandCenterSkillClip;
+			Animator animator{};
+			animator.clipState = &mBossHandCenterSkillClip;
+			newEntity->AddComponent(animator);
 
 			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::HandSkill));
 			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
 			newEntity->AddComponent(collider);
 
-			BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
-			boxCollider->size = { .width = float(mBossHandCenterSkillTextures[0].GetWidth()), .height = float(mBossHandCenterSkillTextures[0].GetHeight()) };
+			BoxCollider boxCollider{};
+			boxCollider.size = { .width = float(mBossHandCenterSkillTextures[0].GetWidth()), .height = float(mBossHandCenterSkillTextures[0].GetHeight()) };
+			newEntity->AddComponent(boxCollider);
+
+			DebugActive debugActive{};
+			debugActive.isValue = mIsDebugActive;
+			newEntity->AddComponent(debugActive);
 
 			const Entity* skillEntity = getEntity<BossHandSkillTag>();
 			const Transform* skillTransform = skillEntity->GetComponent<Transform>();
 			
-			Transform* transform = newEntity->GetComponent<Transform>();
-			transform->position = skillTransform->position;
-			transform->position.y += 3.0f;
-			transform->scale = { .width = CENTER_WIDTH_SIZE, .height = PRIMARY_SIZE };
-			transform->flip = skillTransform->flip;
+			Transform transform{};
+			transform.position = skillTransform->position;
+			transform.position.y += 3.0f;
+			transform.scale = { .width = CENTER_WIDTH_SIZE, .height = PRIMARY_SIZE };
+			transform.flip = skillTransform->flip;
 
 			if (skillTransform->flip == SDL_FLIP_NONE)
 			{
-				transform->position.x += CENTER_POSITION_OFFSET;
+				transform.position.x += CENTER_POSITION_OFFSET;
 			}
 			else if (skillTransform->flip == SDL_FLIP_HORIZONTAL)
 			{
-				transform->position.x -= CENTER_POSITION_OFFSET;
+				transform.position.x -= CENTER_POSITION_OFFSET;
 			}
 
-			Active* active = newEntity->GetComponent<Active>();
-			active->isValue = true;
+			newEntity->AddComponent(transform);
+
+			Damage damage{};
+			damage.value = 10;
+			newEntity->AddComponent(damage);
+
+			Active active{};
+			active.isValue = true;
+			newEntity->AddComponent(active);
 
 			mHandSkillState.isSpawn = true;
 
@@ -3638,44 +3689,44 @@ void MainScene::spawnHitbox()
 
 			Entity* newHitboxEntity = GetEntityWorld()->AddEntity(new Entity());
 			newHitboxEntity->AddComponent(BigWhiteHitboxTag());
-			newHitboxEntity->AddComponent(Damage());
-			newHitboxEntity->AddComponent(Transform());
-			newHitboxEntity->AddComponent(Direction());
-			newHitboxEntity->AddComponent(Active());
-			newHitboxEntity->AddComponent(BoxCollider());
 			newHitboxEntity->AddComponent(DebugColor());
 
 			CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::MonsterAttack));
 			collider.CollisionLayerMask.set(uint32_t(MainScene::CollisionLayer::Player));
 			newHitboxEntity->AddComponent(collider);
 
-			Hitbox hitbox{};
-			hitbox.targetEntity = monsterEntity;
-			newHitboxEntity->AddComponent(hitbox);
-
-			Active* active = newHitboxEntity->GetComponent<Active>();
-			active->isValue = true;
-
 			DebugActive debugActive{};
 			debugActive.isValue = mIsDebugActive;
 			newHitboxEntity->AddComponent(debugActive);
 
-			BoxCollider* boxCollider = newHitboxEntity->GetComponent<BoxCollider>();
-			boxCollider->size = state->attackSize;
-			boxCollider->offset = state->attackOffset;
+			BoxCollider boxCollider{};
+			boxCollider.size = state->attackSize;
+			boxCollider.offset = state->attackOffset;
+			newHitboxEntity->AddComponent(boxCollider);
+
+			Hitbox hitbox{};
+			hitbox.targetEntity = monsterEntity;
+			newHitboxEntity->AddComponent(hitbox);
 
 			const Direction* monsterDirection = hitbox.targetEntity->GetComponent<Direction>();
-			Direction* direction = newHitboxEntity->GetComponent<Direction>();
-			direction->value = monsterDirection->value;
+			Direction direction{};
+			direction.value = monsterDirection->value;
+			newHitboxEntity->AddComponent(direction);
 
 			const Transform* monsterTransform = hitbox.targetEntity->GetComponent<Transform>();
-			Transform* transform = newHitboxEntity->GetComponent<Transform>();
-			transform->position = monsterTransform->position;
-			transform->scale = monsterTransform->scale;
+			Transform transform{};
+			transform.position = monsterTransform->position;
+			transform.scale = monsterTransform->scale;
+			newHitboxEntity->AddComponent(transform);
 
 			const Damage* damage = hitbox.targetEntity->GetComponent<Damage>();
-			Damage* attackDamage = newHitboxEntity->GetComponent<Damage>();
-			attackDamage->value = damage->value;
+			Damage attackDamage{};
+			attackDamage.value = damage->value;
+			newHitboxEntity->AddComponent(attackDamage);
+
+			Active active{};
+			active.isValue = true;
+			newHitboxEntity->AddComponent(active);
 
 			monsterHitboxSponwer->hitboxEntity = newHitboxEntity;
 			monsterHitboxSponwer->isSpawned = true;
@@ -4166,6 +4217,35 @@ void MainScene::bulletToMonsterCollision()
 	}
 }
 
+void MainScene::playerToBossCollision()
+{
+	const Entity* bossEntity = getEntity<BossTag>();
+	Entity* playerEntity = getEntity<PlayerTag>();
+
+	if (Collision::Get().IsCollisionEnter(*playerEntity, *bossEntity))
+	{
+		Hp* playerHp = playerEntity->GetComponent<Hp>();
+		const Damage* damage = bossEntity->GetComponent<Damage>();
+		playerHp->value -= damage->value;
+
+		const std::string name = std::to_string(playerHp->value) + "/" + std::to_string(playerHp->max);
+		const Entity* hpEntity = getEntity<PlayerHpLabelTag>();
+		Label* playerLabel = hpEntity->GetComponent<Label>();
+		playerLabel->text = name;
+
+		const float currentWidth = (static_cast<float>(playerHp->value) / playerHp->max) * 3.0f;
+		Entity* playerHpBar = getEntity<PlayerHpBarTag>();
+		Transform* transform = playerHpBar->GetComponent<Transform>();
+		transform->scale.width = currentWidth;
+
+	}
+	else if (Collision::Get().IsCollisionStay(*playerEntity, *bossEntity))
+	{
+		Knockback* knockback = playerEntity->GetComponent<Knockback>();
+		knockback->isValue = true;
+	}
+}
+
 void MainScene::swordAttackToBossCollision(const float deltaTime)
 {
 	Entity* bossEntity = getEntity<BossTag>();
@@ -4200,6 +4280,134 @@ void MainScene::swordAttackToBossCollision(const float deltaTime)
 		if (swordColor->a <= 0)
 		{
 			swordAttackEntity->SetRemove();
+		}
+	}
+}
+
+void MainScene::bulletToBossCollision()
+{
+	Entity* bossEntity = getEntity<BossTag>();
+
+	std::vector<Entity*> entities = getEntities<BulletTag>();
+	for (Entity* bulletEntity : entities)
+	{
+		if (Collision::Get().IsCollisionEnter(*bulletEntity, *bossEntity))
+		{
+			const Damage& damage = *bulletEntity->GetComponent<Damage>();
+
+			Hp* hp = bossEntity->GetComponent<Hp>();
+			hp->value -= damage.value;
+
+			Entity* hpBarEntity = getEntity<BossHpBarTag>();
+			Transform* transform = hpBarEntity->GetComponent<Transform>();
+			const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 6.2f;
+			transform->scale.width = currentWidth;
+
+			const std::string hpName = std::to_string(hp->value) + "/" + std::to_string(hp->max);
+			Entity* hpLabelEntity = getEntity<BossHpLabelTag>();
+			hpLabelEntity->GetComponent<Label>();
+			Label* label = hpLabelEntity->GetComponent<Label>();
+			label->text = hpName;
+		}
+		else if (Collision::Get().IsCollisionStay(*bulletEntity, *bossEntity))
+		{
+			Knockback* knockback = bossEntity->GetComponent<Knockback>();
+			knockback->isValue = true;
+
+			bulletEntity->SetRemove();
+		}
+	}	
+}
+
+void MainScene::playerToBossHitboxCollision()
+{
+	Entity* playerEntity = getEntity<PlayerTag>();
+
+	std::vector<Entity*> entities = getEntities<CycloneFanTag>();
+	for (Entity* cycloneEntity : entities)
+	{
+		if (Collision::Get().IsCollisionEnter(*cycloneEntity, *playerEntity))
+		{
+			const Damage& damage = *cycloneEntity->GetComponent<Damage>();
+
+			Hp* playerHp = playerEntity->GetComponent<Hp>();
+			playerHp->value -= damage.value;
+
+			std::string name = std::to_string(playerHp->value) + "/" + std::to_string(playerHp->max);
+			const Entity* hpLabelEntity = getEntity<PlayerHpLabelTag>();
+			Label* playerLabel = hpLabelEntity->GetComponent<Label>();
+			playerLabel->text = name;
+
+			const Entity* playerHpBarEntity = getEntity<PlayerHpBarTag>();
+			Transform* transform = playerHpBarEntity->GetComponent<Transform>();
+			const float currentWidth = (static_cast<float>(playerHp->value) / playerHp->max) * 3.0f;
+			transform->scale.width = currentWidth;
+		}
+		else if (Collision::Get().IsCollisionStay(*cycloneEntity, *playerEntity))
+		{
+			Knockback* knockback = playerEntity->GetComponent<Knockback>();
+			knockback->isValue = true;
+
+			cycloneEntity->SetRemove();
+		}
+	}
+}
+
+void MainScene::playerToBossHandAttackCollision()
+{
+	Entity* playerEntity = getEntity<PlayerTag>();
+
+	// Hand
+	{
+		const Entity* handEntity = getEntity<BossHandCenterSkillTag>();
+		if (Collision::Get().IsCollisionEnter(*playerEntity, *handEntity))
+		{
+			Hp* playerHp = playerEntity->GetComponent<Hp>();
+			const Damage* damage = handEntity->GetComponent<Damage>();
+			playerHp->value -= damage->value;
+
+			const std::string name = std::to_string(playerHp->value) + "/" + std::to_string(playerHp->max);
+			const Entity* hpEntity = getEntity<PlayerHpLabelTag>();
+			Label* playerLabel = hpEntity->GetComponent<Label>();
+			playerLabel->text = name;
+
+			const float currentWidth = (static_cast<float>(playerHp->value) / playerHp->max) * 3.0f;
+			Entity* playerHpBar = getEntity<PlayerHpBarTag>();
+			Transform* transform = playerHpBar->GetComponent<Transform>();
+			transform->scale.width = currentWidth;
+
+		}
+		else if (Collision::Get().IsCollisionStay(*playerEntity, *handEntity))
+		{
+			Knockback* knockback = playerEntity->GetComponent<Knockback>();
+			knockback->isValue = true;
+		}
+	}
+
+	// Center
+	{
+		const Entity* centerEntity = getEntity<BossHandCenterSkillTag>();
+		if (Collision::Get().IsCollisionEnter(*playerEntity, *centerEntity))
+		{
+			Hp* playerHp = playerEntity->GetComponent<Hp>();
+			const Damage* damage = centerEntity->GetComponent<Damage>();
+			playerHp->value -= damage->value;
+
+			const std::string name = std::to_string(playerHp->value) + "/" + std::to_string(playerHp->max);
+			const Entity* hpEntity = getEntity<PlayerHpLabelTag>();
+			Label* playerLabel = hpEntity->GetComponent<Label>();
+			playerLabel->text = name;
+
+			const float currentWidth = (static_cast<float>(playerHp->value) / playerHp->max) * 3.0f;
+			Entity* playerHpBar = getEntity<PlayerHpBarTag>();
+			Transform* transform = playerHpBar->GetComponent<Transform>();
+			transform->scale.width = currentWidth;
+
+		}
+		else if (Collision::Get().IsCollisionStay(*playerEntity, *centerEntity))
+		{
+			Knockback* knockback = playerEntity->GetComponent<Knockback>();
+			knockback->isValue = true;
 		}
 	}
 }

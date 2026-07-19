@@ -206,7 +206,11 @@ private:
 	void swordAttackToMonsterCollision();
 	void bulletToMonsterCollision();
 
+	void playerToBossCollision();
 	void swordAttackToBossCollision(const float deltaTime);
+	void bulletToBossCollision();
+	void playerToBossHitboxCollision();
+	void playerToBossHandAttackCollision();
 
 	template<typename T>
 	void spawnRangedAttack(const SpawnRangeAttackDesc& desc);
