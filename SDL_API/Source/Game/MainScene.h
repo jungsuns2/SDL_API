@@ -200,6 +200,8 @@ private:
 	void spawnHitbox();
 	void updateHitbox(const float deltaTime);
 
+	void gameReset();
+
 	void playerToMonsterCollision();
 	void playerToMonsterHitboxCollision();
 	void playerToArrowCollision();
@@ -228,7 +230,8 @@ private:
 	uint32_t getRandom(const uint32_t min, const uint32_t max);
 
 private:
-	bool mIsUpdate = true;
+	bool mIsMainSceneUpdate = true;
+	bool mIsGameUpdate = false;
 	bool mIsDebugActive = false;
 
 	uint32_t mTileMaxCount = 0;

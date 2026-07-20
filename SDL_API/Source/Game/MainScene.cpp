@@ -10,7 +10,12 @@
 
 constexpr float PRIMARY_SIZE = 3.0f;
 
-// TODO: 엔딩: 보스 죽이면 성공, 플레이어가 죽으면 실패
+constexpr float WAVE_STATE_TIME = 3.0f;
+constexpr float FADE_TIME = 1.3f;
+constexpr float FADE_OUT_TIME = 2.3f;
+constexpr float FADE_SPEED = 255.0f / FADE_TIME;
+
+// TODO: 엔딩: 보스 죽이면 성공
 // TODO: 노래 추가하기
 // TODO: 시간되면, 보스 손 움직이게 하기
 
@@ -76,7 +81,6 @@ void MainScene::Initialize()
 			.isSpawn = false
 		};
 	}
-
 }
 
 bool MainScene::Update(const float deltaTime)
@@ -85,11 +89,6 @@ bool MainScene::Update(const float deltaTime)
 
 	// Update Wave
 	{
-		constexpr float WAVE_STATE_TIME = 3.0f;
-		constexpr float FADE_TIME = 1.3f;
-		constexpr float FADE_OUT_TIME = 2.3f;
-		constexpr float FADE_SPEED = 255.0f / FADE_TIME;
-
 		// 웨이브 정보를 잠시 동안 라벨로 표시한다.
 		{
 			// BackGround
@@ -98,6 +97,7 @@ bool MainScene::Update(const float deltaTime)
 				if (Active* active = entity->GetComponent<Active>();
 					active->isValue)
 				{
+					mIsGameUpdate = false;
 					updateCamera(nullptr);
 
 					Entity* playerEntity = getEntity<PlayerTag>();
@@ -131,23 +131,8 @@ bool MainScene::Update(const float deltaTime)
 
 			Entity* waveStageEntity = getEntity<WaveStageTag>();
 			Active* active = waveStageEntity->GetComponent<Active>();
-
 			if (active->isValue)
 			{
-				for (auto entities = getEntities<PlayerHpBarAllTag>();
-					Entity * hpBarEntity : entities)
-				{
-					Active* active = hpBarEntity->GetComponent<Active>();
-					active->isValue = false;
-				}
-
-				for (auto entities = getEntities<PlayerDashUiAllTag>();
-					Entity * DashUiEntity : entities)
-				{
-					Active* active = DashUiEntity->GetComponent<Active>();
-					active->isValue = false;
-				}
-
 				Entity* backGroundEntity = getEntity<NextBackGroundTag>();
 				Color* backGroundColor = backGroundEntity->GetComponent<Color>();
 
@@ -162,6 +147,7 @@ bool MainScene::Update(const float deltaTime)
 
 						if (backGroundColor->a <= 0)
 						{
+							backGroundColor->a = 0;
 							labelColor->a = 0;
 
 							backGroundEntity->SetRemove();
@@ -183,6 +169,18 @@ bool MainScene::Update(const float deltaTime)
 								{
 									Active* active = DashUiEntity->GetComponent<Active>();
 									active->isValue = true;
+								}
+
+								const Entity* gunEntity = getEntity<GunTag>();
+								if (gunEntity != nullptr)
+								{
+									if (const Active* gunActive = gunEntity->GetComponent<Active>();
+										gunActive->isValue)
+									{
+										Entity* bulletLabelEntity = getEntity<BulletCountTag>();
+										Active* bulletLabelActive = bulletLabelEntity->GetComponent<Active>();
+										bulletLabelActive->isValue = mPlayerWeaponState.isSword;
+									}
 								}
 
 								Entity* playerEntity = getEntity<PlayerTag>();
@@ -210,6 +208,9 @@ bool MainScene::Update(const float deltaTime)
 
 							// 플레이어 총알을 초기화한다.
 							mBulletState.count = mBulletState.maxCount;
+
+							// 게임을 업데이트한다.
+							mIsGameUpdate = true;
 						}
 					}
 				}
@@ -220,7 +221,8 @@ bool MainScene::Update(const float deltaTime)
 		// 다음 웨이브를 위해 값을 초기화한다.
 		const Entity* waveEntity = getEntity<WaveStageTag>();
 		if (const Active* waveActive = waveEntity->GetComponent<Active>();
-			not waveActive->isValue)
+			not waveActive->isValue
+			and mIsGameUpdate)
 		{
 			mGameWaveState.waveTimer -= deltaTime;
 			if (mGameWaveState.waveTimer <= 0.0f)
@@ -236,40 +238,12 @@ bool MainScene::Update(const float deltaTime)
 					// 라벨 정보를 갱신한다.
 					{
 						const std::string name = std::to_string(mGameWaveState.index + 1) + " Wave";
-						Entity* entity = getEntity<WaveStageTag>();
-						Label* label = entity->GetComponent<Label>();
+						Entity* waveStageEntity = getEntity<WaveStageTag>();
+						Label* label = waveStageEntity->GetComponent<Label>();
 						label->text = name;
 
-						Active* active = entity->GetComponent<Active>();
+						Active* active = waveStageEntity->GetComponent<Active>();
 						active->isValue = true;
-					}
-
-					// 몬스터를 갱신한다.
-					{
-						mMonsterIndex = 0;
-
-						for (std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
-							Entity * entity : monsterEntities)
-						{
-							Monster* monster = entity->GetComponent<Monster>();
-							monster->state = Monster::eState::Dead;
-
-							entity->SetRemove();
-						}
-
-						// 몬스터 체력바를 갱신한다.
-						for (std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
-							Entity * entity : hpBarEntities)
-						{
-							entity->SetRemove();
-						}
-
-						// 몬스터 충돌체를 갱신한다.
-						for (std::vector<Entity*> attackColliders = getEntities<BigWhiteHitboxTag>();
-							Entity * entity : attackColliders)
-						{
-							entity->SetRemove();
-						}
 					}
 
 					// 플레이어 총알을 갱신한다.
@@ -278,17 +252,24 @@ bool MainScene::Update(const float deltaTime)
 						Label* label = bulletCountEntity->GetComponent<Label>();
 						label->text = std::to_string(mBulletState.count) + "/" + std::to_string(mBulletState.maxCount);
 					}
+
+					mMonsterIndex = 0;
+
+					gameReset();
 				}
 				else
 				{					
 					// 시간 안에 보스를 죽이지 못하면, 게임이 끝난다.
-					if (Entity* clearBackGroundEntity = getEntity<ClearBackGroundTag>();
+					if (Entity* clearBackGroundEntity = getEntity<EndingBackGroundTag>();
 						clearBackGroundEntity == nullptr)
 					{
+						mIsGameUpdate = false;
+						updateCamera(nullptr);
+
 						// 배경화면
 						{
 							Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-							newEntity->AddComponent(ClearBackGroundTag());
+							newEntity->AddComponent(EndingBackGroundTag());
 							newEntity->AddComponent(Color());
 
 							Image image{};
@@ -308,7 +289,7 @@ bool MainScene::Update(const float deltaTime)
 						// Lose 글자
 						{
 							Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-							newEntity->AddComponent(FailLabelTag());
+							newEntity->AddComponent(LoseLabelTag());
 							newEntity->AddComponent(Ui());
 							newEntity->AddComponent(Color());
 
@@ -325,39 +306,6 @@ bool MainScene::Update(const float deltaTime)
 							active.isValue = true;
 							newEntity->AddComponent(active);
 						}
-					}
-
-					// UI를 삭제한다.
-					{
-						for (auto entities = getEntities<PlayerHpBarAllTag>();
-							Entity * hpBarEntity : entities)
-						{
-							Active* active = hpBarEntity->GetComponent<Active>();
-							active->isValue = false;
-						}
-
-						for (auto entities = getEntities<PlayerDashUiAllTag>();
-							Entity * DashUiEntity : entities)
-						{
-							Active* active = DashUiEntity->GetComponent<Active>();
-							active->isValue = false;
-						}
-
-						Entity* bossHpBarAllEntity = getEntity<BossHpBarAllTag>();
-						if (bossHpBarAllEntity != nullptr)
-						{
-							Active* active = bossHpBarAllEntity->GetComponent<Active>();
-							active->isValue = false;
-						}
-					}
-
-					// WaveTimer를 초기화한다.
-					{
-						Entity* waveTimerEntity = getEntity<WaveTimerTag>();
-						Active* waveTimerActive = waveTimerEntity->GetComponent<Active>();
-						waveTimerActive->isValue = false;
-
-						mGameWaveState.remainingMonsterGroupSpawnTimer = 1.0f;
 					}
 				}
 			}
@@ -380,9 +328,7 @@ bool MainScene::Update(const float deltaTime)
 
 		// Update Monster Spawn
 		{
-			const Entity* waveEntity = getEntity<WaveStageTag>();
-			if (const Active* waveActive = waveEntity->GetComponent<Active>();
-				not waveActive->isValue)
+			if (mIsGameUpdate)
 			{
 				const WaveDesc& waveDesc = WAVES[mGameWaveState.index];
 				const uint32_t monsterGroupIndex = waveDesc.monsterGroupIndicies[mGameWaveState.groupIndex];
@@ -400,15 +346,18 @@ bool MainScene::Update(const float deltaTime)
 		}
 	}
 
-	updateCamera(getEntity<PlayerTag>());
+	if (mIsGameUpdate)
+	{
+		updateCamera(getEntity<PlayerTag>());
+		playerState(deltaTime);
+		changePlayerWeapon();
+	}
 
-	playerState(deltaTime);
 	playerMove(deltaTime);
-	changePlayerWeapon();
 
 	updateSwordStates(deltaTime);
 	updateSword();
-	
+
 	spawnSwordAttack();
 	updateSwordAttack(deltaTime);
 	updateSwordAttackStates(deltaTime);
@@ -426,15 +375,15 @@ bool MainScene::Update(const float deltaTime)
 	monsterHpBarMove();
 
 	// 원거리 몬스터의 공격을 초기화와 업데이트한다.
- 	spawnRangedAttack<MonsterArrowTag>
-	(
-		SpawnRangeAttackDesc
-		{
-			.type = eMonsterType::Archer,
-			.texture = &mArrowTexture,
-			.spawnFrameIndex = 7
-		}
-	);
+	spawnRangedAttack<MonsterArrowTag>
+		(
+			SpawnRangeAttackDesc
+			{
+				.type = eMonsterType::Archer,
+				.texture = &mArrowTexture,
+				.spawnFrameIndex = 7
+			}
+		);
 	rangedAttackState<MonsterArrowTag>();
 	rangedAttackMove(300.0f, deltaTime);
 
@@ -463,7 +412,7 @@ bool MainScene::Update(const float deltaTime)
 	bossHandsSetClip();
 	handSkillSetClip();
 
-	return mIsUpdate;
+	return mIsMainSceneUpdate;
 }
 
 void MainScene::Finalize()
@@ -1276,7 +1225,7 @@ void MainScene::input()
 
 	if (Input::Get().GetKeyDown(SDL_SCANCODE_Y))
 	{
-		mIsUpdate = !mIsUpdate;
+		mIsMainSceneUpdate = !mIsMainSceneUpdate;
 	}
 
 #if defined(_DEBUG)
@@ -1366,6 +1315,7 @@ void MainScene::initializePlayerDashUi()
 		entity->AddComponent(PlayerDashUiAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
+		entity->AddComponent(Active());
 
 		Image image{};
 		image.texture = &mPlayerDashCenterBackGroundTexture;
@@ -1386,10 +1336,6 @@ void MainScene::initializePlayerDashUi()
 
 		entity->AddComponent(transform);
 		entity->AddComponent(image);
-
-		Active active{};
-		active.isValue = true;
-		entity->AddComponent(active);
 	}
 
 	// Dash
@@ -1400,6 +1346,7 @@ void MainScene::initializePlayerDashUi()
 		entity->AddComponent(PlayerDashUiAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
+		entity->AddComponent(Active());
 
 		Image image{};
 		image.texture = &mPlayerDashTexture;
@@ -1415,10 +1362,6 @@ void MainScene::initializePlayerDashUi()
 		}
 
 		entity->AddComponent(transform);
-
-		Active active{};
-		active.isValue = true;
-		entity->AddComponent(active);
 	}
 }
 
@@ -1436,6 +1379,7 @@ void MainScene::initializePlayerHpBarUi()
 		entity->AddComponent(PlayerHpBarAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
+		entity->AddComponent(Active());
 
 		Image image{};
 		image.texture = &mPlayerHpBarBackGroundTexture;
@@ -1445,10 +1389,6 @@ void MainScene::initializePlayerHpBarUi()
 		transform.position = { .x = HPBAR_BACKGROUND_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_BACKGROUND_OFFSET.y };
 		transform.scale = { .width = 3.0f, .height = 3.0f };
 		entity->AddComponent(transform);
-
-		Active active{};
-		active.isValue = true;
-		entity->AddComponent(active);
 	}
 
 	// Player Hp Bar Bolder
@@ -1458,6 +1398,7 @@ void MainScene::initializePlayerHpBarUi()
 		entity->AddComponent(PlayerHpBarAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
+		entity->AddComponent(Active());
 
 		Image image{};
 		image.texture = &mPlayerHpBarBorderTexture;
@@ -1467,10 +1408,6 @@ void MainScene::initializePlayerHpBarUi()
 		transform.position = { .x = HPBAR_BACKGROUND_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_BACKGROUND_OFFSET.y };
 		transform.scale = { .width = 3.0f, .height = 3.0f };
 		entity->AddComponent(transform);
-
-		Active active{};
-		active.isValue = true;
-		entity->AddComponent(active);
 	}
 
 	// Player Icon
@@ -1480,6 +1417,7 @@ void MainScene::initializePlayerHpBarUi()
 		entity->AddComponent(PlayerHpBarAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
+		entity->AddComponent(Active());
 
 		Image image{};
 		image.texture = &mPlayerIconTexture;
@@ -1489,10 +1427,6 @@ void MainScene::initializePlayerHpBarUi()
 		transform.position = { .x = ICON_OFFSET.x, .y = float(Constant::Get().GetHeight()) - ICON_OFFSET.y };
 		transform.scale = { .width = 1.5f, .height = 1.5f };
 		entity->AddComponent(transform);
-
-		Active active{};
-		active.isValue = true;
-		entity->AddComponent(active);
 	}
 
 	const Entity* playerEntity = getEntity<PlayerTag>();
@@ -1505,6 +1439,7 @@ void MainScene::initializePlayerHpBarUi()
 		entity->AddComponent(PlayerHpBarAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
+		entity->AddComponent(Active());
 
 		Image image{};
 		image.texture = &mRedRectTexture;
@@ -1516,10 +1451,6 @@ void MainScene::initializePlayerHpBarUi()
 		const float currentWidth = (static_cast<float>(hp->value) / hp->max) * 3.0f;
 		transform.scale = { .width = currentWidth, .height = 0.6f };
 		entity->AddComponent(transform);
-
-		Active active{};
-		active.isValue = true;
-		entity->AddComponent(active);
 	}
 
 	// Player Hp Label
@@ -1529,6 +1460,7 @@ void MainScene::initializePlayerHpBarUi()
 		entity->AddComponent(PlayerHpBarAllTag());
 		entity->AddComponent(Ui());
 		entity->AddComponent(Color());
+		entity->AddComponent(Active());
 
 		Label label{};
 		label.font = &mHpFont;
@@ -1540,10 +1472,6 @@ void MainScene::initializePlayerHpBarUi()
 		Transform transform{};
 		transform.position = { .x = HPBAR_LABEL_OFFSET.x, .y = float(Constant::Get().GetHeight()) - HPBAR_LABEL_OFFSET.y };
 		entity->AddComponent(transform);
-
-		Active active{};
-		active.isValue = true;
-		entity->AddComponent(active);
 	}
 }
 
@@ -1620,7 +1548,7 @@ void MainScene::initializeWaveStage()
 
 void MainScene::initializePlayer()
 {
-	constexpr uint32_t MAX_HP = 100;
+	constexpr uint32_t MAX_HP = 1;
 	constexpr uint32_t MAX_DASH = 5;
 
 	// Left Hand
@@ -1869,9 +1797,78 @@ void MainScene::playerState(const float deltaTime)
 			Active* rightHandActive = rightHandEntity->GetComponent<Active>();
 			rightHandActive->isValue = false;
 
-			// TODO: Lose 창을 만든다.
-			// UI 다 끄기
-			// WaveTimer 값 고정시키기 (안 흐르도록)
+			// Lose 창
+			{
+				if (Entity* endingEntity = getEntity<EndingBackGroundTag>();
+					endingEntity == nullptr)
+				{
+					// 배경화면
+					{
+						Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+						newEntity->AddComponent(EndingBackGroundTag());
+
+						Image image{};
+						image.texture = &mBgSkyNightTexture;
+						image.layer = uint32_t(Layer::BackGround);
+						newEntity->AddComponent(image);
+
+						Transform transform{};
+						transform.scale = { .width = 5.0f, .height = 5.0f };
+						newEntity->AddComponent(transform);
+
+						Active active{};
+						active.isValue = true;
+						newEntity->AddComponent(active);
+
+						Color color{};
+						color.a = 0;
+						newEntity->AddComponent(color);
+
+					}
+
+					// Lose 글자
+					{
+						Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+						newEntity->AddComponent(LoseLabelTag());
+						newEntity->AddComponent(Ui());
+
+						Label label{};
+						label.font = &mUIFont;
+						label.text = "Lose...";
+						newEntity->AddComponent(label);
+
+						Transform transform{};
+						transform.position = { .x = Constant::Get().GetHalfWidth() - 50.0f, .y = Constant::Get().GetHalfHeight() - 50.0f };
+						newEntity->AddComponent(transform);
+
+						Active active{};
+						active.isValue = true;
+						newEntity->AddComponent(active);
+
+						Color color{};
+						color.a = 0;
+						newEntity->AddComponent(color);
+					}
+				}
+
+				Entity* endingEntity = getEntity<EndingBackGroundTag>();
+				Color* endingColor = endingEntity->GetComponent<Color>();
+				endingColor->a += Uint8(FADE_SPEED * deltaTime);
+				
+				Entity* lebelEntity = getEntity<LoseLabelTag>();
+				Color* labelColor = lebelEntity->GetComponent<Color>();
+				labelColor->a += Uint8(FADE_SPEED * deltaTime);
+
+				if (endingColor->a >= 255)
+				{
+					endingColor->a = 255;
+					labelColor->a = 255;
+
+					mIsGameUpdate = false;
+					updateCamera(nullptr);
+					gameReset();
+				}
+			}
 		}
 	}
 }
@@ -2068,16 +2065,16 @@ void MainScene::changePlayerWeapon()
 
 		Entity* gunEntity = getEntity<GunTag>();
 		Entity* swordEntity = getEntity<SwordTag>();
-		Entity* bulletLabelEntity = getEntity<BulletCountTag>();
 
 		Active* gunActive = gunEntity->GetComponent<Active>();
 		gunActive->isValue = mPlayerWeaponState.isSword;
 
-		Active* bulletLabelActive = bulletLabelEntity->GetComponent<Active>();
-		bulletLabelActive->isValue = mPlayerWeaponState.isSword;
-
 		Active* swordActive = swordEntity->GetComponent<Active>();
 		swordActive->isValue = !mPlayerWeaponState.isSword;
+
+		Entity* bulletLabelEntity = getEntity<BulletCountTag>();
+		Active* bulletLabelActive = bulletLabelEntity->GetComponent<Active>();
+		bulletLabelActive->isValue = mPlayerWeaponState.isSword;
 	}
 }
 
@@ -3878,6 +3875,71 @@ void MainScene::updateHitbox(const float deltaTime)
 			hitboxSponwer->hitboxEntity->SetRemove();
 			hitboxSponwer->hitboxEntity->RemovedComponent();
 			hitboxSponwer->hitboxEntity = nullptr;
+		}
+	}
+}
+
+void MainScene::gameReset()
+{
+	// UI를 갱신한다.
+	{
+		for (auto entities = getEntities<PlayerHpBarAllTag>();
+			Entity * hpBarEntity : entities)
+		{
+			Active* active = hpBarEntity->GetComponent<Active>();
+			active->isValue = false;
+		}
+
+		for (auto entities = getEntities<PlayerDashUiAllTag>();
+			Entity * DashUiEntity : entities)
+		{
+			Active* active = DashUiEntity->GetComponent<Active>();
+			active->isValue = false;
+		}
+
+		Entity* bulletUiEntity = getEntity<BulletCountTag>();
+		if (bulletUiEntity != nullptr)
+		{
+			Entity* gunEntity = getEntity<GunTag>();
+			if (Active* gunActive = gunEntity->GetComponent<Active>();
+				gunActive->isValue)
+			{
+				Active* bulletActive = bulletUiEntity->GetComponent<Active>();
+				bulletActive->isValue = false;
+			}
+		}
+
+		Entity* bossHpBarAllEntity = getEntity<BossHpBarAllTag>();
+		if (bossHpBarAllEntity != nullptr)
+		{
+			Active* active = bossHpBarAllEntity->GetComponent<Active>();
+			active->isValue = false;
+		}
+	}
+
+	// 몬스터를 갱신한다.
+	{
+		for (std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
+			Entity * entity : monsterEntities)
+		{
+			Monster* monster = entity->GetComponent<Monster>();
+			monster->state = Monster::eState::Dead;
+
+			entity->SetRemove();
+		}
+
+		// 몬스터 체력바를 갱신한다.
+		for (std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
+			Entity * entity : hpBarEntities)
+		{
+			entity->SetRemove();
+		}
+
+		// 몬스터 충돌체를 갱신한다.
+		for (std::vector<Entity*> attackColliders = getEntities<BigWhiteHitboxTag>();
+			Entity * entity : attackColliders)
+		{
+			entity->SetRemove();
 		}
 	}
 }

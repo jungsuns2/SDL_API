@@ -240,16 +240,16 @@ struct NextBackGroundTag : public Component
 	NextBackGroundTag() : Component(&_ID) {}
 };
 
-struct ClearBackGroundTag : public Component
+struct EndingBackGroundTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	ClearBackGroundTag() : Component(&_ID) {}
+	EndingBackGroundTag() : Component(&_ID) {}
 };
 
-struct FailLabelTag : public Component
+struct LoseLabelTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	FailLabelTag() : Component(&_ID) {}
+	LoseLabelTag() : Component(&_ID) {}
 };
 
 struct Player : public Component
