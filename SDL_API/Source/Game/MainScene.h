@@ -154,6 +154,10 @@ private:
 	void initializeWaveTimer();
 	void initializeWaveStage();
 
+	void initializeEnding(Uint8 opaque = 255);
+	void initializeEndingLabel(const std::string& text);
+	void updateEnding(const float deltaTime);
+
 	void playerDash(const Point& moveDirection, const float deltaTime);
 	void playerSpawnShadow(const float deltaTime);
 	void playerUpdateShadow(const float deltaTime);
@@ -317,6 +321,7 @@ private:
 
 	std::array<Texture, 10> mBossIdleTextures{};
 	std::array<Texture, 12> mBossAttackTextures{};
+	std::array<Texture, 6> mBossDeadTextures{};
 	std::array<Texture, 10> mBossHandTextures{};
 	std::array<Texture, 10> mBossBackTextures{};
 	std::array<Texture, 2> mCycloneFanTextures{};

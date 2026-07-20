@@ -15,7 +15,6 @@ constexpr float FADE_TIME = 1.3f;
 constexpr float FADE_OUT_TIME = 2.3f;
 constexpr float FADE_SPEED = 255.0f / FADE_TIME;
 
-// TODO: 엔딩: 보스 죽이면 성공
 // TODO: 노래 추가하기
 // TODO: 시간되면, 보스 손 움직이게 하기
 
@@ -104,25 +103,25 @@ bool MainScene::Update(const float deltaTime)
 					Transform* playerTransfrom = playerEntity->GetComponent<Transform>();
 					playerTransfrom->position = { .x = 0.0f, .y = 0.0f };
 
-					if (Entity* entity = getEntity<NextBackGroundTag>();
+					if (Entity* entity = getEntity<NextStageTag>();
 						entity == nullptr)
 					{
 						Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-						newEntity->AddComponent(NextBackGroundTag());
-						newEntity->AddComponent(Image());
-						newEntity->AddComponent(Transform());
-						newEntity->AddComponent(Active());
+						newEntity->AddComponent(NextStageTag());
 						newEntity->AddComponent(Color());
 
-						Image* image = newEntity->GetComponent<Image>();
-						image->texture = &mBgSkyNightTexture;
-						image->layer = uint32_t(Layer::BackGround);
+						Image image{};
+						image.texture = &mBgSkyNightTexture;
+						image.layer = uint32_t(Layer::BackGround);
+						newEntity->AddComponent(image);
 
-						Transform* transform = newEntity->GetComponent<Transform>();
-						transform->scale = { .width = 3.5f, .height = 3.5f };
+						Transform transform{};
+						transform.scale = { .width = 3.5f, .height = 3.5f };
+						newEntity->AddComponent(transform);
 
-						Active* active = newEntity->GetComponent<Active>();
-						active->isValue = true;
+						Active active{};
+						active.isValue = true;
+						newEntity->AddComponent(active);
 					}
 				}
 			}
@@ -133,24 +132,24 @@ bool MainScene::Update(const float deltaTime)
 			Active* active = waveStageEntity->GetComponent<Active>();
 			if (active->isValue)
 			{
-				Entity* backGroundEntity = getEntity<NextBackGroundTag>();
-				Color* backGroundColor = backGroundEntity->GetComponent<Color>();
+				Entity* nextStageEntity = getEntity<NextStageTag>();
+				Color* nextStageColor = nextStageEntity->GetComponent<Color>();
 
 				Color* labelColor = waveStageEntity->GetComponent<Color>();
 
 				if (mGameWaveState.labelShowElapsedTimer >= FADE_OUT_TIME)
 				{
-					if (backGroundEntity != nullptr)
+					if (nextStageEntity != nullptr)
 					{
-						backGroundColor->a -= Uint8(FADE_SPEED * deltaTime);
+						nextStageColor->a -= Uint8(FADE_SPEED * deltaTime);
 						labelColor->a -= Uint8(FADE_SPEED * deltaTime);
 
-						if (backGroundColor->a <= 0)
+						if (nextStageColor->a <= 0)
 						{
-							backGroundColor->a = 0;
+							nextStageColor->a = 0;
 							labelColor->a = 0;
 
-							backGroundEntity->SetRemove();
+							nextStageEntity->SetRemove();
 
 							mGameWaveState.labelShowElapsedTimer = 0.0f;
 							active->isValue = false;
@@ -258,55 +257,14 @@ bool MainScene::Update(const float deltaTime)
 					gameReset();
 				}
 				else
-				{					
+				{
+					mIsGameUpdate = false;
+					updateCamera(nullptr);
+
 					// 시간 안에 보스를 죽이지 못하면, 게임이 끝난다.
-					if (Entity* clearBackGroundEntity = getEntity<EndingBackGroundTag>();
-						clearBackGroundEntity == nullptr)
-					{
-						mIsGameUpdate = false;
-						updateCamera(nullptr);
-
-						// 배경화면
-						{
-							Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-							newEntity->AddComponent(EndingBackGroundTag());
-							newEntity->AddComponent(Color());
-
-							Image image{};
-							image.texture = &mBgSkyNightTexture;
-							image.layer = uint32_t(Layer::BackGround);
-							newEntity->AddComponent(image);
-
-							Transform transform{};
-							transform.scale = { .width = 3.5f, .height = 3.5f };
-							newEntity->AddComponent(transform);
-
-							Active active{};
-							active.isValue = true;
-							newEntity->AddComponent(active);
-						}
-
-						// Lose 글자
-						{
-							Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-							newEntity->AddComponent(LoseLabelTag());
-							newEntity->AddComponent(Ui());
-							newEntity->AddComponent(Color());
-
-							Label label{};
-							label.font = &mUIFont;
-							label.text = "Lose...";
-							newEntity->AddComponent(label);
-
-							Transform transform{};
-							transform.position = { .x = Constant::Get().GetHalfWidth() - 50.0f, .y = Constant::Get().GetHalfHeight() - 50.0f };
-							newEntity->AddComponent(transform);
-
-							Active active{};
-							active.isValue = true;
-							newEntity->AddComponent(active);
-						}
-					}
+					initializeEnding(0);
+					initializeEndingLabel("Lose...");
+					updateEnding(deltaTime);
 				}
 			}
 		}
@@ -499,6 +457,11 @@ void MainScene::Finalize()
 		}
 
 		for (Texture& texture : mBossAttackTextures)
+		{
+			texture.Finalize();
+		}
+
+		for (Texture& texture : mBossDeadTextures)
 		{
 			texture.Finalize();
 		}
@@ -1002,21 +965,6 @@ void MainScene::initialize_Resource()
 			index = 0;
 		}
 
-		// Run
-		{
-			mBossIdleTextures[0].Initialize(GetHelper(), "Resource/Monster/Boss/Idle/0.png");
-
-			Clip::Frame frame =
-			{
-				.texture = &mBossIdleTextures[0],
-				.durationTime = 0.12f,
-			};
-
-			mBossClips[uint32_t(Monster::eState::Run)].AddClip(frame);
-
-			index = 0;
-		}
-
 		// Attack
 		{
 			for (Texture& texture : mBossAttackTextures)
@@ -1030,6 +978,24 @@ void MainScene::initialize_Resource()
 				};
 
 				mBossClips[uint32_t(Monster::eState::Attack)].AddClip(frame);
+			}
+
+			index = 0;
+		}
+
+		// Dead
+		{
+			for (Texture& texture : mBossDeadTextures)
+			{
+				texture.Initialize(GetHelper(), "Resource/Monster/Boss/Dead/" + std::to_string(index++) + ".png");
+
+				Clip::Frame frame =
+				{
+					.texture = &texture,
+					.durationTime = 0.12f,
+				};
+
+				mBossClips[uint32_t(Monster::eState::Dead)].AddClip(frame);
 			}
 
 			index = 0;
@@ -1546,6 +1512,91 @@ void MainScene::initializeWaveStage()
 	entity->AddComponent(color);
 }
 
+void MainScene::initializeEnding(Uint8 opaque)
+{
+	if (Entity* entity = getEntity<EndingTag>();
+		entity == nullptr)
+	{
+		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+		newEntity->AddComponent(EndingTag());
+
+		Image image{};
+		image.texture = &mBgSkyNightTexture;
+		image.layer = uint32_t(Layer::BackGround);
+		newEntity->AddComponent(image);
+
+		Transform transform{};
+		transform.scale = { .width = 3.5f, .height = 3.5f };
+		newEntity->AddComponent(transform);
+
+		Active active{};
+		active.isValue = true;
+		newEntity->AddComponent(active);
+
+		Color color{};
+		color.a = opaque;
+		newEntity->AddComponent(color);
+	}
+}
+
+void MainScene::initializeEndingLabel(const std::string& text)
+{
+	if (const Entity* labelEntity = getEntity<EndingLabelTag>();
+		labelEntity == nullptr)
+	{
+		Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
+		newEntity->AddComponent(EndingLabelTag());
+		newEntity->AddComponent(Ui());
+
+		Label label{};
+		label.font = &mUIFont;
+		label.text = text;
+		newEntity->AddComponent(label);
+
+		Transform transform{};
+		transform.position = { .x = Constant::Get().GetHalfWidth() - 50.0f, .y = Constant::Get().GetHalfHeight() - 50.0f };
+		newEntity->AddComponent(transform);
+
+		Active active{};
+		active.isValue = true;
+		newEntity->AddComponent(active);
+
+		Color color{};
+		color.a = 0;
+		newEntity->AddComponent(color);
+	}
+}
+
+void MainScene::updateEnding(const float deltaTime)
+{
+	Entity* endingEntity = getEntity<EndingTag>();
+	if (endingEntity != nullptr)
+	{
+		Color* endingColor = endingEntity->GetComponent<Color>();
+		endingColor->a += Uint8(FADE_SPEED * deltaTime);
+	}
+
+	Entity* lebelEntity = getEntity<EndingLabelTag>();
+	if (endingEntity != nullptr
+		and lebelEntity != nullptr)
+	{
+		updateCamera(nullptr);
+		gameReset();
+
+		Color* labelColor = lebelEntity->GetComponent<Color>();
+		labelColor->a += Uint8(FADE_SPEED * deltaTime);
+
+		if (Color* endingColor = endingEntity->GetComponent<Color>();
+			endingColor->a >= 255)
+		{
+			endingColor->a = 255;
+			labelColor->a = 255;
+
+			mIsGameUpdate = false;
+		}
+	}
+}
+
 void MainScene::initializePlayer()
 {
 	constexpr uint32_t MAX_HP = 1;
@@ -1799,75 +1850,9 @@ void MainScene::playerState(const float deltaTime)
 
 			// Lose 창
 			{
-				if (Entity* endingEntity = getEntity<EndingBackGroundTag>();
-					endingEntity == nullptr)
-				{
-					// 배경화면
-					{
-						Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-						newEntity->AddComponent(EndingBackGroundTag());
-
-						Image image{};
-						image.texture = &mBgSkyNightTexture;
-						image.layer = uint32_t(Layer::BackGround);
-						newEntity->AddComponent(image);
-
-						Transform transform{};
-						transform.scale = { .width = 5.0f, .height = 5.0f };
-						newEntity->AddComponent(transform);
-
-						Active active{};
-						active.isValue = true;
-						newEntity->AddComponent(active);
-
-						Color color{};
-						color.a = 0;
-						newEntity->AddComponent(color);
-
-					}
-
-					// Lose 글자
-					{
-						Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
-						newEntity->AddComponent(LoseLabelTag());
-						newEntity->AddComponent(Ui());
-
-						Label label{};
-						label.font = &mUIFont;
-						label.text = "Lose...";
-						newEntity->AddComponent(label);
-
-						Transform transform{};
-						transform.position = { .x = Constant::Get().GetHalfWidth() - 50.0f, .y = Constant::Get().GetHalfHeight() - 50.0f };
-						newEntity->AddComponent(transform);
-
-						Active active{};
-						active.isValue = true;
-						newEntity->AddComponent(active);
-
-						Color color{};
-						color.a = 0;
-						newEntity->AddComponent(color);
-					}
-				}
-
-				Entity* endingEntity = getEntity<EndingBackGroundTag>();
-				Color* endingColor = endingEntity->GetComponent<Color>();
-				endingColor->a += Uint8(FADE_SPEED * deltaTime);
-				
-				Entity* lebelEntity = getEntity<LoseLabelTag>();
-				Color* labelColor = lebelEntity->GetComponent<Color>();
-				labelColor->a += Uint8(FADE_SPEED * deltaTime);
-
-				if (endingColor->a >= 255)
-				{
-					endingColor->a = 255;
-					labelColor->a = 255;
-
-					mIsGameUpdate = false;
-					updateCamera(nullptr);
-					gameReset();
-				}
+				initializeEnding(0);
+				initializeEndingLabel("Lose...");
+				updateEnding(deltaTime);
 			}
 		}
 	}
@@ -3422,10 +3407,9 @@ void MainScene::updateBossStates(const float deltaTime)
 
 	case Monster::eState::Dead:
 	{
-		// TODO: Clear 창을 만든다.
-		// UI 다 끄기
-		// WaveTimer 값 고정시키기 (안 흐르도록)
-		__noop;
+		initializeEnding(0);
+		initializeEndingLabel("Clear!!!");
+		updateEnding(deltaTime);
 		break;
 	}
 
@@ -3444,9 +3428,6 @@ void MainScene::updateBossStates(const float deltaTime)
 	}
 
 	hp->value = 0;
-
-	Active* active = entity->GetComponent<Active>();
-	active->isValue = false;
 
 	monster->state = Monster::eState::Dead;
 }
@@ -3708,7 +3689,7 @@ void MainScene::bossSetClip()
 		break;
 
 	case Monster::eState::Dead:
-		__noop;
+		animator->SetClip(&monster->clips[uint32_t(Monster::eState::Dead)]);
 		break;
 
 	default:
@@ -3909,8 +3890,8 @@ void MainScene::gameReset()
 			}
 		}
 
-		Entity* bossHpBarAllEntity = getEntity<BossHpBarAllTag>();
-		if (bossHpBarAllEntity != nullptr)
+		for (auto entities = getEntities<BossHpBarAllTag>();
+			Entity * bossHpBarAllEntity : entities)
 		{
 			Active* active = bossHpBarAllEntity->GetComponent<Active>();
 			active->isValue = false;
@@ -3920,7 +3901,7 @@ void MainScene::gameReset()
 	// 몬스터를 갱신한다.
 	{
 		for (std::vector<Entity*> monsterEntities = getEntities<NormalMonsterTag>();
-			Entity * entity : monsterEntities)
+			Entity* entity : monsterEntities)
 		{
 			Monster* monster = entity->GetComponent<Monster>();
 			monster->state = Monster::eState::Dead;
@@ -3930,14 +3911,14 @@ void MainScene::gameReset()
 
 		// 몬스터 체력바를 갱신한다.
 		for (std::vector<Entity*> hpBarEntities = getEntities<MonsterHpBarTag>();
-			Entity * entity : hpBarEntities)
+			Entity* entity : hpBarEntities)
 		{
 			entity->SetRemove();
 		}
 
 		// 몬스터 충돌체를 갱신한다.
 		for (std::vector<Entity*> attackColliders = getEntities<BigWhiteHitboxTag>();
-			Entity * entity : attackColliders)
+			Entity* entity : attackColliders)
 		{
 			entity->SetRemove();
 		}

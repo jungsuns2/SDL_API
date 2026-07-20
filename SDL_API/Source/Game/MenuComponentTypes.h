@@ -1,10 +1,10 @@
 #pragma once
 #include "Core/Entity/Component.h"
 
-struct NextBackGroundTag : public Component
+struct EndingTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	NextBackGroundTag() : Component(&_ID) {}
+	EndingTag() : Component(&_ID) {}
 };
 
 struct LogoTag : public Component

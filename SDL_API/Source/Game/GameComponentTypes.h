@@ -234,22 +234,22 @@ struct CycloneFanTag : public Component
 	CycloneFanTag() : Component(&_ID) {}
 };
 
-struct NextBackGroundTag : public Component
+struct NextStageTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	NextBackGroundTag() : Component(&_ID) {}
+	NextStageTag() : Component(&_ID) {}
 };
 
-struct EndingBackGroundTag : public Component
+struct EndingTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	EndingBackGroundTag() : Component(&_ID) {}
+	EndingTag() : Component(&_ID) {}
 };
 
-struct LoseLabelTag : public Component
+struct EndingLabelTag : public Component
 {
 	static constexpr uint32_t _ID = 0;
-	LoseLabelTag() : Component(&_ID) {}
+	EndingLabelTag() : Component(&_ID) {}
 };
 
 struct Player : public Component
