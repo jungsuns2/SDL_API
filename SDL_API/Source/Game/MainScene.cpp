@@ -2175,7 +2175,7 @@ void MainScene::updateSwordAttackStates(const float deltaTime)
 
 void MainScene::spawnBullets(const float deltaTime)
 {
-	constexpr float FIRE_TIME = 0.8f;
+	constexpr float FIRE_TIME = 0.5f;
 
 	if (mBulletState.count <= 0)
 	{
@@ -2206,15 +2206,7 @@ void MainScene::spawnBullets(const float deltaTime)
 			Entity* newEntity = GetEntityWorld()->AddEntity(new Entity());
 			{
 				newEntity->AddComponent(BulletTag());
-				newEntity->AddComponent(RangedAttack());
-				newEntity->AddComponent(Direction());
-				newEntity->AddComponent(Transform());
-				newEntity->AddComponent(Image());
-				newEntity->AddComponent(Animator());
-				newEntity->AddComponent(Active());
 				newEntity->AddComponent(Color());
-				newEntity->AddComponent(Damage());
-				newEntity->AddComponent(BoxCollider());
 				newEntity->AddComponent(DebugColor());
 
 				CollisionDetector collider(static_cast<uint32_t>(MainScene::CollisionLayer::PlayerBullet));
@@ -2226,34 +2218,42 @@ void MainScene::spawnBullets(const float deltaTime)
 				newEntity->AddComponent(debugActive);
 			}
 
-			Image* image = newEntity->GetComponent<Image>();
-			image->layer = static_cast<uint32_t>(Layer::Player);
+			Image image{};
+			image.layer = static_cast<uint32_t>(Layer::Player);
+			newEntity->AddComponent(image);
 
-			Animator* animator = newEntity->GetComponent<Animator>();
-			animator->clipState = &mBulletClip;
-			animator->frameIndex = 0;
-			animator->elapsedTime = 0.0f;
+			Animator animator{};
+			animator.clipState = &mBulletClip;
+			animator.frameIndex = 0;
+			animator.elapsedTime = 0.0f;
+			newEntity->AddComponent(animator);
 
-			BoxCollider* boxCollider = newEntity->GetComponent<BoxCollider>();
-			boxCollider->size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
+			BoxCollider boxCollider{};
+			boxCollider.size = { .width = float(mBulletTextures[5].GetWidth()), .height = float(mBulletTextures[5].GetHeight()) };
+			newEntity->AddComponent(boxCollider);
 
-			Active* active = newEntity->GetComponent<Active>();
-			active->isValue = true;
+			Active active{};
+			active.isValue = true;
+			newEntity->AddComponent(active);
 
-			RangedAttack* rangedAttack = newEntity->GetComponent<RangedAttack>();
-			rangedAttack->distance = 300.0f;
-			rangedAttack->startPosition = gunTransform->position;
+			RangedAttack rangedAttack{};
+			rangedAttack.distance = 300.0f;
+			rangedAttack.startPosition = gunTransform->position;
+			newEntity->AddComponent(rangedAttack);
 
-			Transform* transform = newEntity->GetComponent<Transform>();
-			transform->position = gunTransform->position;
-			transform->scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+			Transform transform{};
+			transform.position = gunTransform->position;
+			transform.scale = { .width = PRIMARY_SIZE, .height = PRIMARY_SIZE };
+			newEntity->AddComponent(transform);
 
 			const Point difference = getScreenMousePosition() - gunTransform->position;
-			Direction* direction = newEntity->GetComponent<Direction>();
-			direction->value = Math::NormalizeVector(difference);
+			Direction direction{};
+			direction.value = Math::NormalizeVector(difference);
+			newEntity->AddComponent(direction);
 
-			Damage* damage = newEntity->GetComponent<Damage>();
-			damage->value = 2;
+			Damage damage{};
+			damage.value = 2;
+			newEntity->AddComponent(damage);
 
 			const Entity* bulletCountEntity = getEntity<BulletCountTag>();
 			Label* label = bulletCountEntity->GetComponent<Label>();
